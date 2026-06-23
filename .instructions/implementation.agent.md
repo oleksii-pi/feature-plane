@@ -1,1 +1,1 @@
-Implement what user requested in prompt.md
+Store "results of implementation" in the root 'implementation-details.md'
