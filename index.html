@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A local Control Plane proof-of-concept for long-running feature work."
+    />
+    <title>Control Plane</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%23172033%22/><text x=%2216%22 y=%2220%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2211%22 font-weight=%22700%22 fill=%22white%22>CP</text></svg>" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="workspace" id="workspace">
+        <aside class="panel features-panel" aria-labelledby="features-heading">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Workspace</p>
+              <h1 id="features-heading">Features</h1>
+            </div>
+            <div class="menu" data-menu>
+              <button class="menu-button" type="button" aria-label="Feature actions" aria-haspopup="menu" aria-expanded="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="5" r="1.75" />
+                  <circle cx="12" cy="12" r="1.75" />
+                  <circle cx="12" cy="19" r="1.75" />
+                </svg>
+              </button>
+              <div class="menu-popover" role="menu" hidden>
+                <button id="add-feature-button" type="button" role="menuitem"><u>A</u>dd</button>
+                <button id="feature-settings-button" type="button" role="menuitem"><u>S</u>ettings</button>
+                <div class="menu-separator" role="separator"></div>
+                <button id="hide-features-button" type="button" role="menuitem"><u>H</u>ide</button>
+              </div>
+            </div>
+          </div>
+
+          <label class="search-box">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-4-4" />
+            </svg>
+            <span class="sr-only">Search features</span>
+            <input id="feature-search" type="search" placeholder="Search features" autocomplete="off" />
+          </label>
+
+          <div class="feature-list" id="feature-list"></div>
+        </aside>
+
+        <section class="content-column">
+          <nav class="timeline" id="timeline" aria-label="Feature workflow" hidden></nav>
+
+          <section class="panel details-panel" aria-labelledby="feature-title">
+            <div class="details-header">
+              <div>
+                <div class="title-row">
+                  <h2 id="feature-title"></h2>
+                  <span class="state-badge" id="state-badge"></span>
+                </div>
+                <p id="feature-meta"></p>
+              </div>
+              <div class="details-actions">
+                <button class="secondary-button" id="back-step-button" type="button">Go back</button>
+                <button class="secondary-button" id="retry-run-button" type="button">Retry</button>
+                <button class="secondary-button" id="cancel-run-button" type="button">Cancel run</button>
+                <button class="primary-button" id="advance-button" type="button">Move to next step</button>
+                <div class="menu detail-menu" data-menu>
+                  <button class="menu-button" type="button" aria-label="Feature detail actions" aria-haspopup="menu" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="12" cy="5" r="1.75" />
+                      <circle cx="12" cy="12" r="1.75" />
+                      <circle cx="12" cy="19" r="1.75" />
+                    </svg>
+                  </button>
+                  <div class="menu-popover" role="menu" hidden>
+                    <button id="toggle-workflow-button" type="button" role="menuitemcheckbox" aria-checked="false"><u>W</u>orkflow</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-heading">
+              <div>
+                <h3>Artifacts</h3>
+              </div>
+            </div>
+            <div class="artifact-list" id="artifact-list"></div>
+          </section>
+        </section>
+
+      </main>
+    </div>
+
+    <div class="global-menu menu" data-menu>
+      <button class="menu-button" type="button" aria-label="Application actions" aria-haspopup="menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="5" r="1.75" />
+          <circle cx="12" cy="12" r="1.75" />
+          <circle cx="12" cy="19" r="1.75" />
+        </svg>
+      </button>
+      <div class="menu-popover" role="menu" hidden>
+        <button id="repository-workflow-button" type="button" role="menuitem"><u>W</u>orkflow</button>
+        <button id="validate-repository-button" type="button" role="menuitem"><u>V</u>alidate repository</button>
+        <div class="menu-separator" role="separator"></div>
+        <button id="save-state-button" type="button" role="menuitem">Save application state to clipboard</button>
+        <button id="restore-state-button" type="button" role="menuitem">Restore application state to clipboard</button>
+      </div>
+    </div>
+
+    <dialog id="feature-dialog">
+      <form id="feature-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">New item</p>
+            <h2>Create feature</h2>
+          </div>
+          <button class="icon-button" id="close-dialog-button" type="button" aria-label="Close dialog">×</button>
+        </div>
+        <label class="form-field">
+          Feature name
+          <input id="new-feature-name" name="name" required maxlength="80" placeholder="e.g. Improve release visibility" />
+        </label>
+        <label class="form-field">
+          Prompt
+          <textarea id="new-feature-prompt" name="prompt" rows="5" required placeholder="Describe what should change..."></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-dialog-button" type="button">Cancel</button>
+          <button class="primary-button" type="submit">Create feature</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="feature-settings-dialog">
+      <form id="feature-settings-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Feature settings</p>
+            <h2 id="settings-feature-name"></h2>
+          </div>
+          <button class="icon-button" id="close-settings-button" type="button" aria-label="Close feature settings">×</button>
+        </div>
+        <label class="form-field">
+          Branch name
+          <input id="feature-branch-name" name="branch" required maxlength="120" spellcheck="false" />
+          <span class="field-help">The branch used for agent changes and pull requests.</span>
+        </label>
+        <div class="danger-zone">
+          <div>
+            <strong>Delete feature</strong>
+            <p>Remove this feature and all of its artifacts and run history.</p>
+          </div>
+          <button class="danger-button" id="request-delete-feature-button" type="button">Delete feature</button>
+        </div>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-settings-button" type="button">Cancel</button>
+          <button class="primary-button" type="submit">Save changes</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="delete-feature-dialog" class="confirmation-dialog">
+      <form id="delete-feature-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow danger-text">Permanent action</p>
+            <h2>Delete feature?</h2>
+          </div>
+          <button class="icon-button" id="close-delete-button" type="button" aria-label="Close confirmation">×</button>
+        </div>
+        <p class="dialog-copy">This will permanently delete <strong id="delete-feature-name"></strong>, including its artifacts and run history. This action cannot be undone.</p>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-delete-button" type="button">Cancel</button>
+          <button class="danger-button" type="submit">Delete feature</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="repository-workflow-dialog" class="repository-workflow-dialog">
+      <div class="dialog-content">
+        <div class="dialog-heading workflow-dialog-heading">
+          <div>
+            <p class="eyebrow">Repository workflow</p>
+            <div class="workflow-title-row">
+              <h2>Software delivery workflow</h2>
+              <span class="read-only-badge">Read only</span>
+            </div>
+          </div>
+          <button class="icon-button" id="close-workflow-button" type="button" aria-label="Close repository workflow">×</button>
+        </div>
+        <div class="workflow-source" id="workflow-source" aria-label="Workflow source details"></div>
+        <p class="repository-workflow-help">This workflow applies to every feature.</p>
+        <ol class="repository-workflow-steps" id="repository-workflow-steps" aria-label="Ordered repository workflow"></ol>
+        <div class="dialog-actions">
+          <button class="primary-button" id="close-workflow-action" type="button">Close</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="repository-validation-dialog" class="validation-dialog">
+      <div class="dialog-content">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Repository validation</p>
+            <h2 id="validation-title">Repository validation</h2>
+          </div>
+          <button class="icon-button" id="close-validation-button" type="button" aria-label="Close repository validation">×</button>
+        </div>
+        <div class="validation-context" id="validation-context" aria-label="Validation execution details"></div>
+        <div class="validation-summary" id="validation-summary" role="status"></div>
+        <div class="validation-list" id="validation-list"></div>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="close-validation-action" type="button">Close</button>
+          <button class="primary-button" id="rerun-validation-button" type="button">Validate again</button>
+        </div>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>

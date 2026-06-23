@@ -1,0 +1,12 @@
+sdlc:
+  app_port: 3000
+  agents:
+    - implementation
+  workflow:
+    - state: Draft
+      artifact: prompt.md
+    - state: "@implementation"
+      agent: implementation
+      artifact: implementation-details.md
+    - state: Review implementation
+    - state: Done
