@@ -25,8 +25,10 @@ function findRun(id) {
 
 function assertAgentStep(feature) {
   const step = currentStep(feature);
-  if (!step?.agent) throw httpError(409, "The current workflow step is not an agent step.");
-  if (feature.activeRunId) throw httpError(409, "This feature already has an active run.");
+  if (!step?.agent)
+    throw httpError(409, "The current workflow step is not an agent step.");
+  if (feature.activeRunId)
+    throw httpError(409, "This feature already has an active run.");
   return step;
 }
 
@@ -52,7 +54,6 @@ async function startRun(feature) {
 
   await addEvent(feature, run, "Starting", "Agent run queued.");
   run.status = "running";
-  await addEvent(feature, run, "Analyzing", "Reading prompt and workflow context.");
 
   const commandTemplate = getAgentRunCommand();
   if (commandTemplate) {
@@ -102,23 +103,42 @@ async function completeSimulatedRun(feature, run, status, message) {
 
 async function completeConfiguredRun(feature, run) {
   const step = workflow[run.step];
-  const artifactPath = path.join(getFeatureWorkspacePath(feature), step.artifact);
-  await queueRunEvent(feature, run, "Verifying", "Checking required artifact on disk.");
+  const artifactPath = path.join(
+    getFeatureWorkspacePath(feature),
+    step.artifact,
+  );
+  await queueRunEvent(
+    feature,
+    run,
+    "Verifying",
+    "Checking required artifact on disk.",
+  );
 
   let content;
   try {
     content = await fsp.readFile(artifactPath, "utf8");
   } catch {
-    await failRun(feature, run, `Required artifact ${step.artifact} was not created.`);
+    await failRun(
+      feature,
+      run,
+      `Required artifact ${step.artifact} was not created.`,
+    );
     return;
   }
 
   updateCompletedRun(feature, run, step, content);
-  await addEvent(feature, run, "Completed", "Agent run completed successfully.");
+  await addEvent(
+    feature,
+    run,
+    "Completed",
+    "Agent run completed successfully.",
+  );
 }
 
 function updateCompletedRun(feature, run, step, content) {
-  const existing = feature.artifacts.find((artifact) => artifact.name === step.artifact);
+  const existing = feature.artifacts.find(
+    (artifact) => artifact.name === step.artifact,
+  );
   const artifact = {
     name: step.artifact,
     path: `${feature.workspace}/${step.artifact}`,
@@ -153,7 +173,12 @@ function renderArtifact(feature, run, step) {
 }
 
 async function failRun(feature, run, message, level = "error") {
-  if (run.status === "failed" || run.status === "succeeded" || run.status === "cancelled") return run;
+  if (
+    run.status === "failed" ||
+    run.status === "succeeded" ||
+    run.status === "cancelled"
+  )
+    return run;
   run.status = "failed";
   run.finishedAt = new Date().toISOString();
   feature.activeRunId = null;
@@ -177,7 +202,13 @@ async function cancelRun(runId) {
   run.finishedAt = new Date().toISOString();
   feature.activeRunId = null;
   feature.updated = new Date().toISOString();
-  await addEvent(feature, run, "Cancelled", "Agent run cancelled by user.", "info");
+  await addEvent(
+    feature,
+    run,
+    "Cancelled",
+    "Agent run cancelled by user.",
+    "info",
+  );
   return run;
 }
 
