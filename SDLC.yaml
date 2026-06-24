@@ -2,6 +2,7 @@ sdlc:
   app_port: 3000
   agents:
     - implementation
+    - merge
   workflow:
     - state: Draft
       artifact: prompt.md

@@ -1,5 +1,10 @@
 const path = require("node:path");
-const { PORT, ROOT, workflow } = require("./config");
+const { PORT, workflow } = require("./config");
+const {
+  getFeatureArtifactFolder,
+  getFeatureArtifactFolderPath,
+  getFeatureWorkspaceFolderPath,
+} = require("./feature-artifacts");
 
 function isInteractiveCodexCommand(command) {
   const normalized = String(command ?? "").trim();
@@ -7,7 +12,7 @@ function isInteractiveCodexCommand(command) {
 }
 
 function getFeatureWorkspacePath(feature) {
-  return path.join(ROOT, feature.workspace);
+  return getFeatureWorkspaceFolderPath(feature);
 }
 
 function getAgentInstructionPath(feature, agent) {
@@ -16,11 +21,18 @@ function getAgentInstructionPath(feature, agent) {
 
 function buildAgentContext(feature, run) {
   const step = workflow[run.step] ?? {};
+  const artifactFolder = getFeatureArtifactFolder(feature);
+  const artifactFolderPath = getFeatureArtifactFolderPath(feature);
   return {
     agent: run.agent,
+    app_port: feature.appPort,
     artifact: run.artifact,
-    artifact_path: path.join(getFeatureWorkspacePath(feature), run.artifact),
+    artifact_folder: artifactFolder,
+    artifact_folder_path: artifactFolderPath,
+    artifact_path: path.join(artifactFolderPath, run.artifact),
     branch: feature.branch,
+    context_folder: artifactFolder,
+    context_folder_path: artifactFolderPath,
     default_branch: String(process.env.default_branch ?? ""),
     feature_id: feature.id,
     feature_name: feature.name,
@@ -28,7 +40,7 @@ function buildAgentContext(feature, run) {
     feature_title: feature.name,
     instruction_path: getAgentInstructionPath(feature, run.agent),
     llm_model_name: String(process.env.llm_model_name ?? ""),
-    prompt_path: path.join(getFeatureWorkspacePath(feature), "prompt.md"),
+    prompt_path: path.join(artifactFolderPath, "prompt.md"),
     run_id: run.id,
     server_port: PORT,
     state: step.state,

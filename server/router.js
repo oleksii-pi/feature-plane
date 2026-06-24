@@ -1,6 +1,10 @@
 const fsp = require("node:fs/promises");
-const path = require("node:path");
-const { FEATURE_ROOT, workflow } = require("./config");
+const { workflow } = require("./config");
+const {
+  branchArtifactFolder,
+  branchWorkspaceFolder,
+  getFeatureWorkspaceFolderPath,
+} = require("./feature-artifacts");
 const { httpError, readJson, sendJson, sendNoContent } = require("./http");
 const { serveStatic } = require("./static");
 const { normalizeFeature, publicState, saveState, state } = require("./state");
@@ -74,6 +78,8 @@ async function route(req, res) {
           throw httpError(422, "Feature branches must live under feature/.");
         }
         feature.branch = branch;
+        feature.workspace = branchWorkspaceFolder(branch, feature.slug);
+        feature.artifactFolder = branchArtifactFolder(branch, feature.slug);
       }
       if (body.name) feature.name = String(body.name);
       feature.updated = new Date().toISOString();
@@ -85,7 +91,7 @@ async function route(req, res) {
 
     if (req.method === "DELETE" && parts.length === 2) {
       state.features = state.features.filter((item) => item.id !== feature.id);
-      await fsp.rm(path.join(FEATURE_ROOT, feature.slug), { recursive: true, force: true });
+      await fsp.rm(getFeatureWorkspaceFolderPath(feature), { recursive: true, force: true });
       await saveState();
       sendNoContent(res);
       return;

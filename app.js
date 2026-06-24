@@ -316,13 +316,14 @@ function runLabel(run) {
 function renderRunLog(run, index, isExpanded, feature) {
   const step = workflow[run.step] ?? selectedStep();
   const eventMarkup = displayEvents(run).join("");
+  const artifactFolder = feature.artifactFolder || feature.workspace;
   return `
     <article class="artifact-card run-log ${run.status} ${isExpanded ? "expanded" : ""}" data-artifact-index="${index}">
       <button class="artifact-header" type="button" aria-expanded="${isExpanded}">
         <span class="artifact-label">${escapeHtml(runLabel(run))}</span>
         <span class="artifact-title">
           <strong>${escapeHtml(step?.agent ?? step?.state ?? "Run")}</strong>
-          <span>${escapeHtml(run.status)} · ${escapeHtml(feature.workspace)}</span>
+          <span>${escapeHtml(run.status)} · ${escapeHtml(artifactFolder)}</span>
         </span>
         <span class="artifact-chevron">⌃</span>
       </button>
@@ -427,7 +428,7 @@ function renderDetails() {
   const branchLink = document.createElement("a");
   branchLink.href = `#${feature.branch}`;
   branchLink.textContent = feature.branch;
-  elements.featureMeta.append(branchLink, ` · ${feature.updated} · ${feature.workspace}`);
+  elements.featureMeta.append(branchLink, ` · ${feature.updated} · ${feature.artifactFolder || feature.workspace}`);
   elements.stateBadge.textContent = displayStep(feature);
   elements.stateBadge.classList.toggle("running", Boolean(feature.activeRunId));
   elements.advanceButton.disabled =
@@ -448,7 +449,7 @@ function renderDetails() {
 function renderRepositoryWorkflow() {
   elements.workflowSource.innerHTML = `
     <span><strong>Source</strong><code>server.js</code></span>
-    <span><strong>Workspace root</strong><code>feature/</code></span>
+    <span><strong>Artifact root</strong><code>feature/</code></span>
     <span><strong>Features</strong>${features.length}</span>
   `;
   elements.repositoryWorkflowSteps.innerHTML = workflow

@@ -119,8 +119,10 @@ workspace. It must be non-interactive and should not require shell operators.
 `agent_run_command` is optional. If configured, Control Plane launches it as a
 child process inside the feature workspace and expands placeholders before
 execution. Supported placeholders include `%instruction_path%`,
-`%prompt_path%`, `%branch%`, `%workspace%`, `%agent%`, `%artifact%`,
-`%state%`, `%feature_name%`, and `%feature_id%`. Placeholder values are
+`%prompt_path%`, `%artifact_path%`, `%artifact_folder%`,
+`%artifact_folder_path%`, `%context_folder%`, `%context_folder_path%`,
+`%branch%`, `%workspace%`, `%agent%`, `%artifact%`, `%state%`,
+`%feature_name%`, `%feature_id%`, and `%app_port%`. Placeholder values are
 shell-escaped automatically, so use them as bare tokens rather than wrapping
 them in extra quotes.
 
@@ -137,6 +139,9 @@ feature/
 ```
 
 `feature/` may be created by Control Plane when the first feature is created.
+Each feature has an artifact/context folder whose path matches the feature
+branch name, for example branch `feature/verification-improvement` uses
+`feature/verification-improvement/`.
 
 The target repository's `.gitignore` must ignore generated logs:
 
@@ -191,7 +196,7 @@ When a user creates a feature, Control Plane:
 
 1. Generates a URL-safe slug from the title.
 2. Creates branch `feature/<slug>`.
-3. Creates workspace `feature/<slug>/` inside the target repository.
+3. Creates artifact/context folder `feature/<slug>/` inside the target repository.
 4. Writes `feature/<slug>/prompt.md`.
 5. Commits the prompt with Git identity `agent <agent@control-plane.local>`.
 6. Adds the feature to browser state.
@@ -207,7 +212,7 @@ When a feature enters an agent state, Control Plane:
 3. Starts the configured agent command as a child process.
 4. Changes the displayed state to `Agent Run: <agent name>`.
 5. Streams stdout, stderr, and structured status events to the UI.
-6. Appends the same stream to `feature/<slug>/<agent-name>.log`.
+6. Appends the same stream to `feature/<slug>/<agent-name>.agent.log`.
 7. Verifies that the required artifact exists.
 8. Commits intended changes if needed.
 9. Pushes the branch when Git publishing is configured.
@@ -229,6 +234,8 @@ The agent receives enough context to know:
 
 - Feature branch
 - Feature workspace path
+- Feature artifact/context folder path
+- Feature-scoped application port
 - Current workflow state
 - Required artifact
 - Agent instructions from `.instructions/<agent-name>.agent.md`

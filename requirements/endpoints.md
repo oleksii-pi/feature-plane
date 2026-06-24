@@ -1,3 +1,5 @@
+This file can contain outdated overview.
+
 # Control Plane Endpoints
 
 This document explains the minimal API surface from `control-plane-poc.md` and the purpose of each endpoint.
@@ -108,7 +110,11 @@ Expected response:
   "currentStep": "Review implementation plan",
   "steps": [
     { "state": "Draft", "artifact": "prompt.md" },
-    { "state": "@acceptance criteria", "agent": "acceptance-criteria", "artifact": "acceptance-criteria.md" },
+    {
+      "state": "@acceptance criteria",
+      "agent": "acceptance-criteria",
+      "artifact": "acceptance-criteria.md"
+    },
     { "state": "Review acceptance criteria" }
   ]
 }
@@ -218,7 +224,13 @@ Expected payload:
 Example event:
 
 ```json
-{"timestamp":"2026-06-23T10:15:00Z","run_id":"run-456","level":"info","status":"Starting","message":"Agent run started"}
+{
+  "timestamp": "2026-06-23T10:15:00Z",
+  "run_id": "run-456",
+  "level": "info",
+  "status": "Starting",
+  "message": "Agent run started"
+}
 ```
 
 Why it should exist:

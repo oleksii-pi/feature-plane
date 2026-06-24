@@ -1,8 +1,14 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
 const { randomUUID } = require("node:crypto");
-const { FEATURES_HOME, FEATURE_ROOT, ROOT, WORKSPACE_COPY_EXCLUDES, workflow } = require("./config");
+const { ROOT, WORKSPACE_COPY_EXCLUDES, workflow } = require("./config");
+const {
+  branchArtifactFolder,
+  branchWorkspaceFolder,
+  getFeatureArtifactFolderPath,
+} = require("./feature-artifacts");
 const { httpError } = require("./http");
+const { allocateAvailablePort } = require("./ports");
 const { clampStep, saveState, slugify, state } = require("./state");
 
 let startRun;
@@ -40,17 +46,25 @@ async function seedFeatureWorkspace(featureDir) {
 async function createFeature({ title, prompt }) {
   if (!title || !prompt) throw httpError(400, "Feature title and prompt are required.");
   const slug = uniqueSlug(title);
-  const featureDir = path.join(FEATURE_ROOT, slug);
-  const relativeWorkspace = `${FEATURES_HOME}/${slug}`;
+  const branch = `feature/${slug}`;
+  const relativeWorkspace = branchWorkspaceFolder(branch, slug);
+  const artifactFolder = branchArtifactFolder(branch, slug);
+  const featureDir = path.join(ROOT, relativeWorkspace);
+  const artifactDir = path.join(ROOT, artifactFolder);
+  const usedPorts = new Set(state.features.map((feature) => feature.appPort).filter(Boolean));
+  const appPort = await allocateAvailablePort(usedPorts);
   await seedFeatureWorkspace(featureDir);
-  await fsp.writeFile(path.join(featureDir, "prompt.md"), prompt);
+  await fsp.mkdir(artifactDir, { recursive: true });
+  await fsp.writeFile(path.join(artifactDir, "prompt.md"), prompt);
 
   const feature = {
     id: `feature-${randomUUID()}`,
     name: title,
     slug,
-    branch: `feature/${slug}`,
+    branch,
+    appPort,
     workspace: relativeWorkspace,
+    artifactFolder,
     step: 0,
     updated: new Date().toISOString(),
     activeRunId: null,
@@ -58,7 +72,7 @@ async function createFeature({ title, prompt }) {
     artifacts: [
       {
         name: "prompt.md",
-        path: `${relativeWorkspace}/prompt.md`,
+        path: `${artifactFolder}/prompt.md`,
         availableAtStep: 0,
         updated: new Date().toISOString(),
         content: prompt,
@@ -73,7 +87,7 @@ async function createFeature({ title, prompt }) {
 }
 
 async function saveFeatureFiles(feature) {
-  const featureDir = path.join(FEATURE_ROOT, feature.slug);
+  const featureDir = getFeatureArtifactFolderPath(feature);
   await fsp.mkdir(featureDir, { recursive: true });
   await Promise.all(
     feature.artifacts.map((artifact) =>
@@ -112,7 +126,7 @@ async function updateArtifact(feature, index, content) {
   artifact.content = content;
   artifact.updated = new Date().toISOString();
   feature.updated = new Date().toISOString();
-  await fsp.writeFile(path.join(ROOT, artifact.path), content);
+  await fsp.writeFile(path.join(getFeatureArtifactFolderPath(feature), artifact.name), content);
   await saveFeatureFiles(feature);
   await saveState();
   return artifact;

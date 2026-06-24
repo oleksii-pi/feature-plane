@@ -8,6 +8,12 @@ const {
   STATE_FILE,
   workflow,
 } = require("./config");
+const {
+  branchArtifactFolder,
+  branchWorkspaceFolder,
+  getFeatureArtifactFolder,
+} = require("./feature-artifacts");
+const { allocateAvailablePort, normalizePort } = require("./ports");
 const { addEvent, isVerboseRunEvent } = require("./run-events");
 
 const state = {
@@ -28,8 +34,9 @@ async function ensureStorage() {
   try {
     const saved = JSON.parse(await fsp.readFile(STATE_FILE, "utf8"));
     if (migratedLegacyRoot) rewriteLegacyFeatureState(saved);
-    const needsRewrite = migratedLegacyRoot || savedFeatureMetadataNeedsRewrite(saved);
     if (Array.isArray(saved.features)) state.features = saved.features.map(normalizeFeature);
+    const assignedPorts = await assignFeaturePorts();
+    const needsRewrite = migratedLegacyRoot || assignedPorts || savedFeatureMetadataNeedsRewrite(saved);
     if (needsRewrite) {
       await Promise.all(state.features.map(saveFeatureFiles));
       await saveState();
@@ -76,6 +83,9 @@ function rewriteLegacyFeaturePaths(feature) {
   if (!feature || typeof feature !== "object") return feature;
   const rewritten = { ...feature };
   if (typeof rewritten.workspace === "string") rewritten.workspace = rewriteLegacyWorkspacePath(rewritten.workspace);
+  if (typeof rewritten.artifactFolder === "string") {
+    rewritten.artifactFolder = rewriteLegacyWorkspacePath(rewritten.artifactFolder);
+  }
   if (Array.isArray(rewritten.artifacts)) {
     rewritten.artifacts = rewritten.artifacts.map((artifact) => {
       if (!artifact || typeof artifact !== "object") return artifact;
@@ -100,22 +110,41 @@ function rewriteLegacyWorkspacePath(value) {
 function savedFeatureMetadataNeedsRewrite(saved) {
   if (!saved || typeof saved !== "object") return false;
   if (!Array.isArray(saved.features)) return false;
-  return saved.features.some((feature) => feature && typeof feature === "object" && "prompt" in feature);
+  return saved.features.some(
+    (feature) =>
+      feature &&
+      typeof feature === "object" &&
+      ("prompt" in feature ||
+        typeof feature.artifactFolder !== "string" ||
+        feature.artifactFolder === feature.workspace),
+  );
 }
 
 function normalizeFeature(feature) {
   const slug = String(feature.slug ?? slugify(feature.name ?? feature.title ?? "feature"));
+  const branch = String(feature.branch ?? `feature/${slug}`);
+  const workspace = rewriteLegacyWorkspacePath(
+    String(feature.workspace ?? branchWorkspaceFolder(branch, slug)),
+  );
+  const storedArtifactFolder = rewriteLegacyWorkspacePath(
+    String(feature.artifactFolder ?? branchArtifactFolder(branch, slug)),
+  );
+  const artifactFolder =
+    storedArtifactFolder === workspace ? branchArtifactFolder(branch, slug) : storedArtifactFolder;
+  const appPort = normalizePort(feature.appPort ?? feature.app_port);
   return {
     id: String(feature.id),
     name: String(feature.name ?? feature.title ?? "Untitled feature"),
     slug,
-    branch: String(feature.branch ?? `feature/${slug}`),
-    workspace: rewriteLegacyWorkspacePath(String(feature.workspace ?? `${FEATURES_HOME}/${slug}`)),
+    branch,
+    appPort,
+    workspace,
+    artifactFolder,
     step: clampStep(feature.step),
     updated: String(feature.updated ?? new Date().toISOString()),
     activeRunId: feature.activeRunId ?? null,
     cost: feature.cost ?? null,
-    artifacts: Array.isArray(feature.artifacts) ? feature.artifacts : [],
+    artifacts: normalizeArtifacts(feature.artifacts, artifactFolder),
     runs: Array.isArray(feature.runs)
       ? feature.runs.map((run) => ({
           ...run,
@@ -123,6 +152,38 @@ function normalizeFeature(feature) {
         }))
       : [],
   };
+}
+
+function normalizeArtifacts(artifacts, artifactFolder) {
+  if (!Array.isArray(artifacts)) return [];
+  return artifacts.map((artifact) => {
+    if (!artifact || typeof artifact !== "object") return artifact;
+    const name = String(artifact.name ?? "");
+    if (!name) return artifact;
+    return {
+      ...artifact,
+      name,
+      path: `${artifactFolder}/${name}`,
+    };
+  });
+}
+
+async function assignFeaturePorts() {
+  const usedPorts = new Set();
+  let changed = false;
+
+  for (const feature of state.features) {
+    if (feature.appPort && !usedPorts.has(feature.appPort)) {
+      usedPorts.add(feature.appPort);
+      continue;
+    }
+
+    feature.appPort = await allocateAvailablePort(usedPorts);
+    usedPorts.add(feature.appPort);
+    changed = true;
+  }
+
+  return changed;
 }
 
 function recoverInterruptedRuns() {
@@ -165,6 +226,8 @@ function publicState() {
       id: feature.slug,
       featureId: feature.id,
       path: feature.workspace,
+      artifactFolder: getFeatureArtifactFolder(feature),
+      appPort: feature.appPort,
       activeRunId: feature.activeRunId,
     })),
     validation: validateRepository(),

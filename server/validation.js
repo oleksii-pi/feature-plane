@@ -10,9 +10,9 @@ function validateRepository() {
   );
   const checks = [
     {
-      name: "Feature storage",
+      name: "Feature artifact folders",
       status: fs.existsSync(FEATURE_ROOT) ? "passed" : "failed",
-      message: `${path.relative(ROOT, FEATURE_ROOT)} exists and stores all feature branches.`,
+      message: `${path.relative(ROOT, FEATURE_ROOT)} stores feature prompts, artifacts, and agent logs.`,
     },
     {
       name: "Workflow structure",
@@ -34,7 +34,7 @@ function validateRepository() {
     {
       name: "Run logs",
       status: "passed",
-      message: "Run logs are appended under the matching feature branch folder.",
+      message: "Run logs are appended as <agent>.agent.log under the matching feature artifact folder.",
     },
     {
       name: "Feature run command",

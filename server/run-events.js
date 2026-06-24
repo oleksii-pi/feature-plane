@@ -1,6 +1,6 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
-const { FEATURE_ROOT } = require("./config");
+const { getFeatureArtifactFolderPath } = require("./feature-artifacts");
 
 const runQueues = new Map();
 const eventClients = new Map();
@@ -26,7 +26,7 @@ function enqueueRunTask(runId, task) {
 }
 
 async function appendRunLog(feature, run, event) {
-  const logPath = path.join(FEATURE_ROOT, feature.slug, `${run.agent}.log`);
+  const logPath = path.join(getFeatureArtifactFolderPath(feature), `${run.agent}.agent.log`);
   await fsp.mkdir(path.dirname(logPath), { recursive: true });
   await fsp.appendFile(logPath, `${JSON.stringify(event)}\n`);
 }
