@@ -116,10 +116,6 @@ function getAgentRunCommand() {
   return String(process.env.agent_run_command ?? "").trim();
 }
 
-function getFeatureRunCommand() {
-  return String(process.env.feature_run_command ?? "").trim();
-}
-
 module.exports = {
   ROOT,
   PORT,
@@ -131,5 +127,4 @@ module.exports = {
   sdlcConfig,
   workflow,
   getAgentRunCommand,
-  getFeatureRunCommand,
 };

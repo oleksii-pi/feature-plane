@@ -1,10 +1,8 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { FEATURE_ROOT, FEATURES_HOME, PORT, ROOT, getFeatureRunCommand, sdlcConfig, workflow } = require("./config");
-const { expandCommandTemplate } = require("./agent-command");
+const { FEATURE_ROOT, FEATURES_HOME, ROOT, sdlcConfig, workflow } = require("./config");
 
 function validateRepository() {
-  const featureRunCommand = getFeatureRunCommand();
   const instructionFilesPresent = (sdlcConfig.agents ?? []).every((agent) =>
     fs.existsSync(path.join(ROOT, ".instructions", `${agent}.agent.md`)),
   );
@@ -36,13 +34,6 @@ function validateRepository() {
       status: "passed",
       message: "Run logs are appended as <agent>.agent.log under the matching feature artifact folder.",
     },
-    {
-      name: "Feature run command",
-      status: featureRunCommand ? "passed" : "warning",
-      message: featureRunCommand
-        ? "feature_run_command is configured in .env."
-        : "feature_run_command is not configured in .env.",
-    },
   ];
   const passed = checks.filter((check) => check.status === "passed").length;
   const warnings = checks.filter((check) => check.status === "warning").length;
@@ -58,13 +49,6 @@ function validateRepository() {
   };
 }
 
-function resolveConfiguredFeatureRunCommand() {
-  const template = getFeatureRunCommand();
-  if (!template) return { command: "", unresolved: [] };
-  return expandCommandTemplate(template, { server_port: PORT });
-}
-
 module.exports = {
-  resolveConfiguredFeatureRunCommand,
   validateRepository,
 };
