@@ -63,7 +63,6 @@ Expected response:
 {
   "id": "feature-123",
   "title": "Improve login flow",
-  "prompt": "Make the login flow faster and clearer.",
   "branch": "feature/improve-login-flow",
   "workspace": ".control-plane/worktrees/feature/improve-login-flow",
   "currentStep": "Review implementation plan",
@@ -85,14 +84,13 @@ Expected payload:
 
 ```json
 {
-  "title": "Improve login flow",
-  "prompt": "Make the login flow faster and clearer."
+  "title": "Improve login flow"
 }
 ```
 
 Why it should exist:
 
-- Users may need to correct the feature title or prompt.
+- Users may need to correct the feature title.
 - Keeping metadata updates separate from workflow transitions avoids accidental state changes.
 
 ## `GET /features/{id}/steps`
@@ -305,4 +303,3 @@ Error codes:
 - `404` for unknown resources
 - `409` for invalid workflow transitions or already-active runs
 - `422` for invalid repository configuration
-

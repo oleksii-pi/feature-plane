@@ -118,10 +118,11 @@ workspace. It must be non-interactive and should not require shell operators.
 
 `agent_run_command` is optional. If configured, Control Plane launches it as a
 child process inside the feature workspace and expands placeholders before
-execution. Supported placeholders include `%prompt%`, `%branch%`,
-`%workspace%`, `%agent%`, `%artifact%`, `%state%`, `%feature_name%`, and
-`%feature_id%`. Placeholder values are shell-escaped automatically, so use
-them as bare tokens rather than wrapping them in extra quotes.
+execution. Supported placeholders include `%instruction_path%`,
+`%prompt_path%`, `%branch%`, `%workspace%`, `%agent%`, `%artifact%`,
+`%state%`, `%feature_name%`, and `%feature_id%`. Placeholder values are
+shell-escaped automatically, so use them as bare tokens rather than wrapping
+them in extra quotes.
 
 ## Target Repository Contract
 
@@ -231,6 +232,7 @@ The agent receives enough context to know:
 - Current workflow state
 - Required artifact
 - Agent instructions from `.instructions/<agent-name>.agent.md`
+- Initial feature request from `prompt.md`
 
 The agent may modify files in the workspace. To succeed, it must create the
 required artifact and exit successfully.

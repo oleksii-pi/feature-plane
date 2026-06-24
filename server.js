@@ -41,7 +41,12 @@ async function ensureStorage() {
   try {
     const saved = JSON.parse(await fsp.readFile(STATE_FILE, "utf8"));
     if (migratedLegacyRoot) rewriteLegacyFeatureState(saved);
+    const needsRewrite = migratedLegacyRoot || savedFeatureMetadataNeedsRewrite(saved);
     if (Array.isArray(saved.features)) state.features = saved.features.map(normalizeFeature);
+    if (needsRewrite) {
+      await Promise.all(state.features.map(saveFeatureFiles));
+      await saveState();
+    }
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
     await saveState();
@@ -103,6 +108,12 @@ function rewriteLegacyWorkspacePath(value) {
     }
   }
   return value;
+}
+
+function savedFeatureMetadataNeedsRewrite(saved) {
+  if (!saved || typeof saved !== "object") return false;
+  if (!Array.isArray(saved.features)) return false;
+  return saved.features.some((feature) => feature && typeof feature === "object" && "prompt" in feature);
 }
 
 function loadDotEnv(filePath) {
@@ -199,22 +210,24 @@ function getFeatureWorkspacePath(feature) {
   return path.join(ROOT, feature.workspace);
 }
 
+function getAgentInstructionPath(feature, agent) {
+  return path.join(getFeatureWorkspacePath(feature), ".instructions", `${agent}.agent.md`);
+}
+
 function buildAgentContext(feature, run) {
   const step = workflow[run.step] ?? {};
   return {
     agent: run.agent,
-    agent_prompt: feature.prompt,
     artifact: run.artifact,
     artifact_path: path.join(getFeatureWorkspacePath(feature), run.artifact),
     branch: feature.branch,
     default_branch: String(process.env.default_branch ?? ""),
     feature_id: feature.id,
     feature_name: feature.name,
-    feature_prompt: feature.prompt,
     feature_slug: feature.slug,
     feature_title: feature.name,
+    instruction_path: getAgentInstructionPath(feature, run.agent),
     llm_model_name: String(process.env.llm_model_name ?? ""),
-    prompt: feature.prompt,
     prompt_path: path.join(getFeatureWorkspacePath(feature), "prompt.md"),
     run_id: run.id,
     server_port: PORT,
@@ -290,6 +303,22 @@ async function appendRunLogOutput(feature, run, streamName, message) {
   await appendRunLog(feature, run, entry);
 }
 
+async function logConfiguredAgentRunStart(feature, run, command, cwd) {
+  const message = `Executing agent_run_command: ${command}`;
+  console.log(
+    `[agent_run_command] feature=${feature.slug} run=${run.id} agent=${run.agent} cwd=${cwd} command=${command}`,
+  );
+  await appendRunLog(feature, run, {
+    timestamp: new Date().toISOString(),
+    run_id: run.id,
+    level: "info",
+    status: "command",
+    message,
+    cwd,
+    command,
+  });
+}
+
 function createRunEvent(run, status, message, level = "info") {
   return {
     timestamp: new Date().toISOString(),
@@ -353,7 +382,6 @@ function normalizeFeature(feature) {
     id: String(feature.id),
     name: String(feature.name ?? feature.title ?? "Untitled feature"),
     slug,
-    prompt: String(feature.prompt ?? ""),
     branch: String(feature.branch ?? `feature/${slug}`),
     workspace: rewriteLegacyWorkspacePath(String(feature.workspace ?? `${FEATURES_HOME}/${slug}`)),
     step: clampStep(feature.step),
@@ -454,7 +482,6 @@ async function createFeature({ title, prompt }) {
     id: `feature-${randomUUID()}`,
     name: title,
     slug,
-    prompt,
     branch: `feature/${slug}`,
     workspace: relativeWorkspace,
     step: 0,
@@ -586,6 +613,12 @@ function startSimulatedRun(feature, run) {
 
 async function startConfiguredAgentRun(feature, run, commandTemplate) {
   const context = buildAgentContext(feature, run);
+  try {
+    await fsp.access(context.instruction_path, fs.constants.R_OK);
+  } catch {
+    await failRun(feature, run, `Missing agent instructions: ${path.relative(context.workspace_path, context.instruction_path)}.`);
+    return;
+  }
   const { command, unresolved } = expandCommandTemplate(commandTemplate, context);
   if (unresolved.length) {
     await failRun(feature, run, `Unknown placeholder(s) in agent_run_command: ${unresolved.join(", ")}.`);
@@ -608,9 +641,9 @@ async function startConfiguredAgentRun(feature, run, commandTemplate) {
     CONTROL_PLANE_BRANCH: feature.branch,
     CONTROL_PLANE_FEATURE_ID: feature.id,
     CONTROL_PLANE_FEATURE_NAME: feature.name,
-    CONTROL_PLANE_FEATURE_PROMPT: feature.prompt,
     CONTROL_PLANE_FEATURE_SLUG: feature.slug,
     CONTROL_PLANE_FEATURE_WORKSPACE: feature.workspace,
+    CONTROL_PLANE_INSTRUCTION_PATH: context.instruction_path,
     CONTROL_PLANE_PROMPT_PATH: context.prompt_path,
     CONTROL_PLANE_REQUIRED_ARTIFACT: run.artifact,
     CONTROL_PLANE_RUN_ID: run.id,
@@ -620,6 +653,7 @@ async function startConfiguredAgentRun(feature, run, commandTemplate) {
 
   let child;
   try {
+    await logConfiguredAgentRunStart(feature, run, command, context.workspace_path);
     child = spawn(command, {
       cwd: context.workspace_path,
       env: childEnv,
@@ -837,6 +871,9 @@ async function updateArtifact(feature, index, content) {
 
 function validateRepository() {
   const featureRunCommand = getFeatureRunCommand();
+  const instructionFilesPresent = (sdlcConfig.agents ?? []).every((agent) =>
+    fs.existsSync(path.join(ROOT, ".instructions", `${agent}.agent.md`)),
+  );
   const checks = [
     {
       name: "Feature storage",
@@ -854,6 +891,11 @@ function validateRepository() {
         ? "passed"
         : "failed",
       message: "Every agent step has a Markdown artifact.",
+    },
+    {
+      name: "Agent instructions",
+      status: instructionFilesPresent ? "passed" : "failed",
+      message: "Every configured agent has a matching .instructions/<agent>.agent.md file.",
     },
     {
       name: "Run logs",
