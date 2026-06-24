@@ -9,4 +9,7 @@ sdlc:
       agent: implementation
       artifact: implementation-details.md
     - state: Review implementation
+    - state: "@merge"
+      agent: merge
+      artifact: change-log.md
     - state: Done
