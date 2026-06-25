@@ -179,6 +179,24 @@
       </form>
     </dialog>
 
+    <dialog id="artifact-save-dialog" class="confirmation-dialog">
+      <div class="dialog-content">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Save artifact</p>
+            <h2>What should happen next?</h2>
+          </div>
+          <button class="icon-button" id="close-artifact-save-button" type="button" aria-label="Close confirmation">×</button>
+        </div>
+        <p class="dialog-copy">Saving <strong id="artifact-save-name"></strong> can make later generated artifacts and runs stale.</p>
+        <div class="dialog-actions artifact-save-actions">
+          <button class="secondary-button" id="cancel-artifact-save-button" type="button">Cancel</button>
+          <button class="secondary-button" id="preserve-next-steps-button" type="button">Preserve all next steps</button>
+          <button class="primary-button" id="discard-next-steps-button" type="button">Discard all next steps (recommended)</button>
+        </div>
+      </div>
+    </dialog>
+
     <dialog id="repository-workflow-dialog" class="repository-workflow-dialog">
       <div class="dialog-content">
         <div class="dialog-heading workflow-dialog-heading">

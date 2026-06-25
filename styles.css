@@ -1072,6 +1072,17 @@ dialog form {
   width: min(440px, calc(100vw - 32px));
 }
 
+.artifact-save-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.artifact-save-actions .primary-button {
+  min-width: 210px;
+}
+
 .validation-dialog {
   width: min(720px, calc(100vw - 32px));
   max-height: calc(100vh - 40px);

@@ -110,7 +110,9 @@ async function route(req, res) {
 
     if (req.method === "PATCH" && parts[2] === "artifacts" && parts[3]) {
       const body = await readJson(req);
-      const artifact = await updateArtifact(feature, Number(parts[3]), String(body.content ?? ""));
+      const artifact = await updateArtifact(feature, Number(parts[3]), String(body.content ?? ""), {
+        discardNextSteps: Boolean(body.discardNextSteps),
+      });
       sendJson(res, 200, artifact);
       return;
     }
