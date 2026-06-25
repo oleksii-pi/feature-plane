@@ -13,6 +13,7 @@ let workflowVisible = false;
 let validation = null;
 let toastTimer;
 let eventSources = new Map();
+let pendingArtifactSaveCard = null;
 
 const elements = {
   featureList: document.querySelector("#feature-list"),
@@ -39,6 +40,8 @@ const elements = {
   deleteDialog: document.querySelector("#delete-feature-dialog"),
   deleteForm: document.querySelector("#delete-feature-form"),
   deleteFeatureName: document.querySelector("#delete-feature-name"),
+  artifactSaveDialog: document.querySelector("#artifact-save-dialog"),
+  artifactSaveName: document.querySelector("#artifact-save-name"),
   repositoryWorkflowDialog: document.querySelector("#repository-workflow-dialog"),
   workflowSource: document.querySelector("#workflow-source"),
   repositoryWorkflowSteps: document.querySelector("#repository-workflow-steps"),
@@ -632,17 +635,70 @@ async function moveToStep(feature, nextStep) {
   showToast(isAgentStep(workflow[nextStep]) ? `${workflow[nextStep].agent} queued` : `Moved to ${workflow[nextStep].state}`);
 }
 
-async function updateArtifact(card) {
+function openArtifactSaveDialog(card) {
+  const sourceIndex = Number(card.dataset.sourceIndex);
+  const feature = selectedFeature();
+  if (!feature || !Number.isInteger(sourceIndex)) return;
+  pendingArtifactSaveCard = card;
+  elements.artifactSaveName.textContent = feature.artifacts[sourceIndex]?.name ?? "this artifact";
+  elements.artifactSaveDialog.showModal();
+  document.querySelector("#discard-next-steps-button").focus();
+}
+
+function closeArtifactSaveDialog() {
+  pendingArtifactSaveCard = null;
+  if (elements.artifactSaveDialog.open) elements.artifactSaveDialog.close();
+}
+
+async function savePendingArtifact({ discardNextSteps }) {
+  const card = pendingArtifactSaveCard;
+  closeArtifactSaveDialog();
+  if (!card) return;
+  await updateArtifact(card, { discardNextSteps });
+}
+
+function featureHasNextStepEntries(feature, editedStep) {
+  return (
+    feature.artifacts.some((artifact) => (artifact.availableAtStep ?? 0) > editedStep) ||
+    feature.runs.some((run) => run.step > editedStep) ||
+    feature.step > editedStep
+  );
+}
+
+async function ensureNextStepsDiscarded(featureId, editedStep) {
+  const feature = features.find((item) => item.id === featureId);
+  if (!feature || !featureHasNextStepEntries(feature, editedStep)) return;
+
+  feature.artifacts = feature.artifacts.filter(
+    (artifact) => (artifact.availableAtStep ?? 0) <= editedStep,
+  );
+  feature.runs = feature.runs.filter((run) => run.step <= editedStep);
+  feature.step = Math.min(feature.step, editedStep);
+  feature.activeRunId = null;
+  feature.updated = new Date().toISOString();
+
+  await api("/state", {
+    method: "PUT",
+    body: JSON.stringify({ features }),
+  });
+  await loadState({ preserveView: true });
+}
+
+async function updateArtifact(card, { discardNextSteps = false } = {}) {
   const feature = selectedFeature();
   const sourceIndex = Number(card.dataset.sourceIndex);
   const value = card.querySelector(".artifact-editor").value.trim();
   if (!feature || !Number.isInteger(sourceIndex) || !value) return;
+  const artifactName = feature.artifacts[sourceIndex]?.name ?? "Artifact";
+  const editedStep = feature.artifacts[sourceIndex]?.availableAtStep ?? 0;
   await api(`/features/${feature.id}/artifacts/${sourceIndex}`, {
     method: "PATCH",
-    body: JSON.stringify({ content: value }),
+    body: JSON.stringify({ content: value, discardNextSteps }),
   });
   await loadState({ preserveView: true });
-  showToast(`${feature.artifacts[sourceIndex].name} saved`);
+  if (discardNextSteps) await ensureNextStepsDiscarded(feature.id, editedStep);
+  const suffix = discardNextSteps ? " and next steps discarded" : "";
+  showToast(`${artifactName} saved${suffix}`);
 }
 
 elements.featureList.addEventListener("click", (event) => {
@@ -770,7 +826,7 @@ elements.artifactList.addEventListener("click", async (event) => {
   }
 
   if (event.target.closest(".save-artifact-button")) {
-    await updateArtifact(card);
+    openArtifactSaveDialog(card);
   }
 });
 
@@ -843,6 +899,17 @@ document.querySelector("#request-delete-feature-button").addEventListener("click
 });
 document.querySelector("#close-delete-button").addEventListener("click", () => elements.deleteDialog.close());
 document.querySelector("#cancel-delete-button").addEventListener("click", () => elements.deleteDialog.close());
+elements.artifactSaveDialog.addEventListener("close", () => {
+  pendingArtifactSaveCard = null;
+});
+document.querySelector("#close-artifact-save-button").addEventListener("click", closeArtifactSaveDialog);
+document.querySelector("#cancel-artifact-save-button").addEventListener("click", closeArtifactSaveDialog);
+document.querySelector("#preserve-next-steps-button").addEventListener("click", () => {
+  savePendingArtifact({ discardNextSteps: false }).catch((error) => showToast(error.message));
+});
+document.querySelector("#discard-next-steps-button").addEventListener("click", () => {
+  savePendingArtifact({ discardNextSteps: true }).catch((error) => showToast(error.message));
+});
 
 elements.settingsForm.addEventListener("submit", async (event) => {
   event.preventDefault();
