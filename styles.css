@@ -781,6 +781,8 @@ button.artifact-header,
 }
 
 .artifact-title .execution-price {
+  display: inline;
+  margin-left: 6px;
   color: var(--blue-soft);
   font-weight: 700;
 }

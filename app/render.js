@@ -169,6 +169,10 @@ function displayRunTitle(step) {
   return title.charAt(0).toUpperCase() + title.slice(1);
 }
 
+function displayRunPrice(run) {
+  return run.cost ?? "TBD";
+}
+
 function displayRelativePath(path, feature) {
   const value = String(path ?? "");
   const workspace = String(feature?.workspace ?? "").replace(/\/+$/g, "");
@@ -194,7 +198,7 @@ function renderRunLog(run, index, isExpanded) {
         <button class="artifact-toggle" type="button" aria-expanded="${isExpanded}">
           <span class="artifact-label">${escapeHtml(runLabel(run))}</span>
           <span class="artifact-title">
-            <strong>${escapeHtml(displayRunTitle(step))}</strong>
+            <strong>${escapeHtml(displayRunTitle(step))}<span class="execution-price">${escapeHtml(displayRunPrice(run))}</span></strong>
           </span>
         </button>
         <span class="artifact-header-actions">
