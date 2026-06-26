@@ -52,7 +52,7 @@ async function startRun(feature) {
   await saveFeatureFiles(feature);
   await saveState();
 
-  await addEvent(feature, run, "Starting", "Agent run queued.");
+  await addEvent(feature, run, "Started", `${run.agent} started.`);
   run.status = "running";
 
   const commandTemplate = getAgentRunCommand();
@@ -70,9 +70,9 @@ async function startRun(feature) {
 
 function startSimulatedRun(feature, run) {
   const sequence = [
-    ["Implementing", "Writing the required artifact."],
-    ["Verifying", "Checking that the artifact exists."],
-    ["Completed", "Agent run completed successfully."],
+    ["Executing", "Agent executing."],
+    ["Validating", "Validating required artifact."],
+    ["Done", "Done."],
   ];
 
   let delay = 1200;
@@ -80,7 +80,7 @@ function startSimulatedRun(feature, run) {
     const timer = setTimeout(async () => {
       timers.delete(`${run.id}:${index}`);
       if (run.status === "cancelled") return;
-      if (status === "Completed") {
+      if (status === "Done") {
         await completeSimulatedRun(feature, run, status, message);
       } else {
         await addEvent(feature, run, status, message);
@@ -110,8 +110,8 @@ async function completeConfiguredRun(feature, run) {
   await queueRunEvent(
     feature,
     run,
-    "Verifying",
-    "Checking required artifact on disk.",
+    "Validating",
+    "Validating required artifact.",
   );
 
   let content;
@@ -130,8 +130,8 @@ async function completeConfiguredRun(feature, run) {
   await addEvent(
     feature,
     run,
-    "Completed",
-    "Agent run completed successfully.",
+    "Done",
+    "Done.",
   );
 }
 

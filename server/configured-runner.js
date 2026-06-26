@@ -3,8 +3,6 @@ const fsp = require("node:fs/promises");
 const { spawn } = require("node:child_process");
 const path = require("node:path");
 const {
-  appendRunLogOutput,
-  logConfiguredAgentRunStart,
   queueRunEvent,
 } = require("./run-events");
 const {
@@ -44,7 +42,6 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
   const childEnv = buildChildEnv(feature, run, context);
   let child;
   try {
-    await logConfiguredAgentRunStart(feature, run, command, context.workspace_path);
     child = spawn(command, {
       cwd: context.workspace_path,
       env: childEnv,
@@ -57,13 +54,10 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
   }
 
   runProcesses.set(run.id, child);
-  await queueRunEvent(feature, run, "Executing", "Executing configured agent command.");
+  await queueRunEvent(feature, run, "Executing", "Agent executing.");
 
-  const stdoutState = { buffer: "" };
-  const stderrState = { buffer: "" };
-
-  child.stdout?.on("data", (chunk) => consumeChunk(feature, run, "stdout", stdoutState, chunk));
-  child.stderr?.on("data", (chunk) => consumeChunk(feature, run, "stderr", stderrState, chunk));
+  child.stdout?.resume();
+  child.stderr?.resume();
 
   child.once("error", (error) => {
     void (async () => {
@@ -76,7 +70,7 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
   });
 
   child.once("close", (code, signal) => {
-    void handleClose(feature, run, code, signal, stdoutState, stderrState, handlers).catch((handlerError) => {
+    void handleClose(feature, run, code, signal, handlers).catch((handlerError) => {
       console.error(handlerError);
     });
   });
@@ -107,30 +101,8 @@ function buildChildEnv(feature, run, context) {
   };
 }
 
-function consumeChunk(feature, run, streamName, streamState, chunk) {
-  if (run.status === "cancelled") return;
-  streamState.buffer += chunk.toString("utf8");
-  const lines = streamState.buffer.split(/\r?\n/);
-  streamState.buffer = lines.pop() ?? "";
-  lines.forEach((line) => {
-    if (!line.trim()) return;
-    void appendRunLogOutput(feature, run, streamName, line).catch((error) => {
-      console.error(error);
-    });
-  });
-}
-
-async function handleClose(feature, run, code, signal, stdoutState, stderrState, handlers) {
+async function handleClose(feature, run, code, signal, handlers) {
   runProcesses.delete(run.id);
-  if (stdoutState.buffer.trim()) {
-    await appendRunLogOutput(feature, run, "stdout", stdoutState.buffer.trimEnd());
-    stdoutState.buffer = "";
-  }
-  if (stderrState.buffer.trim()) {
-    await appendRunLogOutput(feature, run, "stderr", stderrState.buffer.trimEnd());
-    stderrState.buffer = "";
-  }
-
   if (run.status === "cancelled") return;
   if (code !== 0) {
     await handlers.failRun(

@@ -39,41 +39,6 @@ async function appendRunLog(feature, run, event) {
   await fsp.appendFile(logPath, `${formatRunLogLine(event)}\n`);
 }
 
-async function appendRunLogOutput(feature, run, streamName, message) {
-  const entry = {
-    timestamp: new Date().toISOString(),
-    run_id: run.id,
-    level: streamName === "stderr" ? "error" : "info",
-    status: streamName,
-    message,
-  };
-  await persistRunEvent(feature, run, entry, {
-    appendLog: true,
-    broadcast: true,
-    saveState: false,
-  });
-}
-
-async function logConfiguredAgentRunStart(feature, run, command, cwd) {
-  const message = `Executing agent_run_command: ${command}`;
-  console.log(
-    `[agent_run_command] feature=${feature.slug} run=${run.id} agent=${run.agent} cwd=${cwd} command=${command}`,
-  );
-  await persistRunEvent(feature, run, {
-    timestamp: new Date().toISOString(),
-    run_id: run.id,
-    level: "info",
-    status: "command",
-    message,
-    cwd,
-    command,
-  }, {
-    appendLog: true,
-    broadcast: true,
-    saveState: false,
-  });
-}
-
 function createRunEvent(run, status, message, level = "info") {
   return {
     timestamp: new Date().toISOString(),
@@ -155,10 +120,8 @@ function streamRunEvents(req, res, run) {
 
 module.exports = {
   addEvent,
-  appendRunLogOutput,
   configureRunEvents,
   isVerboseRunEvent,
-  logConfiguredAgentRunStart,
   queueRunEvent,
   RUN_LOG_PREVIEW_LINE_LIMIT,
   streamRunEvents,

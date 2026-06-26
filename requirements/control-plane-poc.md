@@ -211,8 +211,8 @@ When a feature enters an agent state, Control Plane:
 2. Assigns a free local workspace.
 3. Starts the configured agent command as a child process.
 4. Changes the displayed state to `Agent Run: <agent name>`.
-5. Streams stdout, stderr, and structured status events to the UI.
-6. Appends the same stream to `feature/<slug>/<agent-name>.agent.log`.
+5. Streams the minimal structured lifecycle events to the UI.
+6. Appends the same lifecycle events to the run log.
 7. Verifies that the required artifact exists.
 8. Commits intended changes if needed.
 9. Pushes the branch when Git publishing is configured.
@@ -244,16 +244,16 @@ The agent receives enough context to know:
 The agent may modify files in the workspace. To succeed, it must create the
 required artifact and exit successfully.
 
-Structured status events should be JSONL:
+Run logs contain only the structured lifecycle events:
 
 ```jsonl
-{"timestamp":"2026-06-23T10:15:00Z","run_id":"run-123","level":"info","status":"Starting","message":"Agent run started"}
-{"timestamp":"2026-06-23T10:17:12Z","run_id":"run-123","level":"info","status":"Implementing","message":"Updating feature files"}
-{"timestamp":"2026-06-23T10:20:15Z","run_id":"run-123","level":"info","status":"Completed","message":"Agent run completed successfully"}
+{"timestamp":"2026-06-23T10:15:00Z","run_id":"run-123","level":"info","status":"Started","message":"implementation started."}
+{"timestamp":"2026-06-23T10:15:01Z","run_id":"run-123","level":"info","status":"Executing","message":"Agent executing."}
+{"timestamp":"2026-06-23T10:17:12Z","run_id":"run-123","level":"info","status":"Validating","message":"Validating required artifact."}
+{"timestamp":"2026-06-23T10:17:13Z","run_id":"run-123","level":"info","status":"Done","message":"Done."}
 ```
 
-Useful statuses are `Starting`, `Analyzing`, `Implementing`, `Verifying`,
-`Completed`, and `Failed`.
+Useful statuses are `Started`, `Executing`, `Validating`, `Done`, and `Failed`.
 
 ## Cancellation
 

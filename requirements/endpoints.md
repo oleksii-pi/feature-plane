@@ -228,15 +228,15 @@ Example event:
   "timestamp": "2026-06-23T10:15:00Z",
   "run_id": "run-456",
   "level": "info",
-  "status": "Starting",
-  "message": "Agent run started"
+  "status": "Started",
+  "message": "implementation started."
 }
 ```
 
 Why it should exist:
 
 - The UI needs live progress updates while a run is executing.
-- It carries stdout, stderr, and structured status events in real time.
+- It carries minimal structured lifecycle events in real time.
 - It should replay historical events first, then continue streaming new ones.
 
 ## `POST /runs/{id}/cancel`
