@@ -683,6 +683,11 @@ h3 {
   box-shadow: 0 0 0 2px var(--blue-soft);
 }
 
+.artifact-card.failed {
+  border-color: rgba(187, 60, 71, 0.45);
+  box-shadow: 0 0 0 2px rgba(187, 60, 71, 0.12);
+}
+
 .artifact-header {
   width: 100%;
   min-height: 42px;
@@ -794,6 +799,22 @@ button.artifact-header,
   background: var(--accent-soft);
   font-size: 8.8px;
   font-weight: 700;
+}
+
+.run-log.failed .artifact-label {
+  color: var(--danger);
+  background: rgba(187, 60, 71, 0.12);
+}
+
+.run-log.cancelled .artifact-label {
+  color: var(--muted);
+  background: #f0f2f5;
+}
+
+.run-log.running .artifact-label,
+.run-log.queued .artifact-label {
+  color: var(--blue);
+  background: rgba(127, 176, 255, 0.2);
 }
 
 .artifact-chevron {
