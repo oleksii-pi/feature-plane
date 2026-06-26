@@ -37,9 +37,11 @@ export function syncRunStreams() {
       if (run) {
         run.status = payload.run_status ?? run.status;
         run.logSizeBytes = payload.log_size_bytes ?? run.logSizeBytes ?? 0;
-        run.events = [...(run.events ?? []), payload].slice(
-          -RUN_LOG_PREVIEW_LINE_LIMIT,
-        );
+        if (payload.preview !== false) {
+          run.events = [...(run.events ?? []), payload].slice(
+            -RUN_LOG_PREVIEW_LINE_LIMIT,
+          );
+        }
         scheduleRunStreamRender();
       } else {
         await loadState({ preserveView: true });

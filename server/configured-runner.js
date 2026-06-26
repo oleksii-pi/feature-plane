@@ -4,6 +4,7 @@ const { spawn } = require("node:child_process");
 const path = require("node:path");
 const {
   queueRunEvent,
+  queueRunOutput,
 } = require("./run-events");
 const {
   buildAgentContext,
@@ -56,8 +57,12 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
   runProcesses.set(run.id, child);
   await queueRunEvent(feature, run, "Executing", "Agent executing.");
 
-  child.stdout?.resume();
-  child.stderr?.resume();
+  child.stdout?.on("data", (chunk) => {
+    void queueRunOutput(feature, run, "stdout", chunk);
+  });
+  child.stderr?.on("data", (chunk) => {
+    void queueRunOutput(feature, run, "stderr", chunk);
+  });
 
   child.once("error", (error) => {
     void (async () => {

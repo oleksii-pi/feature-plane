@@ -144,6 +144,11 @@ async function route(req, res) {
       return;
     }
 
+    if (req.method === "GET" && parts[2] === "log" && parts[3] === "view") {
+      sendRunLogView(res, run);
+      return;
+    }
+
     if (req.method === "GET" && parts[2] === "log") {
       const logPath = path.join(RUN_LOG_ROOT, `${run.id}.log`);
       try {
@@ -170,6 +175,87 @@ async function route(req, res) {
   }
 
   await serveStatic(url.pathname, res);
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function sendRunLogView(res, run) {
+  const logUrl = `/runs/${encodeURIComponent(run.id)}/log`;
+  res.writeHead(200, {
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-cache",
+  });
+  res.end(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(run.id)} log</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      margin: 0;
+      background: #0f141c;
+      color: #e7edf7;
+      font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #263244;
+      background: #111824;
+    }
+    strong { color: #ffffff; }
+    a { color: #8cc8ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    pre {
+      box-sizing: border-box;
+      min-height: calc(100vh - 42px);
+      margin: 0;
+      padding: 14px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span><strong>${escapeHtml(run.agent ?? "run")}</strong> ${escapeHtml(run.status)}</span>
+    <a href="${logUrl}?download=1" download>Download</a>
+  </header>
+  <pre id="log">Loading...</pre>
+  <script>
+    const logUrl = ${JSON.stringify(logUrl)};
+    const log = document.getElementById("log");
+    async function refreshLog() {
+      const pinnedToBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 24;
+      const response = await fetch(logUrl + "?_=" + Date.now(), { cache: "no-store" });
+      if (!response.ok) {
+        log.textContent = "Log not available yet.";
+        return;
+      }
+      const text = await response.text();
+      if (log.textContent !== text) {
+        log.textContent = text || "No log output yet.";
+        if (pinnedToBottom) window.scrollTo(0, document.body.scrollHeight);
+      }
+    }
+    refreshLog();
+    window.setInterval(refreshLog, 1000);
+  </script>
+</body>
+</html>`);
 }
 
 async function handle(req, res) {

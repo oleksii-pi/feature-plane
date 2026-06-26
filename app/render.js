@@ -129,6 +129,7 @@ function renderRunLog(run, index, isExpanded) {
     ? `<p class="run-log-note">Showing last ${RUN_LOG_PREVIEW_LINE_LIMIT} lines. ${hiddenCount} earlier lines are available in the full log.</p>`
     : "";
   const logUrl = `/runs/${encodeURIComponent(run.id)}/log`;
+  const logViewUrl = `${logUrl}/view`;
   return `
     <article class="artifact-card run-log ${run.status} ${isExpanded ? "expanded" : ""}" data-artifact-index="${index}">
       <div class="artifact-header">
@@ -140,7 +141,7 @@ function renderRunLog(run, index, isExpanded) {
           </span>
         </button>
         <span class="artifact-header-actions">
-          <a class="artifact-log-link" href="${logUrl}" target="_blank" rel="noopener">View logs</a>
+          <a class="artifact-log-link" href="${logViewUrl}" target="_blank" rel="noopener">View logs</a>
           <a class="artifact-log-link" href="${logUrl}?download=1" download>Download</a>
         </span>
         <button class="artifact-chevron-button" type="button" aria-label="Toggle run log" aria-expanded="${isExpanded}">

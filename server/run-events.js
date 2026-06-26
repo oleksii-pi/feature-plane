@@ -41,6 +41,19 @@ async function appendRunLog(feature, run, event) {
   run.logSizeBytes = stat.size;
 }
 
+async function appendRunOutput(feature, run, stream, chunk) {
+  const message = Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk ?? "");
+  if (!message) return;
+  const logPath = path.join(RUN_LOG_ROOT, `${run.id}.log`);
+  await fsp.mkdir(path.dirname(logPath), { recursive: true });
+  await fsp.appendFile(
+    logPath,
+    `[${new Date().toISOString()}] [${stream}]\n${message}${message.endsWith("\n") ? "" : "\n"}`,
+  );
+  const stat = await fsp.stat(logPath);
+  run.logSizeBytes = stat.size;
+}
+
 function createRunEvent(run, status, message, level = "info") {
   return {
     timestamp: new Date().toISOString(),
@@ -91,6 +104,22 @@ async function queueRunEvent(feature, run, status, message, level = "info") {
   });
 }
 
+async function queueRunOutput(feature, run, stream, chunk) {
+  return enqueueRunTask(run.id, async () => {
+    if (run.status !== "queued" && run.status !== "running") return null;
+    await appendRunOutput(feature, run, stream, chunk);
+    broadcastRunEvent(run, {
+      timestamp: new Date().toISOString(),
+      run_id: run.id,
+      level: "info",
+      status: stream,
+      message: "",
+      preview: false,
+    });
+    return null;
+  });
+}
+
 function broadcastRunEvent(run, event) {
   const clients = eventClients.get(run.id);
   if (!clients) return;
@@ -135,6 +164,7 @@ module.exports = {
   configureRunEvents,
   isVerboseRunEvent,
   queueRunEvent,
+  queueRunOutput,
   RUN_LOG_PREVIEW_LINE_LIMIT,
   streamRunEvents,
 };
