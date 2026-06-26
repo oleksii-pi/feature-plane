@@ -44,6 +44,7 @@ async function startRun(feature) {
     startedAt: new Date().toISOString(),
     finishedAt: null,
     cost: null,
+    logSizeBytes: 0,
     events: [],
   };
   feature.runs.push(run);

@@ -150,12 +150,16 @@ export function bindEvents() {
     const card = event.target.closest("[data-artifact-index]");
     if (!card) return;
 
+    if (event.target.closest(".artifact-log-link")) return;
+
     if (event.target.closest(".artifact-header")) {
       state.selectedArtifactIndex = Number(card.dataset.artifactIndex);
       card.classList.toggle("expanded");
       card
-        .querySelector(".artifact-header")
-        .setAttribute("aria-expanded", card.classList.contains("expanded"));
+        .querySelectorAll(".artifact-header, .artifact-toggle, .artifact-chevron-button")
+        .forEach((element) =>
+          element.setAttribute("aria-expanded", card.classList.contains("expanded")),
+        );
       return;
     }
 

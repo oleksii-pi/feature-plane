@@ -37,6 +37,8 @@ async function appendRunLog(feature, run, event) {
   const logPath = path.join(RUN_LOG_ROOT, `${run.id}.log`);
   await fsp.mkdir(path.dirname(logPath), { recursive: true });
   await fsp.appendFile(logPath, `${formatRunLogLine(event)}\n`);
+  const stat = await fsp.stat(logPath);
+  run.logSizeBytes = stat.size;
 }
 
 function createRunEvent(run, status, message, level = "info") {
@@ -92,7 +94,11 @@ async function queueRunEvent(feature, run, status, message, level = "info") {
 function broadcastRunEvent(run, event) {
   const clients = eventClients.get(run.id);
   if (!clients) return;
-  const payload = JSON.stringify({ ...event, run_status: run.status });
+  const payload = JSON.stringify({
+    ...event,
+    log_size_bytes: run.logSizeBytes ?? 0,
+    run_status: run.status,
+  });
   clients.forEach((res) => res.write(`data: ${payload}\n\n`));
 }
 
@@ -103,7 +109,13 @@ function streamRunEvents(req, res, run) {
     Connection: "keep-alive",
   });
   run.events.forEach((event) => {
-    res.write(`data: ${JSON.stringify({ ...event, run_status: run.status })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({
+        ...event,
+        log_size_bytes: run.logSizeBytes ?? 0,
+        run_status: run.status,
+      })}\n\n`,
+    );
   });
   if (run.status !== "queued" && run.status !== "running") {
     res.end();

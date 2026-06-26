@@ -693,11 +693,58 @@ h3 {
   border: 0;
   background: #fff;
   text-align: left;
+}
+
+button.artifact-header,
+.artifact-toggle,
+.artifact-chevron-button {
   cursor: pointer;
 }
 
-.artifact-header:hover {
+.artifact-header:hover,
+.artifact-header:focus-within {
   background: #fafbfc;
+}
+
+.artifact-toggle {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.artifact-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.artifact-log-link {
+  color: var(--accent-dark);
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.artifact-log-link:hover {
+  text-decoration: underline;
+}
+
+.artifact-chevron-button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .file-icon {
@@ -820,21 +867,15 @@ h3 {
   gap: 9px;
 }
 
-.run-log-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 9px;
-}
-
-.run-log-actions .secondary-button {
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-}
-
 .run-log-note {
   margin: 0 0 9px;
   color: var(--muted);
+}
+
+.run-log-size {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .run-event {

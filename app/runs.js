@@ -36,6 +36,7 @@ export function syncRunStreams() {
       const run = findRunById(payload.run_id);
       if (run) {
         run.status = payload.run_status ?? run.status;
+        run.logSizeBytes = payload.log_size_bytes ?? run.logSizeBytes ?? 0;
         run.events = [...(run.events ?? []), payload].slice(
           -RUN_LOG_PREVIEW_LINE_LIMIT,
         );

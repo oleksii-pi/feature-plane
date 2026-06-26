@@ -7,6 +7,13 @@ export function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+export function formatLogSize(bytes) {
+  const size = Number(bytes) || 0;
+  if (size < 1024) return size ? "1kb" : "0kb";
+  if (size < 1024 * 1024) return `${Math.ceil(size / 1024)}kb`;
+  return `${(size / 1024 / 1024).toFixed(1).replace(/\.0$/, "")}mb`;
+}
+
 export function markdownToHtml(content) {
   const lines = escapeHtml(content).split("\n");
   let html = "";

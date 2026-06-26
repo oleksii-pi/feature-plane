@@ -147,14 +147,16 @@ async function route(req, res) {
     if (req.method === "GET" && parts[2] === "log") {
       const logPath = path.join(RUN_LOG_ROOT, `${run.id}.log`);
       try {
-        await fsp.access(logPath);
+        const stat = await fsp.stat(logPath);
+        run.logSizeBytes = stat.size;
       } catch (error) {
         if (error.code === "ENOENT") throw httpError(404, "Run log not found.");
         throw error;
       }
+      const disposition = url.searchParams.has("download") ? "attachment" : "inline";
       res.writeHead(200, {
         "Content-Type": "text/plain; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${run.id}.log"`,
+        "Content-Disposition": `${disposition}; filename="${run.id}.log"`,
       });
       fs.createReadStream(logPath).pipe(res);
       return;

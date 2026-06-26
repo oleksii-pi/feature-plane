@@ -1,9 +1,11 @@
+const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 const path = require("node:path");
 const {
   FEATURE_ROOT,
   FEATURES_HOME,
   LEGACY_FEATURE_ROOTS,
+  RUN_LOG_ROOT,
   ROOT,
   STATE_FILE,
   workflow,
@@ -148,10 +150,22 @@ function normalizeFeature(feature) {
     runs: Array.isArray(feature.runs)
       ? feature.runs.map((run) => ({
           ...run,
+          logSizeBytes: storedRunLogSize(run),
           events: Array.isArray(run.events) ? run.events.slice(-RUN_LOG_PREVIEW_LINE_LIMIT) : [],
         }))
       : [],
   };
+}
+
+function storedRunLogSize(run) {
+  const storedSize = Number(run?.logSizeBytes) || 0;
+  if (!run?.id) return storedSize;
+  try {
+    return fs.statSync(path.join(RUN_LOG_ROOT, `${run.id}.log`)).size;
+  } catch (error) {
+    if (error.code === "ENOENT") return storedSize;
+    throw error;
+  }
 }
 
 function normalizeArtifacts(artifacts, artifactFolder) {

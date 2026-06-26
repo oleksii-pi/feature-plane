@@ -1,5 +1,5 @@
 import { elements } from "./dom.js";
-import { escapeHtml, markdownToHtml } from "./format.js";
+import { escapeHtml, formatLogSize, markdownToHtml } from "./format.js";
 import {
   displayStep,
   isAgentStep,
@@ -128,22 +128,29 @@ function renderRunLog(run, index, isExpanded) {
   const previewNote = hiddenCount
     ? `<p class="run-log-note">Showing last ${RUN_LOG_PREVIEW_LINE_LIMIT} lines. ${hiddenCount} earlier lines are available in the full log.</p>`
     : "";
+  const logUrl = `/runs/${encodeURIComponent(run.id)}/log`;
   return `
     <article class="artifact-card run-log ${run.status} ${isExpanded ? "expanded" : ""}" data-artifact-index="${index}">
-      <button class="artifact-header" type="button" aria-expanded="${isExpanded}">
-        <span class="artifact-label">${escapeHtml(runLabel(run))}</span>
-        <span class="artifact-title">
-          <strong>${escapeHtml(step?.agent ?? step?.state ?? "Run")}</strong>
-          <span>${escapeHtml(run.status)} · ${escapeHtml(logPath)}</span>
+      <div class="artifact-header">
+        <button class="artifact-toggle" type="button" aria-expanded="${isExpanded}">
+          <span class="artifact-label">${escapeHtml(runLabel(run))}</span>
+          <span class="artifact-title">
+            <strong>${escapeHtml(step?.agent ?? step?.state ?? "Run")}</strong>
+            <span>${escapeHtml(run.status)} · ${escapeHtml(logPath)}</span>
+          </span>
+        </button>
+        <span class="artifact-header-actions">
+          <a class="artifact-log-link" href="${logUrl}" target="_blank" rel="noopener">View logs</a>
+          <a class="artifact-log-link" href="${logUrl}?download=1" download>Download</a>
         </span>
-        <span class="artifact-chevron">⌃</span>
-      </button>
+        <button class="artifact-chevron-button" type="button" aria-label="Toggle run log" aria-expanded="${isExpanded}">
+          <span class="artifact-chevron">⌃</span>
+        </button>
+      </div>
       <div class="artifact-body">
-        <div class="run-log-actions">
-          <a class="secondary-button" href="/runs/${encodeURIComponent(run.id)}/log" download>Download</a>
-        </div>
         ${previewNote}
         <div class="run-events">${eventMarkup || "<p>No events recorded.</p>"}</div>
+        <p class="run-log-size">${escapeHtml(formatLogSize(run.logSizeBytes))} of logs</p>
       </div>
     </article>
   `;
