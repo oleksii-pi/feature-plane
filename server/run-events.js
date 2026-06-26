@@ -144,6 +144,7 @@ function streamRunEvents(req, res, run) {
         ...event,
         log_size_bytes: run.logSizeBytes ?? 0,
         run_status: run.status,
+        replay: true,
       })}\n\n`,
     );
   });

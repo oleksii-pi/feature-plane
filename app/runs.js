@@ -16,6 +16,24 @@ export function scheduleRunStreamRender() {
   });
 }
 
+function eventKey(event) {
+  return [
+    event?.timestamp ?? "",
+    event?.status ?? "",
+    event?.level ?? "",
+    event?.message ?? "",
+  ].join("\u0000");
+}
+
+function appendPreviewEvent(run, payload) {
+  const events = run.events ?? [];
+  const nextKey = eventKey(payload);
+  if (payload.replay && events.some((event) => eventKey(event) === nextKey)) {
+    return;
+  }
+  run.events = [...events, payload].slice(-RUN_LOG_PREVIEW_LINE_LIMIT);
+}
+
 export function syncRunStreams() {
   const activeRunIds = new Set(
     state.features.flatMap((feature) =>
@@ -38,9 +56,7 @@ export function syncRunStreams() {
         run.status = payload.run_status ?? run.status;
         run.logSizeBytes = payload.log_size_bytes ?? run.logSizeBytes ?? 0;
         if (payload.preview !== false) {
-          run.events = [...(run.events ?? []), payload].slice(
-            -RUN_LOG_PREVIEW_LINE_LIMIT,
-          );
+          appendPreviewEvent(run, payload);
         }
         scheduleRunStreamRender();
       } else {
