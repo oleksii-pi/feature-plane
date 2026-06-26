@@ -4,6 +4,7 @@ const { RUN_LOG_ROOT } = require("./config");
 
 const runQueues = new Map();
 const eventClients = new Map();
+const RUN_LOG_PREVIEW_LINE_LIMIT = 50;
 let persistence = null;
 
 function configureRunEvents(nextPersistence) {
@@ -89,6 +90,9 @@ function isVerboseRunEvent(event) {
 
 async function persistRunEvent(feature, run, event, options = {}) {
   run.events.push(event);
+  if (run.events.length > RUN_LOG_PREVIEW_LINE_LIMIT) {
+    run.events.splice(0, run.events.length - RUN_LOG_PREVIEW_LINE_LIMIT);
+  }
   if (options.appendLog !== false) {
     await appendRunLog(feature, run, event);
   }
@@ -156,5 +160,6 @@ module.exports = {
   isVerboseRunEvent,
   logConfiguredAgentRunStart,
   queueRunEvent,
+  RUN_LOG_PREVIEW_LINE_LIMIT,
   streamRunEvents,
 };

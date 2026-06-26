@@ -1,5 +1,7 @@
+const fs = require("node:fs");
 const fsp = require("node:fs/promises");
-const { workflow } = require("./config");
+const path = require("node:path");
+const { RUN_LOG_ROOT, workflow } = require("./config");
 const {
   branchArtifactFolder,
   branchWorkspaceFolder,
@@ -139,6 +141,22 @@ async function route(req, res) {
 
     if (req.method === "GET" && parts[2] === "events") {
       streamRunEvents(req, res, run);
+      return;
+    }
+
+    if (req.method === "GET" && parts[2] === "log") {
+      const logPath = path.join(RUN_LOG_ROOT, `${run.id}.log`);
+      try {
+        await fsp.access(logPath);
+      } catch (error) {
+        if (error.code === "ENOENT") throw httpError(404, "Run log not found.");
+        throw error;
+      }
+      res.writeHead(200, {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${run.id}.log"`,
+      });
+      fs.createReadStream(logPath).pipe(res);
       return;
     }
 

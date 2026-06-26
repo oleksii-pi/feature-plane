@@ -820,6 +820,23 @@ h3 {
   gap: 9px;
 }
 
+.run-log-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 9px;
+}
+
+.run-log-actions .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.run-log-note {
+  margin: 0 0 9px;
+  color: var(--muted);
+}
+
 .run-event {
   display: grid;
   grid-template-columns: 58px 12px 1fr;

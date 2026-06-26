@@ -14,7 +14,7 @@ const {
   getFeatureArtifactFolder,
 } = require("./feature-artifacts");
 const { allocateAvailablePort, normalizePort } = require("./ports");
-const { addEvent, isVerboseRunEvent } = require("./run-events");
+const { addEvent, RUN_LOG_PREVIEW_LINE_LIMIT } = require("./run-events");
 
 const state = {
   features: [],
@@ -148,7 +148,7 @@ function normalizeFeature(feature) {
     runs: Array.isArray(feature.runs)
       ? feature.runs.map((run) => ({
           ...run,
-          events: Array.isArray(run.events) ? run.events.filter((event) => !isVerboseRunEvent(event)) : [],
+          events: Array.isArray(run.events) ? run.events.slice(-RUN_LOG_PREVIEW_LINE_LIMIT) : [],
         }))
       : [],
   };

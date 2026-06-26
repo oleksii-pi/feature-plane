@@ -1,5 +1,6 @@
 const STORAGE_KEY = "control-plane-poc-ui-state";
 const TERMINAL_RUN_STATUSES = new Set(["succeeded", "failed", "cancelled"]);
+const RUN_LOG_PREVIEW_LINE_LIMIT = 20;
 
 let workflow = [];
 let features = [];
@@ -14,6 +15,7 @@ let validation = null;
 let toastTimer;
 let eventSources = new Map();
 let pendingArtifactSaveCard = null;
+let runStreamRenderPending = false;
 
 const elements = {
   featureList: document.querySelector("#feature-list"),
@@ -42,7 +44,9 @@ const elements = {
   deleteFeatureName: document.querySelector("#delete-feature-name"),
   artifactSaveDialog: document.querySelector("#artifact-save-dialog"),
   artifactSaveName: document.querySelector("#artifact-save-name"),
-  repositoryWorkflowDialog: document.querySelector("#repository-workflow-dialog"),
+  repositoryWorkflowDialog: document.querySelector(
+    "#repository-workflow-dialog",
+  ),
   workflowSource: document.querySelector("#workflow-source"),
   repositoryWorkflowSteps: document.querySelector("#repository-workflow-steps"),
   validationDialog: document.querySelector("#repository-validation-dialog"),
@@ -90,7 +94,8 @@ function stepSlug(step) {
 function viewUrl(featureId, stepIndex) {
   const url = new URL(window.location.href);
   if (featureId) url.searchParams.set("featureId", featureId);
-  if (workflow[stepIndex]) url.searchParams.set("step", stepSlug(workflow[stepIndex]));
+  if (workflow[stepIndex])
+    url.searchParams.set("step", stepSlug(workflow[stepIndex]));
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
@@ -147,6 +152,14 @@ function displayStep(feature) {
 
 function latestRun(feature) {
   return feature?.runs?.at(-1) ?? null;
+}
+
+function findRunById(runId) {
+  for (const feature of features) {
+    const run = feature.runs?.find((item) => item.id === runId);
+    if (run) return run;
+  }
+  return null;
 }
 
 function latestCost(feature) {
@@ -280,7 +293,8 @@ function renderTimeline(feature) {
           : actualIndex === feature.step
             ? "current"
             : "";
-      const running = actualIndex === feature.step && feature.activeRunId ? "running" : "";
+      const running =
+        actualIndex === feature.step && feature.activeRunId ? "running" : "";
       const selected = actualIndex === selectedStepIndex ? "selected" : "";
       const name = running ? displayStep(feature) : step.state;
       const classes = `timeline-item ${state} ${running} ${selected}`;
@@ -295,7 +309,8 @@ function renderTimeline(feature) {
 }
 
 function displayEvents(run) {
-  return (run.events ?? []).map((event) => {
+  const events = run.events ?? [];
+  return events.slice(-RUN_LOG_PREVIEW_LINE_LIMIT).map((event) => {
     const timestamp = new Date(event.timestamp);
     const time = Number.isNaN(timestamp.valueOf())
       ? ""
@@ -325,6 +340,11 @@ function renderRunLog(run, index, isExpanded, feature) {
   const step = workflow[run.step] ?? selectedStep();
   const eventMarkup = displayEvents(run).join("");
   const logPath = `.features/run-logs/${run.id}.log`;
+  const eventCount = run.events?.length ?? 0;
+  const hiddenCount = Math.max(0, eventCount - RUN_LOG_PREVIEW_LINE_LIMIT);
+  const previewNote = hiddenCount
+    ? `<p class="run-log-note">Showing last ${RUN_LOG_PREVIEW_LINE_LIMIT} lines. ${hiddenCount} earlier lines are available in the full log.</p>`
+    : "";
   return `
     <article class="artifact-card run-log ${run.status} ${isExpanded ? "expanded" : ""}" data-artifact-index="${index}">
       <button class="artifact-header" type="button" aria-expanded="${isExpanded}">
@@ -335,7 +355,13 @@ function renderRunLog(run, index, isExpanded, feature) {
         </span>
         <span class="artifact-chevron">⌃</span>
       </button>
-      <div class="artifact-body"><div class="run-events">${eventMarkup || "<p>No events recorded.</p>"}</div></div>
+      <div class="artifact-body">
+        <div class="run-log-actions">
+          <a class="secondary-button" href="/runs/${encodeURIComponent(run.id)}/log" download>Download</a>
+        </div>
+        ${previewNote}
+        <div class="run-events">${eventMarkup || "<p>No events recorded.</p>"}</div>
+      </div>
     </article>
   `;
 }
@@ -436,20 +462,33 @@ function renderDetails() {
   const branchLink = document.createElement("a");
   branchLink.href = `#${feature.branch}`;
   branchLink.textContent = feature.branch;
-  elements.featureMeta.append(branchLink, ` · ${feature.updated} · ${feature.artifactFolder || feature.workspace}`);
+  elements.featureMeta.append(
+    branchLink,
+    ` · ${feature.updated} · ${feature.artifactFolder || feature.workspace}`,
+  );
   elements.stateBadge.textContent = displayStep(feature);
   elements.stateBadge.classList.toggle("running", Boolean(feature.activeRunId));
   elements.advanceButton.disabled =
     Boolean(feature.activeRunId) || feature.step === workflow.length - 1;
   elements.advanceButton.textContent =
-    feature.step === workflow.length - 1 ? "Feature complete" : "Next";
-  elements.backStepButton.disabled = Boolean(feature.activeRunId) || feature.step === 0;
+    feature.step === workflow.length - 1
+      ? "Feature complete"
+      : "Move to next step";
+  elements.backStepButton.disabled =
+    Boolean(feature.activeRunId) || feature.step === 0;
   const run = latestRun(feature);
   elements.retryRunButton.classList.toggle(
     "visible",
-    Boolean(run && TERMINAL_RUN_STATUSES.has(run.status) && isAgentStep(workflow[feature.step])),
+    Boolean(
+      run &&
+      TERMINAL_RUN_STATUSES.has(run.status) &&
+      isAgentStep(workflow[feature.step]),
+    ),
   );
-  elements.cancelRunButton.classList.toggle("visible", Boolean(feature.activeRunId));
+  elements.cancelRunButton.classList.toggle(
+    "visible",
+    Boolean(feature.activeRunId),
+  );
   renderTimeline(feature);
   renderArtifacts(feature);
 }
@@ -493,24 +532,38 @@ function renderValidation() {
     <span>${validation.errors} errors · ${validation.warnings} warnings</span>
   `;
   elements.validationList.innerHTML = validation.checks
-    .map((check) => `
+    .map(
+      (check) => `
       <article class="validation-check ${escapeHtml(check.status)}">
         <span class="check-icon" aria-hidden="true">${check.status === "passed" ? "✓" : check.status === "warning" ? "!" : "×"}</span>
         <div><strong>${escapeHtml(check.name)}</strong><p>${escapeHtml(check.message)}</p></div>
         <span class="check-status">${escapeHtml(check.status)}</span>
       </article>
-    `)
+    `,
+    )
     .join("");
 }
 
 function render() {
-  elements.workspace.classList.toggle("features-collapsed", featuresPanelHidden);
+  elements.workspace.classList.toggle(
+    "features-collapsed",
+    featuresPanelHidden,
+  );
   elements.timeline.hidden = !workflowVisible;
   elements.workflowButton.setAttribute("aria-checked", String(workflowVisible));
   renderFeatureList();
   renderDetails();
   renderRepositoryWorkflow();
   renderValidation();
+}
+
+function scheduleRunStreamRender() {
+  if (runStreamRenderPending) return;
+  runStreamRenderPending = true;
+  window.requestAnimationFrame(() => {
+    runStreamRenderPending = false;
+    render();
+  });
 }
 
 function showToast(message) {
@@ -567,7 +620,9 @@ function setWorkflowVisible(visible) {
 
 function syncRunStreams() {
   const activeRunIds = new Set(
-    features.flatMap((feature) => (feature.activeRunId ? [feature.activeRunId] : [])),
+    features.flatMap((feature) =>
+      feature.activeRunId ? [feature.activeRunId] : [],
+    ),
   );
   eventSources.forEach((source, runId) => {
     if (!activeRunIds.has(runId)) {
@@ -580,10 +635,20 @@ function syncRunStreams() {
     const source = new EventSource(`/runs/${runId}/events`);
     source.onmessage = async (event) => {
       const payload = JSON.parse(event.data);
-      await loadState({ preserveView: true });
+      const run = findRunById(payload.run_id);
+      if (run) {
+        run.status = payload.run_status ?? run.status;
+        run.events = [...(run.events ?? []), payload].slice(
+          -RUN_LOG_PREVIEW_LINE_LIMIT,
+        );
+        scheduleRunStreamRender();
+      } else {
+        await loadState({ preserveView: true });
+      }
       if (TERMINAL_RUN_STATUSES.has(payload.run_status)) {
         source.close();
         eventSources.delete(runId);
+        await loadState({ preserveView: true });
       }
     };
     source.onerror = () => {
@@ -607,7 +672,9 @@ function appExportState() {
 
 async function saveStateToClipboard() {
   try {
-    await navigator.clipboard.writeText(JSON.stringify(appExportState(), null, 2));
+    await navigator.clipboard.writeText(
+      JSON.stringify(appExportState(), null, 2),
+    );
     showToast("Application state copied to clipboard");
   } catch {
     showToast("Clipboard access was not available");
@@ -617,7 +684,10 @@ async function saveStateToClipboard() {
 async function restoreStateFromClipboard() {
   try {
     const state = JSON.parse(await navigator.clipboard.readText());
-    if (state?.format !== "control-plane-state" || !Array.isArray(state.features)) {
+    if (
+      state?.format !== "control-plane-state" ||
+      !Array.isArray(state.features)
+    ) {
       throw new Error("Invalid application state");
     }
     await api("/state", {
@@ -637,7 +707,11 @@ async function moveToStep(feature, nextStep) {
   await loadState({ preserveView: true });
   const updated = selectedFeature();
   setView(updated.id, Math.min(nextStep, updated.step));
-  showToast(isAgentStep(workflow[nextStep]) ? `${workflow[nextStep].agent} queued` : `Moved to ${workflow[nextStep].state}`);
+  showToast(
+    isAgentStep(workflow[nextStep])
+      ? `${workflow[nextStep].agent} queued`
+      : `Moved to ${workflow[nextStep].state}`,
+  );
 }
 
 function openArtifactSaveDialog(card) {
@@ -645,7 +719,8 @@ function openArtifactSaveDialog(card) {
   const feature = selectedFeature();
   if (!feature || !Number.isInteger(sourceIndex)) return;
   pendingArtifactSaveCard = card;
-  elements.artifactSaveName.textContent = feature.artifacts[sourceIndex]?.name ?? "this artifact";
+  elements.artifactSaveName.textContent =
+    feature.artifacts[sourceIndex]?.name ?? "this artifact";
   elements.artifactSaveDialog.showModal();
   document.querySelector("#discard-next-steps-button").focus();
 }
@@ -664,7 +739,9 @@ async function savePendingArtifact({ discardNextSteps }) {
 
 function featureHasNextStepEntries(feature, editedStep) {
   return (
-    feature.artifacts.some((artifact) => (artifact.availableAtStep ?? 0) > editedStep) ||
+    feature.artifacts.some(
+      (artifact) => (artifact.availableAtStep ?? 0) > editedStep,
+    ) ||
     feature.runs.some((run) => run.step > editedStep) ||
     feature.step > editedStep
   );
@@ -709,7 +786,14 @@ async function updateArtifact(card, { discardNextSteps = false } = {}) {
 elements.featureList.addEventListener("click", (event) => {
   const card = event.target.closest("[data-feature-id]");
   if (!card) return;
-  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return;
   event.preventDefault();
   const feature = features.find((item) => item.id === card.dataset.featureId);
   setView(feature.id, feature.step);
@@ -719,7 +803,14 @@ elements.featureList.addEventListener("click", (event) => {
 elements.timeline.addEventListener("click", (event) => {
   const tab = event.target.closest("[data-step-index]");
   if (!tab) return;
-  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return;
   event.preventDefault();
   setView(selectedFeatureId, Number(tab.dataset.stepIndex));
   renderDetails();
@@ -732,7 +823,9 @@ document.addEventListener("keydown", (event) => {
     event.ctrlKey ||
     event.altKey ||
     event.shiftKey ||
-    event.target.closest("input, textarea, select, [contenteditable='true'], dialog[open]")
+    event.target.closest(
+      "input, textarea, select, [contenteditable='true'], dialog[open]",
+    )
   ) {
     return;
   }
@@ -774,7 +867,8 @@ elements.featureSearch.addEventListener("input", (event) => {
 
 elements.advanceButton.addEventListener("click", async () => {
   const feature = selectedFeature();
-  if (!feature || feature.activeRunId || feature.step >= workflow.length - 1) return;
+  if (!feature || feature.activeRunId || feature.step >= workflow.length - 1)
+    return;
   await moveToStep(feature, feature.step + 1);
 });
 
@@ -853,11 +947,17 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeMenus();
 });
 
-document.querySelector("#add-feature-button").addEventListener("click", openFeatureDialog);
-document.querySelector("#feature-settings-button").addEventListener("click", openFeatureSettings);
-document.querySelector("#hide-features-button").addEventListener("click", () => {
-  setFeaturesPanelHidden(!featuresPanelHidden);
-});
+document
+  .querySelector("#add-feature-button")
+  .addEventListener("click", openFeatureDialog);
+document
+  .querySelector("#feature-settings-button")
+  .addEventListener("click", openFeatureSettings);
+document
+  .querySelector("#hide-features-button")
+  .addEventListener("click", () => {
+    setFeaturesPanelHidden(!featuresPanelHidden);
+  });
 elements.workflowButton.addEventListener("click", () => {
   setWorkflowVisible(!workflowVisible);
 });
@@ -866,55 +966,91 @@ document.querySelector("#save-state-button").addEventListener("click", () => {
   closeMenus();
   saveStateToClipboard();
 });
-document.querySelector("#restore-state-button").addEventListener("click", () => {
-  closeMenus();
-  restoreStateFromClipboard();
-});
-document.querySelector("#repository-workflow-button").addEventListener("click", () => {
-  closeMenus();
-  elements.repositoryWorkflowDialog.showModal();
-  document.querySelector("#close-workflow-action").focus();
-});
-document.querySelector("#validate-repository-button").addEventListener("click", async () => {
-  closeMenus();
-  validation = await api("/repository/validation");
-  renderValidation();
-  elements.validationDialog.showModal();
-  document.querySelector("#close-validation-action").focus();
-});
+document
+  .querySelector("#restore-state-button")
+  .addEventListener("click", () => {
+    closeMenus();
+    restoreStateFromClipboard();
+  });
+document
+  .querySelector("#repository-workflow-button")
+  .addEventListener("click", () => {
+    closeMenus();
+    elements.repositoryWorkflowDialog.showModal();
+    document.querySelector("#close-workflow-action").focus();
+  });
+document
+  .querySelector("#validate-repository-button")
+  .addEventListener("click", async () => {
+    closeMenus();
+    validation = await api("/repository/validation");
+    renderValidation();
+    elements.validationDialog.showModal();
+    document.querySelector("#close-validation-action").focus();
+  });
 
-document.querySelector("#close-workflow-button").addEventListener("click", () => {
-  elements.repositoryWorkflowDialog.close();
-});
-document.querySelector("#close-workflow-action").addEventListener("click", () => {
-  elements.repositoryWorkflowDialog.close();
-});
+document
+  .querySelector("#close-workflow-button")
+  .addEventListener("click", () => {
+    elements.repositoryWorkflowDialog.close();
+  });
+document
+  .querySelector("#close-workflow-action")
+  .addEventListener("click", () => {
+    elements.repositoryWorkflowDialog.close();
+  });
 
-document.querySelector("#close-dialog-button").addEventListener("click", () => elements.dialog.close());
-document.querySelector("#cancel-dialog-button").addEventListener("click", () => elements.dialog.close());
+document
+  .querySelector("#close-dialog-button")
+  .addEventListener("click", () => elements.dialog.close());
+document
+  .querySelector("#cancel-dialog-button")
+  .addEventListener("click", () => elements.dialog.close());
 
-document.querySelector("#close-settings-button").addEventListener("click", () => elements.settingsDialog.close());
-document.querySelector("#cancel-settings-button").addEventListener("click", () => elements.settingsDialog.close());
-document.querySelector("#request-delete-feature-button").addEventListener("click", () => {
-  const feature = selectedFeature();
-  if (!feature) return;
-  elements.deleteFeatureName.textContent = feature.name;
-  elements.settingsDialog.close();
-  elements.deleteDialog.showModal();
-});
-document.querySelector("#close-delete-button").addEventListener("click", () => elements.deleteDialog.close());
-document.querySelector("#cancel-delete-button").addEventListener("click", () => elements.deleteDialog.close());
+document
+  .querySelector("#close-settings-button")
+  .addEventListener("click", () => elements.settingsDialog.close());
+document
+  .querySelector("#cancel-settings-button")
+  .addEventListener("click", () => elements.settingsDialog.close());
+document
+  .querySelector("#request-delete-feature-button")
+  .addEventListener("click", () => {
+    const feature = selectedFeature();
+    if (!feature) return;
+    elements.deleteFeatureName.textContent = feature.name;
+    elements.settingsDialog.close();
+    elements.deleteDialog.showModal();
+  });
+document
+  .querySelector("#close-delete-button")
+  .addEventListener("click", () => elements.deleteDialog.close());
+document
+  .querySelector("#cancel-delete-button")
+  .addEventListener("click", () => elements.deleteDialog.close());
 elements.artifactSaveDialog.addEventListener("close", () => {
   pendingArtifactSaveCard = null;
 });
-document.querySelector("#close-artifact-save-button").addEventListener("click", closeArtifactSaveDialog);
-document.querySelector("#cancel-artifact-save-button").addEventListener("click", closeArtifactSaveDialog);
-document.querySelector("#preserve-next-steps-button").addEventListener("click", () => {
-  savePendingArtifact({ discardNextSteps: false }).catch((error) => showToast(error.message));
-});
-document.querySelector("#discard-next-steps-button").addEventListener("click", () => {
-  savePendingArtifact({ discardNextSteps: true }).catch((error) => showToast(error.message));
-});
+document
+  .querySelector("#close-artifact-save-button")
+  .addEventListener("click", closeArtifactSaveDialog);
+document
+  .querySelector("#cancel-artifact-save-button")
+  .addEventListener("click", closeArtifactSaveDialog);
+document
+  .querySelector("#preserve-next-steps-button")
+  .addEventListener("click", () => {
+    savePendingArtifact({ discardNextSteps: false }).catch((error) =>
+      showToast(error.message),
+    );
+  });
+document
+  .querySelector("#discard-next-steps-button")
+  .addEventListener("click", () => {
+    savePendingArtifact({ discardNextSteps: true }).catch((error) =>
+      showToast(error.message),
+    );
+  });
 
 elements.settingsForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -937,21 +1073,28 @@ elements.deleteForm.addEventListener("submit", async (event) => {
   await api(`/features/${feature.id}`, { method: "DELETE" });
   elements.deleteDialog.close();
   await loadState({ preserveView: false });
-  if (selectedFeatureId) setView(selectedFeatureId, selectedStepIndex, { replace: true });
+  if (selectedFeatureId)
+    setView(selectedFeatureId, selectedStepIndex, { replace: true });
   showToast(`${feature.name} deleted`);
 });
 
-document.querySelector("#close-validation-button").addEventListener("click", () => {
-  elements.validationDialog.close();
-});
-document.querySelector("#close-validation-action").addEventListener("click", () => {
-  elements.validationDialog.close();
-});
-document.querySelector("#rerun-validation-button").addEventListener("click", async () => {
-  validation = await api("/repository/validation");
-  renderValidation();
-  showToast("Repository validation completed");
-});
+document
+  .querySelector("#close-validation-button")
+  .addEventListener("click", () => {
+    elements.validationDialog.close();
+  });
+document
+  .querySelector("#close-validation-action")
+  .addEventListener("click", () => {
+    elements.validationDialog.close();
+  });
+document
+  .querySelector("#rerun-validation-button")
+  .addEventListener("click", async () => {
+    validation = await api("/repository/validation");
+    renderValidation();
+    showToast("Repository validation completed");
+  });
 
 elements.form.addEventListener("submit", async (event) => {
   event.preventDefault();
