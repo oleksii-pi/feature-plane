@@ -102,7 +102,21 @@ function displayRunDetails(run) {
   const tokenDetails = usage.totalTokens
     ? `IN=${usage.inputTokens ?? 0}${cachedDetails} OUT=${usage.outputTokens ?? 0}`
     : "token usage unavailable";
-  return `Price ${cost}, Tokens: ${tokenDetails}`;
+  const changeDetails = displayFileChanges(run.fileChanges);
+  return [`Price ${cost}`, `Tokens: ${tokenDetails}`, changeDetails]
+    .filter(Boolean)
+    .join(", ");
+}
+
+function displayFileChanges(fileChanges) {
+  const changes = [
+    ["added", fileChanges?.added],
+    ["edited", fileChanges?.edited],
+    ["deleted", fileChanges?.deleted],
+  ]
+    .filter(([, count]) => Number(count) > 0)
+    .map(([label, count]) => `${label} ${count} ${count === 1 ? "file" : "files"}`);
+  return changes.length ? `Changed files: ${changes.join(", ")}` : "";
 }
 
 function displayEvents(run) {

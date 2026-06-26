@@ -210,8 +210,9 @@ function normalizeFeature(feature) {
 }
 
 function normalizeRun(run) {
+  const { fileBaseline, ...publicRun } = run;
   return {
-    ...run,
+    ...publicRun,
     startedAt: run.startedAt ? formatDateTime(run.startedAt) : null,
     finishedAt: run.finishedAt ? formatDateTime(run.finishedAt) : null,
     logSizeBytes: storedRunLogSize(run),

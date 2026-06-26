@@ -3,6 +3,7 @@ const path = require("node:path");
 const { randomUUID } = require("node:crypto");
 const { getAgentRunCommand, workflow } = require("./config");
 const { getFeatureArtifactFolder, getFeatureArtifactFolderPath } = require("./feature-artifacts");
+const { createWorkspaceSnapshot, summarizeWorkspaceChanges } = require("./file-changes");
 const { httpError } = require("./http");
 const { state, saveState } = require("./state");
 const { currentStep, saveFeatureFiles } = require("./features");
@@ -49,6 +50,7 @@ async function startRun(feature) {
     logSizeBytes: 0,
     events: [],
   };
+  run.fileBaseline = await createWorkspaceSnapshot(feature);
   feature.runs.push(run);
   feature.activeRunId = run.id;
   feature.updated = formatDateTime();
@@ -154,6 +156,8 @@ async function updateCompletedRun(feature, run, step, content) {
 
   run.status = "succeeded";
   run.finishedAt = formatDateTime();
+  run.fileChanges = await summarizeWorkspaceChanges(feature, run.fileBaseline);
+  delete run.fileBaseline;
   await priceRun(run);
   updateFeatureCost(feature);
   feature.activeRunId = null;
@@ -184,6 +188,7 @@ async function failRun(feature, run, message, level = "error") {
     return run;
   run.status = "failed";
   run.finishedAt = formatDateTime();
+  delete run.fileBaseline;
   feature.activeRunId = null;
   feature.updated = formatDateTime();
   forgetConfiguredRun(run.id);
@@ -203,6 +208,7 @@ async function cancelRun(runId) {
   stopConfiguredRun(run.id);
   run.status = "cancelled";
   run.finishedAt = formatDateTime();
+  delete run.fileBaseline;
   feature.activeRunId = null;
   feature.updated = formatDateTime();
   await addEvent(

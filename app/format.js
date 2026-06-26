@@ -14,19 +14,35 @@ export function formatLogSize(bytes) {
   return `${(size / 1024 / 1024).toFixed(1).replace(/\.0$/, "")}mb`;
 }
 
+function padDatePart(value) {
+  return String(value).padStart(2, "0");
+}
+
+function formatLocalDateTime(date) {
+  return [
+    date.getFullYear(),
+    padDatePart(date.getMonth() + 1),
+    padDatePart(date.getDate()),
+  ].join("-") + " " + [
+    padDatePart(date.getHours()),
+    padDatePart(date.getMinutes()),
+    padDatePart(date.getSeconds()),
+  ].join(":");
+}
+
 export function currentDateTime() {
-  return new Date().toISOString().slice(0, 19).replace("T", " ");
+  return formatLocalDateTime(new Date());
 }
 
 export function formatDateTime(value) {
   if (value instanceof Date) {
-    return value.toISOString().slice(0, 19).replace("T", " ");
+    return formatLocalDateTime(value);
   }
   const text = String(value ?? "");
   if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text)) return text;
   const date = new Date(text);
   if (Number.isNaN(date.valueOf())) return text;
-  return date.toISOString().slice(0, 19).replace("T", " ");
+  return formatLocalDateTime(date);
 }
 
 export function formatDateTimeParts(value) {
