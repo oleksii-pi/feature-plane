@@ -95,6 +95,16 @@ export function renderTimeline(feature) {
     .join("");
 }
 
+function displayRunDetails(run) {
+  const usage = run.usage ?? {};
+  const cost = run.cost ?? "TBD";
+  const cachedDetails = usage.cachedInputTokens ? ` (${usage.cachedInputTokens} cached)` : "";
+  const tokenDetails = usage.totalTokens
+    ? `IN=${usage.inputTokens ?? 0}${cachedDetails} OUT=${usage.outputTokens ?? 0}`
+    : "token usage unavailable";
+  return `Price ${cost}, Tokens: ${tokenDetails}`;
+}
+
 function displayEvents(run) {
   const events = (run.events ?? []).slice(-RUN_LOG_PREVIEW_LINE_LIMIT);
   const isActiveRun = !TERMINAL_RUN_STATUSES.has(run.status);
@@ -104,14 +114,27 @@ function displayEvents(run) {
         return status !== "stdout" && status !== "stderr";
       })
     : -1;
+  const summaryEventIndex = isActiveRun
+    ? -1
+    : events.findLastIndex((event) => {
+        const status = String(event.status ?? "");
+        return status !== "stdout" && status !== "stderr";
+      });
+  const runDetails = summaryEventIndex >= 0 ? displayRunDetails(run) : "";
   return events.map((event, index) => {
     const timestamp = formatDateTimeParts(event.timestamp);
     const status = String(event.status ?? "");
     const isOutput = status === "stdout" || status === "stderr";
     const isActiveEvent = index === activeEventIndex;
-    const message = isOutput
+    const baseMessage = isOutput
       ? event.message
       : `${status}${status ? ": " : ""}${event.message}`;
+    const message =
+      index === summaryEventIndex && status === "Done" && event.message === "Done."
+        ? `${status}: ${runDetails}`
+        : index === summaryEventIndex
+          ? `${baseMessage} ${runDetails}`
+          : baseMessage;
     return `
       <div class="run-event ${isActiveEvent ? "active" : ""} ${isOutput ? "output" : ""}">
         <span class="run-event-time"><span>${escapeHtml(timestamp.date)}</span><span>${escapeHtml(timestamp.time)}</span></span>
@@ -127,10 +150,23 @@ function runLabel(run) {
   return run.status.charAt(0).toUpperCase() + run.status.slice(1);
 }
 
+function displayRunTitle(step) {
+  const title = String(step?.agent ?? step?.state ?? "Run");
+  return title.charAt(0).toUpperCase() + title.slice(1);
+}
+
+function displayRelativePath(path, feature) {
+  const value = String(path ?? "");
+  const workspace = String(feature?.workspace ?? "").replace(/\/+$/g, "");
+  if (!workspace) return value;
+  if (value === workspace) return ".";
+  const prefix = `${workspace}/`;
+  return value.startsWith(prefix) ? value.slice(prefix.length) : value;
+}
+
 function renderRunLog(run, index, isExpanded) {
   const step = state.workflow[run.step] ?? selectedStep();
   const eventMarkup = displayEvents(run).join("");
-  const logPath = `.features/run-logs/${run.id}.log`;
   const eventCount = run.events?.length ?? 0;
   const hiddenCount = Math.max(0, eventCount - RUN_LOG_PREVIEW_LINE_LIMIT);
   const previewNote = hiddenCount
@@ -144,8 +180,7 @@ function renderRunLog(run, index, isExpanded) {
         <button class="artifact-toggle" type="button" aria-expanded="${isExpanded}">
           <span class="artifact-label">${escapeHtml(runLabel(run))}</span>
           <span class="artifact-title">
-            <strong>${escapeHtml(step?.agent ?? step?.state ?? "Run")}</strong>
-            <span>${escapeHtml(run.status)} · ${escapeHtml(logPath)}</span>
+            <strong>${escapeHtml(displayRunTitle(step))}</strong>
           </span>
         </button>
         <span class="artifact-header-actions">
@@ -217,7 +252,7 @@ export function renderArtifacts(feature) {
       return `
         <article class="artifact-card ${isLatest ? "latest" : ""} ${isExpanded ? "expanded" : ""}" data-artifact-index="${visibleIndex}" data-source-index="${entry.sourceIndex}">
           <button class="artifact-header" type="button" aria-expanded="${isExpanded}">
-            <span class="artifact-title"><strong>${escapeHtml(artifact.name)}</strong><span>Updated ${escapeHtml(formatDateTime(artifact.updated))} · ${escapeHtml(artifact.path)}</span></span>
+            <span class="artifact-title"><strong>${escapeHtml(artifact.name)}</strong><span>Updated ${escapeHtml(formatDateTime(artifact.updated))}</span></span>
             ${isLatest ? '<span class="artifact-label">Latest</span>' : ""}
             <span class="artifact-chevron">⌃</span>
           </button>
@@ -263,7 +298,7 @@ export function renderDetails() {
   branchLink.textContent = feature.branch;
   elements.featureMeta.append(
     branchLink,
-    ` · ${formatDateTime(feature.updated)} · ${feature.artifactFolder || feature.workspace}`,
+    ` · ${formatDateTime(feature.updated)} · ${displayRelativePath(feature.artifactFolder || feature.workspace, feature)}`,
   );
   elements.stateBadge.textContent = displayStep(feature);
   elements.stateBadge.classList.toggle("running", Boolean(feature.activeRunId));

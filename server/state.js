@@ -16,6 +16,7 @@ const {
   getFeatureArtifactFolder,
 } = require("./feature-artifacts");
 const { allocateAvailablePort, normalizePort } = require("./ports");
+const { priceRun, updateFeatureCost } = require("./pricing");
 const { addEvent, RUN_LOG_PREVIEW_LINE_LIMIT } = require("./run-events");
 const { formatDateTime } = require("./time");
 
@@ -39,9 +40,11 @@ async function ensureStorage() {
     if (migratedLegacyRoot) rewriteLegacyFeatureState(saved);
     if (Array.isArray(saved.features)) state.features = saved.features.map(normalizeFeature);
     const assignedPorts = await assignFeaturePorts();
+    const repricedRuns = await repriceCompletedRuns();
     const needsRewrite =
       migratedLegacyRoot ||
       assignedPorts ||
+      repricedRuns ||
       savedFeatureMetadataNeedsRewrite(saved) ||
       savedTimestampsNeedRewrite(saved);
     if (needsRewrite) {
@@ -53,6 +56,33 @@ async function ensureStorage() {
     await saveState();
   }
   recoverInterruptedRuns();
+}
+
+async function repriceCompletedRuns() {
+  let changed = false;
+  for (const feature of state.features) {
+    let featureChanged = false;
+    for (const run of feature.runs) {
+      if (run.status !== "succeeded") continue;
+      const before = JSON.stringify({
+        usage: run.usage ?? null,
+        pricing: run.pricing ?? null,
+        cost: run.cost ?? null,
+      });
+      await priceRun(run);
+      const after = JSON.stringify({
+        usage: run.usage ?? null,
+        pricing: run.pricing ?? null,
+        cost: run.cost ?? null,
+      });
+      if (before !== after) featureChanged = true;
+    }
+    if (featureChanged) {
+      updateFeatureCost(feature);
+      changed = true;
+    }
+  }
+  return changed;
 }
 
 async function migrateLegacyFeatureRoot() {

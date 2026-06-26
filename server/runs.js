@@ -12,6 +12,7 @@ const {
   startConfiguredAgentRun,
   stopConfiguredRun,
 } = require("./configured-runner");
+const { priceRun, updateFeatureCost } = require("./pricing");
 const { formatDateTime } = require("./time");
 
 const timers = new Map();
@@ -99,7 +100,7 @@ async function completeSimulatedRun(feature, run, status, message) {
   const featureDir = getFeatureArtifactFolderPath(feature);
   const artifactPath = path.join(featureDir, step.artifact);
   await fsp.writeFile(artifactPath, content);
-  updateCompletedRun(feature, run, step, content);
+  await updateCompletedRun(feature, run, step, content);
   await addEvent(feature, run, status, message);
 }
 
@@ -128,7 +129,7 @@ async function completeConfiguredRun(feature, run) {
     return;
   }
 
-  updateCompletedRun(feature, run, step, content);
+  await updateCompletedRun(feature, run, step, content);
   await addEvent(
     feature,
     run,
@@ -137,7 +138,7 @@ async function completeConfiguredRun(feature, run) {
   );
 }
 
-function updateCompletedRun(feature, run, step, content) {
+async function updateCompletedRun(feature, run, step, content) {
   const existing = feature.artifacts.find(
     (artifact) => artifact.name === step.artifact,
   );
@@ -153,8 +154,8 @@ function updateCompletedRun(feature, run, step, content) {
 
   run.status = "succeeded";
   run.finishedAt = formatDateTime();
-  run.cost = "$0.00";
-  feature.cost = "$0.00";
+  await priceRun(run);
+  updateFeatureCost(feature);
   feature.activeRunId = null;
   feature.step = Math.min(run.step + 1, workflow.length - 1);
   feature.updated = formatDateTime();

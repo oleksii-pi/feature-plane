@@ -10,6 +10,7 @@ const {
 const { httpError } = require("./http");
 const { allocateAvailablePort } = require("./ports");
 const { clampStep, saveState, slugify, state } = require("./state");
+const { updateFeatureCost } = require("./pricing");
 const { formatDateTime } = require("./time");
 
 let startRun;
@@ -133,6 +134,7 @@ async function discardNextSteps(feature, editedStep) {
     (artifact) => (artifact.availableAtStep ?? 0) <= editedStep,
   );
   feature.runs = feature.runs.filter((run) => run.step <= editedStep);
+  updateFeatureCost(feature);
   feature.step = Math.min(feature.step, editedStep);
 
   await Promise.all(
