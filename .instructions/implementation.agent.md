@@ -1,7 +1,7 @@
 1. Look into user prompt.md and apply user request to the codebase.
 
 2. Try to run server on application port that is located in feature.json
-   Try 3 times and report if it is not possible.
+   Keep server app and running.
 
 3. Write into implementation-details.md what exactly was executed
    By the end of the file put url to feature for testing in format: http://localhost:app_port
