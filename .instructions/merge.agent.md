@@ -2,7 +2,7 @@
 
 2. Merge main into the current branch and resolve all possible merge conflicts.
    Check that server can start without errors. Stop server.
-   Aapplication port is located in feature.json
+   Application port is available as CONTROL_PLANE_APP_PORT / %app_port%
 
 3. Merge current branch into main.
 

@@ -1,6 +1,6 @@
 1. Look into user %artifact_folder_path%/prompt.md and apply user request to the codebase.
 
-2. Try to run server on application port that is located in feature.json
+2. Try to run server on application port from CONTROL_PLANE_APP_PORT / %app_port%
    Keep server app and running.
 
 3. Write into implementation-details.md what exactly was executed

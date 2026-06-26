@@ -94,7 +94,6 @@ async function saveFeatureFiles(feature) {
       fsp.writeFile(path.join(featureDir, artifact.name), artifact.content ?? ""),
     ),
   );
-  await fsp.writeFile(path.join(featureDir, "feature.json"), JSON.stringify(feature, null, 2));
 }
 
 function findFeature(id) {

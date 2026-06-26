@@ -56,8 +56,7 @@ rejected because workflow runs do not have a TTY.
   and copies the current repo into a per-feature workspace.
 - Feature branches are represented as `feature/<slug>`, but this PoC does not
   currently create git branches or git worktrees.
-- Feature state is persisted as JSON in the feature home and mirrored into
-  per-feature `feature.json` files.
+- Feature state is persisted as JSON in the feature home.
 - Agent steps are defined in `SDLC.yaml`; every configured agent must have a
   matching `.instructions/<agent>.agent.md` file.
 - A successful configured run must create the Markdown artifact required by the
