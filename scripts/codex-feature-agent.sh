@@ -37,7 +37,14 @@ case "$instruction_path" in
     ;;
 esac
 
-args=(codex exec --profile "$profile" --cd "$workspace" --ask-for-approval on-request)
+approval_policy="${CODEX_FEATURE_APPROVAL_POLICY:-never}"
+
+args=(
+  codex exec
+  --profile "$profile"
+  --cd "$workspace"
+  --config "approval_policy=\"$approval_policy\""
+)
 if [ -n "${CODEX_MODEL:-}" ]; then
   args+=(--model "$CODEX_MODEL")
 fi
