@@ -57,7 +57,7 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
   }
 
   runProcesses.set(run.id, child);
-  await queueRunEvent(feature, run, "Implementing", "Executing configured agent command.");
+  await queueRunEvent(feature, run, "Executing", "Executing configured agent command.");
 
   const stdoutState = { buffer: "" };
   const stderrState = { buffer: "" };
