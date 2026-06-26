@@ -41,6 +41,7 @@ approval_policy="${CODEX_FEATURE_APPROVAL_POLICY:-never}"
 
 args=(
   codex exec
+  --yolo
   --profile "$profile"
   --cd "$workspace"
   --config "approval_policy=\"$approval_policy\""
