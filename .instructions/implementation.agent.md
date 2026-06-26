@@ -8,4 +8,4 @@
 
 IMPORTANT: never reset branch or cleanup or modify feature artifacts folder.
 It is only allowed to write to implementation-details.md file. If there is such file, add incremental index: implementation-details-v2.md, -v3.md, etc.
-This folder contains agent execution logs, important for debugging.
+Write progress and diagnostic output to stdout or stderr. Control Plane captures that output in its own per-run log file.
