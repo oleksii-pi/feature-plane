@@ -234,6 +234,10 @@ function sendRunLogView(res, run) {
       min-height: 38px;
       padding: 2px 0;
     }
+    .log-line.raw {
+      min-height: 0;
+      padding: 0;
+    }
     .log-time {
       color: #9fb0c6;
       line-height: 1.25;
@@ -292,7 +296,7 @@ function sendRunLogView(res, run) {
       text.replace(/\\n$/, "").split("\\n").forEach((line) => {
         const match = line.match(/^\\[(\\d{4}-\\d{2}-\\d{2}) (\\d{2}:\\d{2}:\\d{2})\\] \\[([^\\]]+)\\](?:\\s?(.*))?$/);
         const row = document.createElement("div");
-        row.className = "log-line";
+        row.className = match ? "log-line" : "log-line raw";
 
         const time = document.createElement("span");
         time.className = "log-time";
