@@ -1,4 +1,4 @@
-1. Look into user prompt.md and apply user request to the codebase.
+1. Look into user %artifact_folder_path%/prompt.md and apply user request to the codebase.
 
 2. Try to run server on application port that is located in feature.json
    Keep server app and running.
