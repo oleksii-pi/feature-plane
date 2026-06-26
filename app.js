@@ -301,11 +301,16 @@ function displayEvents(run) {
       ? ""
       : timestamp.toLocaleTimeString([], { hour12: false });
     const state = TERMINAL_RUN_STATUSES.has(run.status) ? run.status : "active";
+    const status = String(event.status ?? "");
+    const isOutput = status === "stdout" || status === "stderr";
+    const message = isOutput
+      ? event.message
+      : `${status}${status ? ": " : ""}${event.message}`;
     return `
-      <div class="run-event ${state}">
+      <div class="run-event ${state} ${isOutput ? "output" : ""}">
         <span>${escapeHtml(time)}</span>
         <span class="event-dot"></span>
-        <span>${escapeHtml(event.status)}: ${escapeHtml(event.message)}</span>
+        <span>${escapeHtml(message)}</span>
       </div>
     `;
   });
@@ -319,14 +324,14 @@ function runLabel(run) {
 function renderRunLog(run, index, isExpanded, feature) {
   const step = workflow[run.step] ?? selectedStep();
   const eventMarkup = displayEvents(run).join("");
-  const artifactFolder = feature.artifactFolder || feature.workspace;
+  const logPath = `.features/run-logs/${run.id}.log`;
   return `
     <article class="artifact-card run-log ${run.status} ${isExpanded ? "expanded" : ""}" data-artifact-index="${index}">
       <button class="artifact-header" type="button" aria-expanded="${isExpanded}">
         <span class="artifact-label">${escapeHtml(runLabel(run))}</span>
         <span class="artifact-title">
           <strong>${escapeHtml(step?.agent ?? step?.state ?? "Run")}</strong>
-          <span>${escapeHtml(run.status)} · ${escapeHtml(artifactFolder)}</span>
+          <span>${escapeHtml(run.status)} · ${escapeHtml(logPath)}</span>
         </span>
         <span class="artifact-chevron">⌃</span>
       </button>
@@ -437,7 +442,7 @@ function renderDetails() {
   elements.advanceButton.disabled =
     Boolean(feature.activeRunId) || feature.step === workflow.length - 1;
   elements.advanceButton.textContent =
-    feature.step === workflow.length - 1 ? "Feature complete" : "Move to next step";
+    feature.step === workflow.length - 1 ? "Feature complete" : "Next";
   elements.backStepButton.disabled = Boolean(feature.activeRunId) || feature.step === 0;
   const run = latestRun(feature);
   elements.retryRunButton.classList.toggle(

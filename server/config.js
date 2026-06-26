@@ -11,6 +11,7 @@ const sdlcConfig = loadSdlcConfig(ROOT);
 const PORT = resolvePort(process.argv.slice(2), sdlcConfig.app_port);
 const FEATURES_HOME = resolveFeaturesHome(process.env.features_home);
 const FEATURE_ROOT = path.join(ROOT, FEATURES_HOME);
+const RUN_LOG_ROOT = path.join(FEATURE_ROOT, "run-logs");
 const LEGACY_FEATURE_ROOTS = ["feature", ".features"].filter((entry) => entry !== FEATURES_HOME);
 const STATE_FILE = path.join(FEATURE_ROOT, "state.json");
 const { workflow } = sdlcConfig;
@@ -121,6 +122,7 @@ module.exports = {
   PORT,
   FEATURES_HOME,
   FEATURE_ROOT,
+  RUN_LOG_ROOT,
   LEGACY_FEATURE_ROOTS,
   STATE_FILE,
   WORKSPACE_COPY_EXCLUDES,

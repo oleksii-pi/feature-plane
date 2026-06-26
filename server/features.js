@@ -128,7 +128,6 @@ async function discardNextSteps(feature, editedStep) {
   const removedArtifacts = feature.artifacts.filter(
     (artifact) => (artifact.availableAtStep ?? 0) > editedStep,
   );
-  const removedRuns = feature.runs.filter((run) => run.step > editedStep);
   feature.artifacts = feature.artifacts.filter(
     (artifact) => (artifact.availableAtStep ?? 0) <= editedStep,
   );
@@ -139,45 +138,6 @@ async function discardNextSteps(feature, editedStep) {
     removedArtifacts.map((artifact) =>
       fsp.rm(path.join(getFeatureArtifactFolderPath(feature), artifact.name), { force: true }),
     ),
-  );
-  await removeRunLogEntries(feature, removedRuns);
-}
-
-async function removeRunLogEntries(feature, removedRuns) {
-  if (!removedRuns.length) return;
-
-  const removedRunIds = new Set(removedRuns.map((run) => run.id));
-  const affectedAgents = new Set(removedRuns.map((run) => run.agent).filter(Boolean));
-  const featureDir = getFeatureArtifactFolderPath(feature);
-
-  await Promise.all(
-    [...affectedAgents].map(async (agent) => {
-      const logPath = path.join(featureDir, `${agent}.agent.log`);
-      let content;
-      try {
-        content = await fsp.readFile(logPath, "utf8");
-      } catch (error) {
-        if (error.code === "ENOENT") return;
-        throw error;
-      }
-
-      const keptLines = content
-        .split("\n")
-        .filter((line) => {
-          if (!line.trim()) return false;
-          try {
-            return !removedRunIds.has(JSON.parse(line).run_id);
-          } catch {
-            return true;
-          }
-        });
-
-      if (keptLines.length) {
-        await fsp.writeFile(logPath, `${keptLines.join("\n")}\n`);
-      } else {
-        await fsp.rm(logPath, { force: true });
-      }
-    }),
   );
 }
 

@@ -1,6 +1,6 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
-const { getFeatureArtifactFolderPath } = require("./feature-artifacts");
+const { RUN_LOG_ROOT } = require("./config");
 
 const runQueues = new Map();
 const eventClients = new Map();
@@ -25,10 +25,17 @@ function enqueueRunTask(runId, task) {
   return next;
 }
 
+function formatRunLogLine(event) {
+  const timestamp = event.timestamp ?? new Date().toISOString();
+  const stream = event.status ?? "event";
+  const message = String(event.message ?? "");
+  return `[${timestamp}] [${stream}] ${message}`;
+}
+
 async function appendRunLog(feature, run, event) {
-  const logPath = path.join(getFeatureArtifactFolderPath(feature), `${run.agent}.agent.log`);
+  const logPath = path.join(RUN_LOG_ROOT, `${run.id}.log`);
   await fsp.mkdir(path.dirname(logPath), { recursive: true });
-  await fsp.appendFile(logPath, `${JSON.stringify(event)}\n`);
+  await fsp.appendFile(logPath, `${formatRunLogLine(event)}\n`);
 }
 
 async function appendRunLogOutput(feature, run, streamName, message) {
@@ -39,7 +46,11 @@ async function appendRunLogOutput(feature, run, streamName, message) {
     status: streamName,
     message,
   };
-  await appendRunLog(feature, run, entry);
+  await persistRunEvent(feature, run, entry, {
+    appendLog: true,
+    broadcast: true,
+    saveState: false,
+  });
 }
 
 async function logConfiguredAgentRunStart(feature, run, command, cwd) {
@@ -47,7 +58,7 @@ async function logConfiguredAgentRunStart(feature, run, command, cwd) {
   console.log(
     `[agent_run_command] feature=${feature.slug} run=${run.id} agent=${run.agent} cwd=${cwd} command=${command}`,
   );
-  await appendRunLog(feature, run, {
+  await persistRunEvent(feature, run, {
     timestamp: new Date().toISOString(),
     run_id: run.id,
     level: "info",
@@ -55,6 +66,10 @@ async function logConfiguredAgentRunStart(feature, run, command, cwd) {
     message,
     cwd,
     command,
+  }, {
+    appendLog: true,
+    broadcast: true,
+    saveState: false,
   });
 }
 
@@ -69,8 +84,7 @@ function createRunEvent(run, status, message, level = "info") {
 }
 
 function isVerboseRunEvent(event) {
-  const status = String(event?.status ?? "").toLowerCase();
-  return status === "stdout" || status === "stderr";
+  return false;
 }
 
 async function persistRunEvent(feature, run, event, options = {}) {

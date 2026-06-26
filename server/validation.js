@@ -10,7 +10,7 @@ function validateRepository() {
     {
       name: "Feature artifact folders",
       status: fs.existsSync(FEATURE_ROOT) ? "passed" : "failed",
-      message: `${path.relative(ROOT, FEATURE_ROOT)} stores feature prompts, artifacts, and agent logs.`,
+      message: `${path.relative(ROOT, FEATURE_ROOT)} stores feature prompts, artifacts, and Control Plane run logs.`,
     },
     {
       name: "Workflow structure",
@@ -32,7 +32,7 @@ function validateRepository() {
     {
       name: "Run logs",
       status: "passed",
-      message: "Run logs are appended as <agent>.agent.log under the matching feature artifact folder.",
+      message: "Run logs are appended as plain text under .features/run-logs/<run-id>.log.",
     },
   ];
   const passed = checks.filter((check) => check.status === "passed").length;
