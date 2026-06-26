@@ -5,6 +5,7 @@ import {
   saveStateToClipboard,
 } from "./api.js";
 import { closeMenus, elements, showToast } from "./dom.js";
+import { currentDateTime } from "./format.js";
 import { render } from "./render.js";
 import {
   isAgentStep,
@@ -105,7 +106,7 @@ async function ensureNextStepsDiscarded(featureId, editedStep) {
   feature.runs = feature.runs.filter((run) => run.step <= editedStep);
   feature.step = Math.min(feature.step, editedStep);
   feature.activeRunId = null;
-  feature.updated = new Date().toISOString();
+  feature.updated = currentDateTime();
 
   await api("/state", {
     method: "PUT",

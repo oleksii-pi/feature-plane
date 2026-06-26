@@ -12,6 +12,7 @@ const {
   startConfiguredAgentRun,
   stopConfiguredRun,
 } = require("./configured-runner");
+const { formatDateTime } = require("./time");
 
 const timers = new Map();
 
@@ -41,7 +42,7 @@ async function startRun(feature) {
     agent: step.agent,
     artifact: step.artifact,
     status: "queued",
-    startedAt: new Date().toISOString(),
+    startedAt: formatDateTime(),
     finishedAt: null,
     cost: null,
     logSizeBytes: 0,
@@ -49,7 +50,7 @@ async function startRun(feature) {
   };
   feature.runs.push(run);
   feature.activeRunId = run.id;
-  feature.updated = new Date().toISOString();
+  feature.updated = formatDateTime();
   await saveFeatureFiles(feature);
   await saveState();
 
@@ -144,19 +145,19 @@ function updateCompletedRun(feature, run, step, content) {
     name: step.artifact,
     path: `${getFeatureArtifactFolder(feature)}/${step.artifact}`,
     availableAtStep: run.step,
-    updated: new Date().toISOString(),
+    updated: formatDateTime(),
     content,
   };
   if (existing) Object.assign(existing, artifact);
   else feature.artifacts.push(artifact);
 
   run.status = "succeeded";
-  run.finishedAt = new Date().toISOString();
+  run.finishedAt = formatDateTime();
   run.cost = "$0.00";
   feature.cost = "$0.00";
   feature.activeRunId = null;
   feature.step = Math.min(run.step + 1, workflow.length - 1);
-  feature.updated = new Date().toISOString();
+  feature.updated = formatDateTime();
 }
 
 function renderArtifact(feature, run, step) {
@@ -181,9 +182,9 @@ async function failRun(feature, run, message, level = "error") {
   )
     return run;
   run.status = "failed";
-  run.finishedAt = new Date().toISOString();
+  run.finishedAt = formatDateTime();
   feature.activeRunId = null;
-  feature.updated = new Date().toISOString();
+  feature.updated = formatDateTime();
   forgetConfiguredRun(run.id);
   await addEvent(feature, run, "Failed", message, level);
   return run;
@@ -200,9 +201,9 @@ async function cancelRun(runId) {
   }
   stopConfiguredRun(run.id);
   run.status = "cancelled";
-  run.finishedAt = new Date().toISOString();
+  run.finishedAt = formatDateTime();
   feature.activeRunId = null;
-  feature.updated = new Date().toISOString();
+  feature.updated = formatDateTime();
   await addEvent(
     feature,
     run,

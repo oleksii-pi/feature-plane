@@ -13,6 +13,7 @@ const { normalizeFeature, publicState, saveState, state } = require("./state");
 const { createFeature, findFeature, moveFeature, saveFeatureFiles, updateArtifact } = require("./features");
 const { cancelRun, findRun, startRun } = require("./runs");
 const { streamRunEvents } = require("./run-events");
+const { formatDateTime } = require("./time");
 const { validateRepository } = require("./validation");
 
 async function route(req, res) {
@@ -84,7 +85,7 @@ async function route(req, res) {
         feature.artifactFolder = branchArtifactFolder(branch, feature.slug);
       }
       if (body.name) feature.name = String(body.name);
-      feature.updated = new Date().toISOString();
+      feature.updated = formatDateTime();
       await saveFeatureFiles(feature);
       await saveState();
       sendJson(res, 200, feature);
@@ -218,14 +219,47 @@ function sendRunLogView(res, run) {
     strong { color: #ffffff; }
     a { color: #8cc8ff; text-decoration: none; }
     a:hover { text-decoration: underline; }
-    pre {
+    #log {
       box-sizing: border-box;
       min-height: calc(100vh - 42px);
       margin: 0;
       padding: 14px;
       overflow-x: auto;
+    }
+    .log-line {
+      display: grid;
+      grid-template-columns: 86px 74px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      min-height: 38px;
+      padding: 2px 0;
+    }
+    .log-time {
+      color: #9fb0c6;
+      line-height: 1.25;
+      white-space: nowrap;
+    }
+    .log-time span {
+      display: block;
+    }
+    .log-date {
+      color: #8d98aa;
+    }
+    .log-clock {
+      color: #e7edf7;
+    }
+    .log-stream {
+      color: #8cc8ff;
+      white-space: nowrap;
+    }
+    .log-message {
+      min-width: 0;
       white-space: pre-wrap;
-      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .log-empty {
+      margin: 0;
+      color: #9fb0c6;
     }
   </style>
 </head>
@@ -234,20 +268,56 @@ function sendRunLogView(res, run) {
     <span><strong>${escapeHtml(run.agent ?? "run")}</strong> ${escapeHtml(run.status)}</span>
     <a href="${logUrl}?download=1" download>Download</a>
   </header>
-  <pre id="log">Loading...</pre>
+  <main id="log"><p class="log-empty">Loading...</p></main>
   <script>
     const logUrl = ${JSON.stringify(logUrl)};
     const log = document.getElementById("log");
+    function appendText(parent, className, value) {
+      const element = document.createElement("span");
+      element.className = className;
+      element.textContent = value;
+      parent.appendChild(element);
+      return element;
+    }
+    function renderLog(text) {
+      log.replaceChildren();
+      if (!text) {
+        const empty = document.createElement("p");
+        empty.className = "log-empty";
+        empty.textContent = "No log output yet.";
+        log.appendChild(empty);
+        return;
+      }
+
+      text.replace(/\\n$/, "").split("\\n").forEach((line) => {
+        const match = line.match(/^\\[(\\d{4}-\\d{2}-\\d{2}) (\\d{2}:\\d{2}:\\d{2})\\] \\[([^\\]]+)\\](?:\\s?(.*))?$/);
+        const row = document.createElement("div");
+        row.className = "log-line";
+
+        const time = document.createElement("span");
+        time.className = "log-time";
+        if (match) {
+          appendText(time, "log-date", match[1]);
+          appendText(time, "log-clock", match[2]);
+        }
+
+        appendText(row, "log-stream", match ? match[3] : "");
+        appendText(row, "log-message", match ? (match[4] ?? "") : line);
+        row.prepend(time);
+        log.appendChild(row);
+      });
+    }
     async function refreshLog() {
       const pinnedToBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 24;
       const response = await fetch(logUrl + "?_=" + Date.now(), { cache: "no-store" });
       if (!response.ok) {
-        log.textContent = "Log not available yet.";
+        renderLog("");
         return;
       }
       const text = await response.text();
-      if (log.textContent !== text) {
-        log.textContent = text || "No log output yet.";
+      if (log.dataset.raw !== text) {
+        log.dataset.raw = text;
+        renderLog(text);
         if (pinnedToBottom) window.scrollTo(0, document.body.scrollHeight);
       }
     }

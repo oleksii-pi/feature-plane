@@ -1,6 +1,7 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
 const { RUN_LOG_ROOT } = require("./config");
+const { formatDateTime } = require("./time");
 
 const runQueues = new Map();
 const eventClients = new Map();
@@ -27,7 +28,7 @@ function enqueueRunTask(runId, task) {
 }
 
 function formatRunLogLine(event) {
-  const timestamp = event.timestamp ?? new Date().toISOString();
+  const timestamp = formatDateTime(event.timestamp || undefined);
   const stream = event.status ?? "event";
   const message = String(event.message ?? "");
   return `[${timestamp}] [${stream}] ${message}`;
@@ -48,7 +49,7 @@ async function appendRunOutput(feature, run, stream, chunk) {
   await fsp.mkdir(path.dirname(logPath), { recursive: true });
   await fsp.appendFile(
     logPath,
-    `[${new Date().toISOString()}] [${stream}]\n${message}${message.endsWith("\n") ? "" : "\n"}`,
+    `[${formatDateTime()}] [${stream}]\n${message}${message.endsWith("\n") ? "" : "\n"}`,
   );
   const stat = await fsp.stat(logPath);
   run.logSizeBytes = stat.size;
@@ -56,7 +57,7 @@ async function appendRunOutput(feature, run, stream, chunk) {
 
 function createRunEvent(run, status, message, level = "info") {
   return {
-    timestamp: new Date().toISOString(),
+    timestamp: formatDateTime(),
     run_id: run.id,
     level,
     status,
@@ -109,7 +110,7 @@ async function queueRunOutput(feature, run, stream, chunk) {
     if (run.status !== "queued" && run.status !== "running") return null;
     await appendRunOutput(feature, run, stream, chunk);
     broadcastRunEvent(run, {
-      timestamp: new Date().toISOString(),
+      timestamp: formatDateTime(),
       run_id: run.id,
       level: "info",
       status: stream,

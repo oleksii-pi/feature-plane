@@ -1,5 +1,11 @@
 import { elements } from "./dom.js";
-import { escapeHtml, formatLogSize, markdownToHtml } from "./format.js";
+import {
+  escapeHtml,
+  formatDateTime,
+  formatDateTimeParts,
+  formatLogSize,
+  markdownToHtml,
+} from "./format.js";
 import {
   displayStep,
   isAgentStep,
@@ -90,24 +96,26 @@ export function renderTimeline(feature) {
 }
 
 function displayEvents(run) {
-  const events = run.events ?? [];
-  return events.slice(-RUN_LOG_PREVIEW_LINE_LIMIT).map((event) => {
-    const timestamp = new Date(event.timestamp);
-    const time = Number.isNaN(timestamp.valueOf())
-      ? ""
-      : timestamp.toLocaleTimeString([], { hour12: false });
-    const runState = TERMINAL_RUN_STATUSES.has(run.status)
-      ? run.status
-      : "active";
+  const events = (run.events ?? []).slice(-RUN_LOG_PREVIEW_LINE_LIMIT);
+  const isActiveRun = !TERMINAL_RUN_STATUSES.has(run.status);
+  const activeEventIndex = isActiveRun
+    ? events.findLastIndex((event) => {
+        const status = String(event.status ?? "");
+        return status !== "stdout" && status !== "stderr";
+      })
+    : -1;
+  return events.map((event, index) => {
+    const timestamp = formatDateTimeParts(event.timestamp);
     const status = String(event.status ?? "");
     const isOutput = status === "stdout" || status === "stderr";
+    const isActiveEvent = index === activeEventIndex;
     const message = isOutput
       ? event.message
       : `${status}${status ? ": " : ""}${event.message}`;
     return `
-      <div class="run-event ${runState} ${isOutput ? "output" : ""}">
-        <span>${escapeHtml(time)}</span>
-        <span class="event-dot"></span>
+      <div class="run-event ${isActiveEvent ? "active" : ""} ${isOutput ? "output" : ""}">
+        <span class="run-event-time"><span>${escapeHtml(timestamp.date)}</span><span>${escapeHtml(timestamp.time)}</span></span>
+        ${isActiveEvent ? '<span class="event-dot"></span>' : '<span aria-hidden="true"></span>'}
         <span>${escapeHtml(message)}</span>
       </div>
     `;
@@ -209,7 +217,7 @@ export function renderArtifacts(feature) {
       return `
         <article class="artifact-card ${isLatest ? "latest" : ""} ${isExpanded ? "expanded" : ""}" data-artifact-index="${visibleIndex}" data-source-index="${entry.sourceIndex}">
           <button class="artifact-header" type="button" aria-expanded="${isExpanded}">
-            <span class="artifact-title"><strong>${escapeHtml(artifact.name)}</strong><span>Updated ${escapeHtml(artifact.updated)} · ${escapeHtml(artifact.path)}</span></span>
+            <span class="artifact-title"><strong>${escapeHtml(artifact.name)}</strong><span>Updated ${escapeHtml(formatDateTime(artifact.updated))} · ${escapeHtml(artifact.path)}</span></span>
             ${isLatest ? '<span class="artifact-label">Latest</span>' : ""}
             <span class="artifact-chevron">⌃</span>
           </button>
@@ -255,7 +263,7 @@ export function renderDetails() {
   branchLink.textContent = feature.branch;
   elements.featureMeta.append(
     branchLink,
-    ` · ${feature.updated} · ${feature.artifactFolder || feature.workspace}`,
+    ` · ${formatDateTime(feature.updated)} · ${feature.artifactFolder || feature.workspace}`,
   );
   elements.stateBadge.textContent = displayStep(feature);
   elements.stateBadge.classList.toggle("running", Boolean(feature.activeRunId));
@@ -316,7 +324,7 @@ export function renderValidation() {
     : "Repository needs attention";
   elements.validationContext.innerHTML = `
     <span><strong>Workspace root</strong><code>${escapeHtml(state.validation.workspaceRoot)}</code></span>
-    <span><strong>Completed</strong>${escapeHtml(state.validation.completedAt)}</span>
+    <span><strong>Completed</strong>${escapeHtml(formatDateTime(state.validation.completedAt))}</span>
   `;
   elements.validationSummary.innerHTML = `
     <span class="validation-score">${state.validation.passed} of ${state.validation.checks.length} checks passed</span>

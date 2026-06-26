@@ -14,6 +14,27 @@ export function formatLogSize(bytes) {
   return `${(size / 1024 / 1024).toFixed(1).replace(/\.0$/, "")}mb`;
 }
 
+export function currentDateTime() {
+  return new Date().toISOString().slice(0, 19).replace("T", " ");
+}
+
+export function formatDateTime(value) {
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 19).replace("T", " ");
+  }
+  const text = String(value ?? "");
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text)) return text;
+  const date = new Date(text);
+  if (Number.isNaN(date.valueOf())) return text;
+  return date.toISOString().slice(0, 19).replace("T", " ");
+}
+
+export function formatDateTimeParts(value) {
+  const text = formatDateTime(value);
+  const match = text.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/);
+  return match ? { date: match[1], time: match[2] } : { date: text, time: "" };
+}
+
 export function markdownToHtml(content) {
   const lines = escapeHtml(content).split("\n");
   let html = "";

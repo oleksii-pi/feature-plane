@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { FEATURE_ROOT, FEATURES_HOME, ROOT, sdlcConfig, workflow } = require("./config");
+const { formatDateTime } = require("./time");
 
 function validateRepository() {
   const instructionFilesPresent = (sdlcConfig.agents ?? []).every((agent) =>
@@ -45,7 +46,7 @@ function validateRepository() {
     warnings,
     errors,
     workspaceRoot: `${FEATURES_HOME}/`,
-    completedAt: new Date().toLocaleString(),
+    completedAt: formatDateTime(),
   };
 }
 

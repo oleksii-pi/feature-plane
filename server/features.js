@@ -10,6 +10,7 @@ const {
 const { httpError } = require("./http");
 const { allocateAvailablePort } = require("./ports");
 const { clampStep, saveState, slugify, state } = require("./state");
+const { formatDateTime } = require("./time");
 
 let startRun;
 
@@ -53,6 +54,7 @@ async function createFeature({ title, prompt }) {
   const artifactDir = path.join(ROOT, artifactFolder);
   const usedPorts = new Set(state.features.map((feature) => feature.appPort).filter(Boolean));
   const appPort = await allocateAvailablePort(usedPorts);
+  const timestamp = formatDateTime();
   await seedFeatureWorkspace(featureDir);
   await fsp.mkdir(artifactDir, { recursive: true });
   await fsp.writeFile(path.join(artifactDir, "prompt.md"), prompt);
@@ -66,7 +68,7 @@ async function createFeature({ title, prompt }) {
     workspace: relativeWorkspace,
     artifactFolder,
     step: 0,
-    updated: new Date().toISOString(),
+    updated: timestamp,
     activeRunId: null,
     cost: null,
     artifacts: [
@@ -74,7 +76,7 @@ async function createFeature({ title, prompt }) {
         name: "prompt.md",
         path: `${artifactFolder}/prompt.md`,
         availableAtStep: 0,
-        updated: new Date().toISOString(),
+        updated: timestamp,
         content: prompt,
       },
     ],
@@ -109,7 +111,7 @@ function currentStep(feature) {
 async function moveFeature(feature, nextStep) {
   nextStep = clampStep(nextStep);
   feature.step = nextStep;
-  feature.updated = new Date().toISOString();
+  feature.updated = formatDateTime();
   const step = currentStep(feature);
   await saveFeatureFiles(feature);
   await saveState();
@@ -145,11 +147,11 @@ async function updateArtifact(feature, index, content, options = {}) {
   if (!artifact) throw httpError(404, "Unknown artifact.");
   const editedStep = artifact.availableAtStep ?? 0;
   artifact.content = content;
-  artifact.updated = new Date().toISOString();
+  artifact.updated = formatDateTime();
   if (options.discardNextSteps) {
     await discardNextSteps(feature, editedStep);
   }
-  feature.updated = new Date().toISOString();
+  feature.updated = formatDateTime();
   await fsp.writeFile(path.join(getFeatureArtifactFolderPath(feature), artifact.name), content);
   await saveFeatureFiles(feature);
   await saveState();

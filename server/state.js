@@ -17,6 +17,7 @@ const {
 } = require("./feature-artifacts");
 const { allocateAvailablePort, normalizePort } = require("./ports");
 const { addEvent, RUN_LOG_PREVIEW_LINE_LIMIT } = require("./run-events");
+const { formatDateTime } = require("./time");
 
 const state = {
   features: [],
@@ -38,7 +39,11 @@ async function ensureStorage() {
     if (migratedLegacyRoot) rewriteLegacyFeatureState(saved);
     if (Array.isArray(saved.features)) state.features = saved.features.map(normalizeFeature);
     const assignedPorts = await assignFeaturePorts();
-    const needsRewrite = migratedLegacyRoot || assignedPorts || savedFeatureMetadataNeedsRewrite(saved);
+    const needsRewrite =
+      migratedLegacyRoot ||
+      assignedPorts ||
+      savedFeatureMetadataNeedsRewrite(saved) ||
+      savedTimestampsNeedRewrite(saved);
     if (needsRewrite) {
       await Promise.all(state.features.map(saveFeatureFiles));
       await saveState();
@@ -122,6 +127,29 @@ function savedFeatureMetadataNeedsRewrite(saved) {
   );
 }
 
+function savedTimestampsNeedRewrite(saved) {
+  if (!saved || typeof saved !== "object") return false;
+  if (!Array.isArray(saved.features)) return false;
+  return saved.features.some((feature) => {
+    if (!feature || typeof feature !== "object") return false;
+    if (timestampNeedsRewrite(feature.updated)) return true;
+    if (Array.isArray(feature.artifacts)) {
+      if (feature.artifacts.some((artifact) => timestampNeedsRewrite(artifact?.updated))) return true;
+    }
+    if (Array.isArray(feature.runs)) {
+      return feature.runs.some((run) => {
+        if (timestampNeedsRewrite(run?.startedAt) || timestampNeedsRewrite(run?.finishedAt)) return true;
+        return Array.isArray(run?.events) && run.events.some((event) => timestampNeedsRewrite(event?.timestamp));
+      });
+    }
+    return false;
+  });
+}
+
+function timestampNeedsRewrite(value) {
+  return typeof value === "string" && value !== formatDateTime(value);
+}
+
 function normalizeFeature(feature) {
   const slug = String(feature.slug ?? slugify(feature.name ?? feature.title ?? "feature"));
   const branch = String(feature.branch ?? `feature/${slug}`);
@@ -143,17 +171,30 @@ function normalizeFeature(feature) {
     workspace,
     artifactFolder,
     step: clampStep(feature.step),
-    updated: String(feature.updated ?? new Date().toISOString()),
+    updated: formatDateTime(feature.updated || undefined),
     activeRunId: feature.activeRunId ?? null,
     cost: feature.cost ?? null,
     artifacts: normalizeArtifacts(feature.artifacts, artifactFolder),
-    runs: Array.isArray(feature.runs)
-      ? feature.runs.map((run) => ({
-          ...run,
-          logSizeBytes: storedRunLogSize(run),
-          events: Array.isArray(run.events) ? run.events.slice(-RUN_LOG_PREVIEW_LINE_LIMIT) : [],
-        }))
+    runs: Array.isArray(feature.runs) ? feature.runs.map(normalizeRun) : [],
+  };
+}
+
+function normalizeRun(run) {
+  return {
+    ...run,
+    startedAt: run.startedAt ? formatDateTime(run.startedAt) : null,
+    finishedAt: run.finishedAt ? formatDateTime(run.finishedAt) : null,
+    logSizeBytes: storedRunLogSize(run),
+    events: Array.isArray(run.events)
+      ? run.events.slice(-RUN_LOG_PREVIEW_LINE_LIMIT).map(normalizeRunEvent)
       : [],
+  };
+}
+
+function normalizeRunEvent(event) {
+  return {
+    ...event,
+    timestamp: event.timestamp ? formatDateTime(event.timestamp) : formatDateTime(),
   };
 }
 
@@ -178,6 +219,7 @@ function normalizeArtifacts(artifacts, artifactFolder) {
       ...artifact,
       name,
       path: `${artifactFolder}/${name}`,
+      updated: artifact.updated ? formatDateTime(artifact.updated) : formatDateTime(),
     };
   });
 }
