@@ -1,11 +1,15 @@
-1. Look into user %artifact_folder_path%/prompt.md and apply user request to the codebase.
+1. Read the user request from the file at `$CONTROL_PLANE_PROMPT_PATH`, then apply it to the codebase.
 
-2. Try to run server on application port from CONTROL_PLANE_APP_PORT / %app_port%
-   Keep server app and running.
+2. Start the server on `$CONTROL_PLANE_APP_PORT`.
+   Keep the server running for testing.
 
-3. Write into implementation-details.md what exactly was executed
-   By the end of the file put url to feature for testing in format: http://localhost:app_port
+3. Write implementation notes to `$CONTROL_PLANE_ARTIFACT_PATH`.
+   Include the test URL in this format:
+   `http://localhost:$CONTROL_PLANE_APP_PORT`
+
+Available Control Plane parameters are exposed as environment variables
 
 IMPORTANT: never reset branch or cleanup or modify feature artifacts folder.
 It is only allowed to write to implementation-details.md file. If there is such file, add incremental index: implementation-details-v2.md, -v3.md, etc.
-Write progress and diagnostic output to stdout or stderr. Control Plane captures that output in its own per-run log file.
+
+Write progress and diagnostic output to stdout or stderr.
