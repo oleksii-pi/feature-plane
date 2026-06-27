@@ -254,7 +254,21 @@ export function bindEvents() {
     const card = event.target.closest("[data-artifact-index]");
     if (!card) return;
 
-    if (event.target.closest(".artifact-log-link")) return;
+    if (event.target.closest("a.artifact-log-link")) return;
+
+    const preview = card.querySelector(".artifact-preview");
+    const editorWrap = card.querySelector(".artifact-edit");
+
+    if (event.target.closest(".edit-artifact-button")) {
+      preview.hidden = true;
+      editorWrap.hidden = false;
+      card.classList.add("expanded");
+      card
+        .querySelectorAll(".artifact-toggle, .artifact-chevron-button")
+        .forEach((element) => element.setAttribute("aria-expanded", "true"));
+      card.querySelector(".artifact-editor").focus();
+      return;
+    }
 
     if (event.target.closest(".artifact-header")) {
       state.selectedArtifactIndex = Number(card.dataset.artifactIndex);
@@ -267,21 +281,9 @@ export function bindEvents() {
       return;
     }
 
-    const preview = card.querySelector(".artifact-preview");
-    const editorWrap = card.querySelector(".artifact-edit");
-    const toolbar = card.querySelector(".preview-toolbar");
-
-    if (event.target.closest(".edit-artifact-button")) {
-      preview.hidden = true;
-      toolbar.hidden = true;
-      editorWrap.hidden = false;
-      card.querySelector(".artifact-editor").focus();
-    }
-
     if (event.target.closest(".cancel-edit-button")) {
       editorWrap.hidden = true;
       preview.hidden = false;
-      toolbar.hidden = false;
     }
 
     if (event.target.closest(".save-artifact-button")) {

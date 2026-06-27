@@ -290,11 +290,18 @@ export function renderArtifacts(feature) {
       const isLatest = visibleIndex === entries.length - 1;
       return `
         <article class="artifact-card ${isLatest ? "latest" : ""} ${isExpanded ? "expanded" : ""}" data-artifact-index="${visibleIndex}" data-source-index="${entry.sourceIndex}">
-          <button class="artifact-header" type="button" aria-expanded="${isExpanded}">
-            <span class="artifact-title"><strong>${escapeHtml(artifact.name)}</strong><span>Updated ${escapeHtml(formatDateTime(artifact.updated))}</span></span>
-            ${isLatest ? '<span class="artifact-label">Latest</span>' : ""}
-            <span class="artifact-chevron">⌃</span>
-          </button>
+          <div class="artifact-header">
+            <button class="artifact-toggle" type="button" aria-expanded="${isExpanded}">
+              <span class="artifact-title"><strong>${escapeHtml(artifact.name)}</strong><span>Updated ${escapeHtml(formatDateTime(artifact.updated))}</span></span>
+            </button>
+            <span class="artifact-header-actions">
+              ${isLatest ? '<span class="artifact-label">Latest</span>' : ""}
+              <button class="artifact-log-link edit-artifact-button" type="button">Edit</button>
+            </span>
+            <button class="artifact-chevron-button" type="button" aria-label="Toggle artifact" aria-expanded="${isExpanded}">
+              <span class="artifact-chevron">⌃</span>
+            </button>
+          </div>
           <div class="artifact-body">
             <div class="artifact-preview">${markdownToHtml(artifact.content)}</div>
             <div class="artifact-edit" hidden>
@@ -303,9 +310,6 @@ export function renderArtifacts(feature) {
                 <button class="secondary-button cancel-edit-button" type="button">Cancel</button>
                 <button class="primary-button save-artifact-button" type="button">Save changes</button>
               </div>
-            </div>
-            <div class="artifact-toolbar preview-toolbar">
-              <button class="secondary-button edit-artifact-button" type="button">Edit artifact</button>
             </div>
           </div>
         </article>

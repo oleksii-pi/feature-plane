@@ -745,10 +745,15 @@ button.artifact-header,
 }
 
 .artifact-log-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--accent-dark);
+  font-family: inherit;
   font-size: 10px;
   font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .artifact-log-link:hover {
