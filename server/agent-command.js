@@ -25,7 +25,6 @@ function buildAgentContext(feature, run) {
   const artifactFolderPath = getFeatureArtifactFolderPath(feature);
   return {
     agent: run.agent,
-    app_port: feature.appPort,
     artifact: run.artifact,
     artifact_folder: artifactFolder,
     artifact_folder_path: artifactFolderPath,

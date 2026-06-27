@@ -1,11 +1,12 @@
 1. Read the user request from the file at `$CONTROL_PLANE_PROMPT_PATH`, then apply it to the codebase.
 
-2. Start the server on `$CONTROL_PLANE_APP_PORT`.
-   Keep the server running for testing.
+2. If you need to run the app, choose a currently free localhost port yourself.
+   Keep only the server process you started running for testing, and do not stop
+   or reuse any already-running feature instance.
 
 3. Write implementation notes to `$CONTROL_PLANE_ARTIFACT_PATH`.
    Include the test URL in this format:
-   `http://localhost:$CONTROL_PLANE_APP_PORT`
+   the localhost URL you selected.
 
 Available Control Plane parameters are exposed as environment variables
 

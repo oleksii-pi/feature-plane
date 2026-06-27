@@ -1,8 +1,8 @@
 # AGENTS.md
 
-## Project Shape
+## Control Plane Project Shape
 
-Feature Plane is a local Control Plane PoC for managing long-lived feature work.
+Control Plane is a local Control Plane PoC for managing long-lived feature work.
 It is intentionally small: a plain Node.js HTTP server serves a browser UI and
 keeps feature state on disk under the configured feature home.
 
@@ -20,8 +20,8 @@ keeps feature state on disk under the configured feature home.
 node server.js 3000
 ```
 
-The port can also come from `PORT`, `port`, or `sdlc.app_port`; CLI argument
-wins. For development with server reloads:
+The port can also come from `PORT` or `port`; CLI argument wins. For
+development with server reloads:
 
 ```sh
 node --watch --watch-path=server server.js 3000
@@ -44,7 +44,7 @@ Useful variables:
 `agent_run_command` supports placeholders from `server/agent-command.js`, such
 as `%instruction_path%`, `%prompt_path%`, `%artifact_path%`,
 `%artifact_folder_path%`, `%workspace_path%`, `%branch%`, `%agent%`,
-`%artifact%`, `%state%`, `%feature_name%`, `%feature_id%`, and `%app_port%`.
+`%artifact%`, `%state%`, `%feature_name%`, and `%feature_id%`.
 Placeholders are shell-escaped by the app, so pass them as bare tokens.
 
 Use `codex exec ...` for configured Codex runs. Plain interactive `codex` is
@@ -52,8 +52,8 @@ rejected because workflow runs do not have a TTY.
 
 ## Current Behavior
 
-- Creating a feature writes `prompt.md`, records metadata, assigns an app port,
-  and copies the current repo into a per-feature workspace.
+- Creating a feature writes `prompt.md`, records metadata, and copies the
+  current repo into a per-feature workspace.
 - Feature branches are represented as `feature/<slug>`, but this PoC does not
   currently create git branches or git worktrees.
 - Feature state is persisted as JSON in the feature home.

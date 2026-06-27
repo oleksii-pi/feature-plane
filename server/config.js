@@ -8,7 +8,7 @@ const ENV_FILE = path.join(ROOT, ".env");
 loadDotEnv(ENV_FILE);
 
 const sdlcConfig = loadSdlcConfig(ROOT);
-const PORT = resolvePort(process.argv.slice(2), sdlcConfig.app_port);
+const PORT = resolvePort(process.argv.slice(2));
 const FEATURES_HOME = resolveFeaturesHome(process.env.features_home);
 const FEATURE_ROOT = path.join(ROOT, FEATURES_HOME);
 const RUN_LOG_ROOT = path.join(FEATURE_ROOT, "run-logs");
@@ -79,15 +79,12 @@ function parseDotEnvValue(rawValue) {
   return commentIndex >= 0 ? rawValue.slice(0, commentIndex).trimEnd() : rawValue;
 }
 
-function resolvePort(argv, fallbackPort) {
+function resolvePort(argv) {
   const cliPort = parsePort(argv[0]);
   if (cliPort !== null) return cliPort;
 
   const envPort = parsePort(process.env.PORT ?? process.env.port);
   if (envPort !== null) return envPort;
-
-  const sdlcPort = parsePort(fallbackPort);
-  if (sdlcPort !== null) return sdlcPort;
 
   return 8765;
 }

@@ -122,9 +122,9 @@ execution. Supported placeholders include `%instruction_path%`,
 `%prompt_path%`, `%artifact_path%`, `%artifact_folder%`,
 `%artifact_folder_path%`, `%context_folder%`, `%context_folder_path%`,
 `%branch%`, `%workspace%`, `%agent%`, `%artifact%`, `%state%`,
-`%feature_name%`, `%feature_id%`, and `%app_port%`. Placeholder values are
-shell-escaped automatically, so use them as bare tokens rather than wrapping
-them in extra quotes.
+`%feature_name%`, and `%feature_id%`. Placeholder values are shell-escaped
+automatically, so use them as bare tokens rather than wrapping them in extra
+quotes.
 
 ## Target Repository Contract
 
@@ -155,7 +155,6 @@ feature/**/*.log
 
 ```yaml
 sdlc:
-  app_port: 3000
   agents:
     - acceptance-criteria
     - implementation-plan
@@ -235,14 +234,15 @@ The agent receives enough context to know:
 - Feature branch
 - Feature workspace path
 - Feature artifact/context folder path
-- Feature-scoped application port
 - Current workflow state
 - Required artifact
 - Agent instructions from `.instructions/<agent-name>.agent.md`
 - Initial feature request from `prompt.md`
 
-The agent may modify files in the workspace. To succeed, it must create the
-required artifact and exit successfully.
+The agent may modify files in the workspace. If it needs to run the app, it
+must choose a currently free port and leave any already-running feature
+instance intact. To succeed, it must create the required artifact and exit
+successfully.
 
 Run logs contain only the structured lifecycle events:
 

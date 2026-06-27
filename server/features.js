@@ -8,7 +8,6 @@ const {
   getFeatureArtifactFolderPath,
 } = require("./feature-artifacts");
 const { httpError } = require("./http");
-const { allocateAvailablePort } = require("./ports");
 const { clampStep, saveState, slugify, state } = require("./state");
 const { updateFeatureCost } = require("./pricing");
 const { formatDateTime } = require("./time");
@@ -53,8 +52,6 @@ async function createFeature({ title, prompt }) {
   const artifactFolder = branchArtifactFolder(branch, slug);
   const featureDir = path.join(ROOT, relativeWorkspace);
   const artifactDir = path.join(ROOT, artifactFolder);
-  const usedPorts = new Set(state.features.map((feature) => feature.appPort).filter(Boolean));
-  const appPort = await allocateAvailablePort(usedPorts);
   const timestamp = formatDateTime();
   await seedFeatureWorkspace(featureDir);
   await fsp.mkdir(artifactDir, { recursive: true });
@@ -65,7 +62,6 @@ async function createFeature({ title, prompt }) {
     name: title,
     slug,
     branch,
-    appPort,
     workspace: relativeWorkspace,
     artifactFolder,
     step: 0,

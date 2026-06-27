@@ -85,7 +85,6 @@ function buildChildEnv(feature, run, context) {
   return {
     ...process.env,
     CONTROL_PLANE_AGENT: run.agent,
-    CONTROL_PLANE_APP_PORT: String(context.app_port),
     CONTROL_PLANE_ARTIFACT: run.artifact,
     CONTROL_PLANE_ARTIFACT_FOLDER: context.artifact_folder,
     CONTROL_PLANE_ARTIFACT_FOLDER_PATH: context.artifact_folder_path,

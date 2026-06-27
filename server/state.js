@@ -15,7 +15,6 @@ const {
   branchWorkspaceFolder,
   getFeatureArtifactFolder,
 } = require("./feature-artifacts");
-const { allocateAvailablePort, normalizePort } = require("./ports");
 const { priceRun, updateFeatureCost } = require("./pricing");
 const { addEvent, RUN_LOG_PREVIEW_LINE_LIMIT } = require("./run-events");
 const { formatDateTime } = require("./time");
@@ -39,11 +38,9 @@ async function ensureStorage() {
     const saved = JSON.parse(await fsp.readFile(STATE_FILE, "utf8"));
     if (migratedLegacyRoot) rewriteLegacyFeatureState(saved);
     if (Array.isArray(saved.features)) state.features = saved.features.map(normalizeFeature);
-    const assignedPorts = await assignFeaturePorts();
     const repricedRuns = await repriceCompletedRuns();
     const needsRewrite =
       migratedLegacyRoot ||
-      assignedPorts ||
       repricedRuns ||
       savedFeatureMetadataNeedsRewrite(saved) ||
       savedTimestampsNeedRewrite(saved);
@@ -191,13 +188,11 @@ function normalizeFeature(feature) {
   );
   const artifactFolder =
     storedArtifactFolder === workspace ? branchArtifactFolder(branch, slug) : storedArtifactFolder;
-  const appPort = normalizePort(feature.appPort ?? feature.app_port);
   return {
     id: String(feature.id),
     name: String(feature.name ?? feature.title ?? "Untitled feature"),
     slug,
     branch,
-    appPort,
     workspace,
     artifactFolder,
     step: clampStep(feature.step),
@@ -255,24 +250,6 @@ function normalizeArtifacts(artifacts, artifactFolder) {
   });
 }
 
-async function assignFeaturePorts() {
-  const usedPorts = new Set();
-  let changed = false;
-
-  for (const feature of state.features) {
-    if (feature.appPort && !usedPorts.has(feature.appPort)) {
-      usedPorts.add(feature.appPort);
-      continue;
-    }
-
-    feature.appPort = await allocateAvailablePort(usedPorts);
-    usedPorts.add(feature.appPort);
-    changed = true;
-  }
-
-  return changed;
-}
-
 function recoverInterruptedRuns() {
   state.features.forEach((feature) => {
     feature.runs.forEach((run) => {
@@ -314,7 +291,6 @@ function publicState() {
       featureId: feature.id,
       path: feature.workspace,
       artifactFolder: getFeatureArtifactFolder(feature),
-      appPort: feature.appPort,
       activeRunId: feature.activeRunId,
     })),
     validation: validateRepository(),
