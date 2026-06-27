@@ -356,7 +356,7 @@ export function renderRepositoryWorkflow() {
       const owner = isAgentStep(step) ? "Agent" : "Human";
       const details = step.artifact
         ? isAgentStep(step)
-          ? `<code>${escapeHtml(step.agent)}</code> produces <code>${escapeHtml(step.artifact)}</code>`
+          ? `produces <code>${escapeHtml(step.artifact)}</code>`
           : `Requires <code>${escapeHtml(step.artifact)}</code>`
         : "Approval checkpoint";
       return `
