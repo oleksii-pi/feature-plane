@@ -7,6 +7,11 @@ const { configureState, ensureStorage, saveState } = require("./server/state");
 const { handle } = require("./server/router");
 const { validateRepository } = require("./server/validation");
 
+function formatLocalDateTime(date = new Date()) {
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
 configureFeatures({ startRun });
 configureRunEvents({ saveFeatureFiles, saveState });
 configureState({ saveFeatureFiles, validateRepository });
@@ -14,7 +19,7 @@ configureState({ saveFeatureFiles, validateRepository });
 ensureStorage()
   .then(() => {
     http.createServer(handle).listen(PORT, "127.0.0.1", () => {
-      console.log(`Control Plane PoC listening on http://127.0.0.1:${PORT}`);
+      console.log(`${formatLocalDateTime()} Control Plane PoC listening on http://127.0.0.1:${PORT}`);
     });
   })
   .catch((error) => {
