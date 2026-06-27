@@ -1,8 +1,10 @@
 1. Read the user request from the file at `$CONTROL_PLANE_PROMPT_PATH`, then apply it to the codebase.
 
-2. If you need to run the app, choose a currently free localhost port yourself.
-   Keep only the server process you started running for testing, and do not stop
-   or reuse any already-running feature instance.
+2. Use the prepared feature instance from `environment-state.md` when it is
+   available. If it is unavailable and you need to run the app, choose a
+   currently free localhost port yourself. Keep only the server process you
+   started running for testing, and do not stop any already-running feature
+   instance.
 
 3. Write implementation notes to `$CONTROL_PLANE_ARTIFACT_PATH`.
    Include the test URL in this format:
