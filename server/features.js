@@ -58,7 +58,7 @@ async function createFeature({ title, prompt }) {
   await fsp.writeFile(path.join(artifactDir, "prompt.md"), prompt);
 
   const feature = {
-    id: createId("feature"),
+    id: createId(),
     name: title,
     slug,
     branch,

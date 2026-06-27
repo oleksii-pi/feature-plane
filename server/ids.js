@@ -4,8 +4,8 @@ function shortGuid() {
   return randomUUID().split("-")[0];
 }
 
-function createId(prefix) {
-  return `${prefix}-${shortGuid()}`;
+function createId() {
+  return shortGuid();
 }
 
 module.exports = {

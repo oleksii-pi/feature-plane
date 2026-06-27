@@ -38,7 +38,7 @@ function assertAgentStep(feature) {
 async function startRun(feature) {
   const step = assertAgentStep(feature);
   const run = {
-    id: createId("run"),
+    id: createId(),
     featureId: feature.id,
     step: feature.step,
     agent: step.agent,

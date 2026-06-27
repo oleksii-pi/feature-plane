@@ -247,10 +247,10 @@ successfully.
 Run logs contain only the structured lifecycle events:
 
 ```jsonl
-{"timestamp":"2026-06-23T10:15:00Z","run_id":"run-123","level":"info","status":"Started","message":"implementation started."}
-{"timestamp":"2026-06-23T10:15:01Z","run_id":"run-123","level":"info","status":"Executing","message":"Agent executing."}
-{"timestamp":"2026-06-23T10:17:12Z","run_id":"run-123","level":"info","status":"Validating","message":"Validating required artifact."}
-{"timestamp":"2026-06-23T10:17:13Z","run_id":"run-123","level":"info","status":"Done","message":"Done."}
+{"timestamp":"2026-06-23T10:15:00Z","run_id":"123","level":"info","status":"Started","message":"implementation started."}
+{"timestamp":"2026-06-23T10:15:01Z","run_id":"123","level":"info","status":"Executing","message":"Agent executing."}
+{"timestamp":"2026-06-23T10:17:12Z","run_id":"123","level":"info","status":"Validating","message":"Validating required artifact."}
+{"timestamp":"2026-06-23T10:17:13Z","run_id":"123","level":"info","status":"Done","message":"Done."}
 ```
 
 Useful statuses are `Started`, `Executing`, `Validating`, `Done`, and `Failed`.

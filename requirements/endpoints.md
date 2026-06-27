@@ -36,7 +36,7 @@ Expected response:
 ```json
 [
   {
-    "id": "feature-123",
+    "id": "123",
     "title": "Improve login flow",
     "currentStep": "Review implementation plan",
     "activeRun": false,
@@ -63,7 +63,7 @@ Expected response:
 
 ```json
 {
-  "id": "feature-123",
+  "id": "123",
   "title": "Improve login flow",
   "branch": "feature/improve-login-flow",
   "workspace": ".control-plane/worktrees/feature/improve-login-flow",
@@ -151,7 +151,7 @@ Expected payload:
 
 ```json
 {
-  "retryOf": "run-456"
+  "retryOf": "456"
 }
 ```
 
@@ -174,7 +174,7 @@ Expected response:
 ```json
 [
   {
-    "id": "run-456",
+    "id": "456",
     "status": "failed",
     "agent": "implementation",
     "startedAt": "2026-06-23T10:15:00Z"
@@ -199,10 +199,10 @@ Expected response:
 
 ```json
 {
-  "id": "run-456",
+  "id": "456",
   "status": "running",
   "workspaceId": "workspace-1",
-  "featureId": "feature-123",
+  "featureId": "123",
   "agent": "implementation"
 }
 ```
@@ -226,7 +226,7 @@ Example event:
 ```json
 {
   "timestamp": "2026-06-23T10:15:00Z",
-  "run_id": "run-456",
+  "run_id": "456",
   "level": "info",
   "status": "Started",
   "message": "implementation started."
@@ -271,7 +271,7 @@ Expected response:
   {
     "id": "workspace-1",
     "path": ".control-plane/worktrees/feature/improve-login-flow",
-    "activeRunId": "run-456",
+    "activeRunId": "456",
     "status": "busy"
   }
 ]
