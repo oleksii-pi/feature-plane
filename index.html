@@ -20,7 +20,7 @@
               <p class="eyebrow">Workspace</p>
               <h1 id="features-heading">Features</h1>
             </div>
-            <div class="menu" data-menu>
+            <div class="menu" data-menu data-menu-shortcut="Digit1">
               <button class="menu-button" type="button" aria-label="Feature actions" aria-haspopup="menu" aria-expanded="false">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="12" cy="5" r="1.75" />
@@ -29,10 +29,10 @@
                 </svg>
               </button>
               <div class="menu-popover" role="menu" hidden>
-                <button id="add-feature-button" type="button" role="menuitem"><u>A</u>dd</button>
-                <button id="feature-settings-button" type="button" role="menuitem"><u>S</u>ettings</button>
+                <button id="add-feature-button" type="button" role="menuitem" data-menu-key="a"><u>A</u>dd</button>
+                <button id="feature-settings-button" type="button" role="menuitem" data-menu-key="s"><u>S</u>ettings</button>
                 <div class="menu-separator" role="separator"></div>
-                <button id="hide-features-button" type="button" role="menuitem"><u>H</u>ide</button>
+                <button id="hide-features-button" type="button" role="menuitem" data-menu-key="h"><u>H</u>ide</button>
               </div>
             </div>
           </div>
@@ -66,7 +66,7 @@
                 <button class="secondary-button" id="retry-run-button" type="button">Retry</button>
                 <button class="secondary-button" id="cancel-run-button" type="button">Cancel run</button>
                 <button class="primary-button" id="advance-button" type="button">Move to next step</button>
-                <div class="menu detail-menu" data-menu>
+                <div class="menu detail-menu" data-menu data-menu-shortcut="Digit2">
                   <button class="menu-button" type="button" aria-label="Feature detail actions" aria-haspopup="menu" aria-expanded="false">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <circle cx="12" cy="5" r="1.75" />
@@ -75,7 +75,7 @@
                     </svg>
                   </button>
                   <div class="menu-popover" role="menu" hidden>
-                    <button id="toggle-workflow-button" type="button" role="menuitemcheckbox" aria-checked="false"><u>W</u>orkflow</button>
+                    <button id="toggle-workflow-button" type="button" role="menuitemcheckbox" aria-checked="false" data-menu-key="w"><u>W</u>orkflow</button>
                   </div>
                 </div>
               </div>
@@ -93,7 +93,7 @@
       </main>
     </div>
 
-    <div class="global-menu menu" data-menu>
+    <div class="global-menu menu" data-menu data-menu-shortcut="Digit3">
       <button class="menu-button" type="button" aria-label="Application actions" aria-haspopup="menu" aria-expanded="false">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="5" r="1.75" />
@@ -102,8 +102,8 @@
         </svg>
       </button>
       <div class="menu-popover" role="menu" hidden>
-        <button id="repository-workflow-button" type="button" role="menuitem"><u>W</u>orkflow</button>
-        <button id="validate-repository-button" type="button" role="menuitem"><u>V</u>alidate repository</button>
+        <button id="repository-workflow-button" type="button" role="menuitem" data-menu-key="w"><u>W</u>orkflow</button>
+        <button id="validate-repository-button" type="button" role="menuitem" data-menu-key="v"><u>V</u>alidate repository</button>
         <div class="menu-separator" role="separator"></div>
         <button id="save-state-button" type="button" role="menuitem">Save application state to clipboard</button>
         <button id="restore-state-button" type="button" role="menuitem">Restore application state to clipboard</button>
@@ -197,19 +197,18 @@
       </div>
     </dialog>
 
-    <dialog id="repository-workflow-dialog" class="repository-workflow-dialog">
+    <dialog id="repository-workflow-dialog" class="repository-workflow-dialog" aria-labelledby="repository-workflow-title">
       <div class="dialog-content">
-        <div class="dialog-heading workflow-dialog-heading">
+        <div class="dialog-heading workflow-dialog-heading" id="workflow-dialog-handle">
           <div>
             <p class="eyebrow">Repository workflow</p>
             <div class="workflow-title-row">
-              <h2>Software delivery workflow</h2>
+              <h2 id="repository-workflow-title">Software delivery workflow</h2>
               <span class="read-only-badge">Read only</span>
             </div>
           </div>
           <button class="icon-button" id="close-workflow-button" type="button" aria-label="Close repository workflow">×</button>
         </div>
-        <div class="workflow-source" id="workflow-source" aria-label="Workflow source details"></div>
         <p class="repository-workflow-help">This workflow applies to every feature.</p>
         <ol class="repository-workflow-steps" id="repository-workflow-steps" aria-label="Ordered repository workflow"></ol>
         <div class="dialog-actions">

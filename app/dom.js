@@ -30,7 +30,6 @@ export const elements = {
   repositoryWorkflowDialog: document.querySelector(
     "#repository-workflow-dialog",
   ),
-  workflowSource: document.querySelector("#workflow-source"),
   repositoryWorkflowSteps: document.querySelector("#repository-workflow-steps"),
   validationDialog: document.querySelector("#repository-validation-dialog"),
   validationTitle: document.querySelector("#validation-title"),
@@ -56,4 +55,26 @@ export function closeMenus(except = null) {
     menu.querySelector(".menu-popover").hidden = true;
     menu.querySelector(".menu-button").setAttribute("aria-expanded", "false");
   });
+}
+
+export function openMenu(menu) {
+  const popover = menu.querySelector(".menu-popover");
+  const button = menu.querySelector(".menu-button");
+  closeMenus(menu);
+  popover.hidden = false;
+  button.setAttribute("aria-expanded", "true");
+  popover.querySelector("button")?.focus();
+}
+
+export function openMenuByShortcut(code) {
+  const menu = document.querySelector(`[data-menu-shortcut="${code}"]`);
+  if (!menu) return false;
+  openMenu(menu);
+  return true;
+}
+
+export function openMenuElement() {
+  return Array.from(document.querySelectorAll("[data-menu]")).find(
+    (menu) => !menu.querySelector(".menu-popover").hidden,
+  );
 }

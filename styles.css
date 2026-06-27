@@ -1190,12 +1190,36 @@ dialog form {
 }
 
 .repository-workflow-dialog {
-  width: min(860px, calc(100vw - 32px));
-  max-height: calc(100vh - 40px);
+  width: min(460px, calc(100vw - 20px));
+  max-height: calc(100vh - 24px);
+  margin: 0;
+}
+
+.repository-workflow-dialog[open] {
+  position: fixed;
+}
+
+.repository-workflow-dialog .dialog-content {
+  padding: 13px;
 }
 
 .workflow-dialog-heading {
-  margin-bottom: 13px;
+  align-items: flex-start;
+  gap: 12px;
+  margin: -3px -3px 8px;
+  padding: 3px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.workflow-dialog-heading:active {
+  cursor: grabbing;
+}
+
+.workflow-dialog-heading h2 {
+  font-size: 15px;
+  line-height: 1.2;
 }
 
 .workflow-title-row {
@@ -1206,37 +1230,16 @@ dialog form {
 }
 
 .read-only-badge {
-  padding: 3px 7px;
+  padding: 2px 5px;
   color: #526074;
   border: 1px solid var(--border-strong);
-  border-radius: 999px;
+  border-radius: 4px;
   background: #f4f6f8;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
-  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.workflow-source {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px 18px;
-  margin-bottom: 10px;
-  color: var(--muted);
-  font-size: 10.5px;
-}
-
-.workflow-source span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.workflow-source strong {
-  color: #354056;
-}
-
-.workflow-source code,
 .repository-workflow-help code,
 .workflow-step-detail code {
   padding: 2px 4px;
@@ -1247,19 +1250,19 @@ dialog form {
 }
 
 .repository-workflow-help {
-  margin: 0 0 14px;
+  margin: 0 0 8px;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 10.5px;
+  line-height: 1.35;
 }
 
 .repository-workflow-steps {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: min(530px, calc(100vh - 245px));
+  gap: 5px;
+  max-height: min(430px, calc(100vh - 170px));
   margin: 0;
-  padding: 2px 5px 2px 2px;
+  padding: 1px 4px 1px 1px;
   overflow-y: auto;
   list-style: none;
   counter-reset: workflow-step;
@@ -1267,14 +1270,14 @@ dialog form {
 
 .repository-workflow-step {
   position: relative;
-  min-height: 58px;
+  min-height: 42px;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 9px;
-  padding: 8px 9px;
+  gap: 7px;
+  padding: 6px 7px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fff;
 }
 
@@ -1283,8 +1286,8 @@ dialog form {
   position: absolute;
   z-index: 1;
   top: 100%;
-  left: 21px;
-  height: 9px;
+  left: 17px;
+  height: 6px;
   border-left: 1px solid var(--border-strong);
 }
 
@@ -1294,15 +1297,15 @@ dialog form {
 }
 
 .workflow-step-number {
-  width: 25px;
-  height: 25px;
+  width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
   color: var(--muted);
   border: 1px solid var(--border-strong);
   border-radius: 999px;
   background: #fff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
 }
 
@@ -1318,20 +1321,20 @@ dialog form {
 }
 
 .repository-workflow-step strong {
-  font-size: 12px;
+  font-size: 11.5px;
 }
 
 .workflow-step-detail {
-  margin-top: 4px;
+  margin-top: 2px;
   color: var(--muted);
-  font-size: 9.8px;
-  line-height: 1.35;
+  font-size: 9.5px;
+  line-height: 1.25;
 }
 
 .workflow-owner {
-  padding: 3px 6px;
+  padding: 2px 5px;
   border-radius: 3px;
-  font-size: 8.5px;
+  font-size: 8px;
   font-weight: 800;
   text-transform: uppercase;
 }

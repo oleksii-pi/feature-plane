@@ -14,7 +14,14 @@ import {
   setFeaturesPanelHidden,
   setWorkflowVisible,
 } from "./actions.js";
-import { closeMenus, elements, showToast } from "./dom.js";
+import {
+  closeMenus,
+  elements,
+  openMenu,
+  openMenuByShortcut,
+  openMenuElement,
+  showToast,
+} from "./dom.js";
 import {
   artifactIndexForStep,
   entriesForFeature,
@@ -31,6 +38,111 @@ import {
   setView,
   state,
 } from "./state.js";
+
+function clampWorkflowDialogPosition(left, top) {
+  const dialog = elements.repositoryWorkflowDialog;
+  const margin = 10;
+  const width = dialog.offsetWidth;
+  const height = dialog.offsetHeight;
+  const maxLeft = Math.max(margin, window.innerWidth - width - margin);
+  const maxTop = Math.max(margin, window.innerHeight - height - margin);
+
+  return {
+    left: Math.min(Math.max(left, margin), maxLeft),
+    top: Math.min(Math.max(top, margin), maxTop),
+  };
+}
+
+function positionWorkflowDialog() {
+  const dialog = elements.repositoryWorkflowDialog;
+  const next = clampWorkflowDialogPosition(
+    (window.innerWidth - dialog.offsetWidth) / 2,
+    (window.innerHeight - dialog.offsetHeight) / 2,
+  );
+
+  dialog.style.left = `${next.left}px`;
+  dialog.style.top = `${next.top}px`;
+}
+
+function bindWorkflowDialogDrag() {
+  const dialog = elements.repositoryWorkflowDialog;
+  const handle = document.querySelector("#workflow-dialog-handle");
+  let drag = null;
+
+  handle.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || event.target.closest("button")) return;
+    const rect = dialog.getBoundingClientRect();
+    drag = {
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+    };
+    handle.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+
+  handle.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    const next = clampWorkflowDialogPosition(
+      event.clientX - drag.offsetX,
+      event.clientY - drag.offsetY,
+    );
+    dialog.style.left = `${next.left}px`;
+    dialog.style.top = `${next.top}px`;
+  });
+
+  handle.addEventListener("pointerup", (event) => {
+    if (!drag) return;
+    drag = null;
+    handle.releasePointerCapture(event.pointerId);
+  });
+
+  handle.addEventListener("pointercancel", () => {
+    drag = null;
+  });
+
+  window.addEventListener("resize", () => {
+    if (dialog.open) positionWorkflowDialog();
+  });
+}
+
+function isTextEntryTarget(target) {
+  return target.closest("input, textarea, select, [contenteditable='true']");
+}
+
+function hasOpenModalDialog() {
+  return Boolean(document.querySelector("dialog[open]"));
+}
+
+function bindMenuKeyboardShortcuts() {
+  document.addEventListener("keydown", (event) => {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey)
+      return;
+
+    const activeMenu = openMenuElement();
+    if (activeMenu && !event.shiftKey && event.key.length === 1) {
+      const item = activeMenu.querySelector(
+        `[data-menu-key="${event.key.toLowerCase()}"]`,
+      );
+      if (!item) return;
+      event.preventDefault();
+      closeMenus();
+      item.click();
+      return;
+    }
+
+    if (
+      !event.shiftKey ||
+      isTextEntryTarget(event.target) ||
+      hasOpenModalDialog()
+    ) {
+      return;
+    }
+
+    if (openMenuByShortcut(event.code)) {
+      event.preventDefault();
+    }
+  });
+}
 
 export function bindEvents() {
   elements.featureList.addEventListener("click", (event) => {
@@ -192,11 +304,11 @@ export function bindEvents() {
       event.stopPropagation();
       const opening = popover.hidden;
       closeMenus(opening ? menu : null);
-      popover.hidden = !opening;
-      button.setAttribute("aria-expanded", String(opening));
-      if (opening) popover.querySelector("button")?.focus();
+      if (opening) openMenu(menu);
     });
   });
+
+  bindMenuKeyboardShortcuts();
 
   document.addEventListener("click", () => closeMenus());
   document.addEventListener("keydown", (event) => {
@@ -231,6 +343,7 @@ export function bindEvents() {
     .addEventListener("click", () => {
       closeMenus();
       elements.repositoryWorkflowDialog.showModal();
+      positionWorkflowDialog();
       document.querySelector("#close-workflow-action").focus();
     });
   document
@@ -253,6 +366,8 @@ export function bindEvents() {
     .addEventListener("click", () => {
       elements.repositoryWorkflowDialog.close();
     });
+
+  bindWorkflowDialogDrag();
 
   document
     .querySelector("#close-dialog-button")

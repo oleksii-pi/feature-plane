@@ -346,11 +346,6 @@ export function renderDetails() {
 }
 
 export function renderRepositoryWorkflow() {
-  elements.workflowSource.innerHTML = `
-    <span><strong>Source</strong><code>server.js</code></span>
-    <span><strong>Artifact root</strong><code>.artifacts/</code></span>
-    <span><strong>Features</strong>${state.features.length}</span>
-  `;
   elements.repositoryWorkflowSteps.innerHTML = state.workflow
     .map((step, index) => {
       const owner = isAgentStep(step) ? "Agent" : "Human";
