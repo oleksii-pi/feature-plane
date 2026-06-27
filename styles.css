@@ -1185,8 +1185,19 @@ dialog form {
 }
 
 .validation-dialog {
-  width: min(720px, calc(100vw - 32px));
-  max-height: calc(100vh - 40px);
+  width: min(520px, calc(100vw - 20px));
+  max-height: calc(100vh - 24px);
+  margin: 0;
+}
+
+.validation-dialog[open],
+.repository-workflow-dialog[open] {
+  position: fixed;
+}
+
+.validation-dialog .dialog-content,
+.repository-workflow-dialog .dialog-content {
+  padding: 13px;
 }
 
 .repository-workflow-dialog {
@@ -1195,14 +1206,7 @@ dialog form {
   margin: 0;
 }
 
-.repository-workflow-dialog[open] {
-  position: fixed;
-}
-
-.repository-workflow-dialog .dialog-content {
-  padding: 13px;
-}
-
+.validation-dialog-heading,
 .workflow-dialog-heading {
   align-items: flex-start;
   gap: 12px;
@@ -1213,10 +1217,12 @@ dialog form {
   touch-action: none;
 }
 
+.validation-dialog-heading:active,
 .workflow-dialog-heading:active {
   cursor: grabbing;
 }
 
+.validation-dialog-heading h2,
 .workflow-dialog-heading h2 {
   font-size: 15px;
   line-height: 1.2;
@@ -1352,24 +1358,24 @@ dialog form {
 .validation-summary {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-  padding: 11px 13px;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 8px 9px;
   color: var(--danger);
   border: 1px solid #efc7ca;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fff8f8;
-  font-size: 12.1px;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .validation-context {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px 18px;
-  margin: -7px 0 12px;
+  gap: 5px 12px;
+  margin: -2px 0 8px;
   color: var(--muted);
-  font-size: 10.5px;
+  font-size: 10px;
 }
 
 .validation-context span {
@@ -1396,18 +1402,18 @@ dialog form {
 }
 
 .validation-list {
-  max-height: min(480px, calc(100vh - 245px));
+  max-height: min(390px, calc(100vh - 205px));
   overflow-y: auto;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .validation-check {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) auto;
+  grid-template-columns: 19px minmax(0, 1fr) auto;
   align-items: start;
-  gap: 9px;
-  padding: 12px;
+  gap: 7px;
+  padding: 8px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1424,14 +1430,14 @@ dialog form {
 }
 
 .check-icon {
-  width: 19px;
-  height: 19px;
+  width: 17px;
+  height: 17px;
   display: grid;
   place-items: center;
   color: #fff;
   border-radius: 999px;
   background: var(--accent);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
 }
 
@@ -1445,19 +1451,19 @@ dialog form {
 
 .validation-check strong {
   display: block;
-  font-size: 12.1px;
+  font-size: 11.5px;
 }
 
 .validation-check p {
-  margin: 3px 0 0;
+  margin: 2px 0 0;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 10px;
+  line-height: 1.35;
 }
 
 .validation-check code {
   color: #354056;
-  font-size: 10.5px;
+  font-size: 9.8px;
 }
 
 .check-status {
@@ -1465,7 +1471,7 @@ dialog form {
   color: var(--accent-dark);
   border-radius: 2px;
   background: var(--accent-soft);
-  font-size: 8.8px;
+  font-size: 8px;
   font-weight: 700;
 }
 

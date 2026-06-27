@@ -39,8 +39,7 @@ import {
   state,
 } from "./state.js";
 
-function clampWorkflowDialogPosition(left, top) {
-  const dialog = elements.repositoryWorkflowDialog;
+function clampDialogPosition(dialog, left, top) {
   const margin = 10;
   const width = dialog.offsetWidth;
   const height = dialog.offsetHeight;
@@ -53,9 +52,9 @@ function clampWorkflowDialogPosition(left, top) {
   };
 }
 
-function positionWorkflowDialog() {
-  const dialog = elements.repositoryWorkflowDialog;
-  const next = clampWorkflowDialogPosition(
+function centerDialog(dialog) {
+  const next = clampDialogPosition(
+    dialog,
     (window.innerWidth - dialog.offsetWidth) / 2,
     (window.innerHeight - dialog.offsetHeight) / 2,
   );
@@ -64,9 +63,7 @@ function positionWorkflowDialog() {
   dialog.style.top = `${next.top}px`;
 }
 
-function bindWorkflowDialogDrag() {
-  const dialog = elements.repositoryWorkflowDialog;
-  const handle = document.querySelector("#workflow-dialog-handle");
+function bindMovableDialog(dialog, handle) {
   let drag = null;
 
   handle.addEventListener("pointerdown", (event) => {
@@ -82,7 +79,8 @@ function bindWorkflowDialogDrag() {
 
   handle.addEventListener("pointermove", (event) => {
     if (!drag) return;
-    const next = clampWorkflowDialogPosition(
+    const next = clampDialogPosition(
+      dialog,
       event.clientX - drag.offsetX,
       event.clientY - drag.offsetY,
     );
@@ -101,7 +99,7 @@ function bindWorkflowDialogDrag() {
   });
 
   window.addEventListener("resize", () => {
-    if (dialog.open) positionWorkflowDialog();
+    if (dialog.open) centerDialog(dialog);
   });
 }
 
@@ -343,7 +341,7 @@ export function bindEvents() {
     .addEventListener("click", () => {
       closeMenus();
       elements.repositoryWorkflowDialog.showModal();
-      positionWorkflowDialog();
+      centerDialog(elements.repositoryWorkflowDialog);
       document.querySelector("#close-workflow-action").focus();
     });
   document
@@ -353,6 +351,7 @@ export function bindEvents() {
       state.validation = await api("/repository/validation");
       renderValidation();
       elements.validationDialog.showModal();
+      centerDialog(elements.validationDialog);
       document.querySelector("#close-validation-action").focus();
     });
 
@@ -367,7 +366,14 @@ export function bindEvents() {
       elements.repositoryWorkflowDialog.close();
     });
 
-  bindWorkflowDialogDrag();
+  bindMovableDialog(
+    elements.repositoryWorkflowDialog,
+    document.querySelector("#workflow-dialog-handle"),
+  );
+  bindMovableDialog(
+    elements.validationDialog,
+    document.querySelector("#validation-dialog-handle"),
+  );
 
   document
     .querySelector("#close-dialog-button")
