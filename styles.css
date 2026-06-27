@@ -789,6 +789,12 @@ button.artifact-header,
   flex: 1;
 }
 
+.artifact-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .artifact-title strong,
 .artifact-title > span:not(.artifact-title-main) {
   display: block;
@@ -813,6 +819,13 @@ button.artifact-header,
   margin-top: 2px;
   color: var(--muted);
   font-size: 9.9px;
+}
+
+.artifact-updated {
+  color: var(--muted);
+  font-size: 9.9px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .execution-actions {
@@ -865,7 +878,7 @@ button.artifact-header,
 
 .artifact-body {
   display: none;
-  padding: 12px;
+  padding: 4px;
   border-top: 1px solid var(--border);
   background: #fbfcfd;
 }

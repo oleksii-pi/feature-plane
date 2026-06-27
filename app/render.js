@@ -287,16 +287,17 @@ export function renderArtifacts(feature) {
       }
 
       const artifact = entry.artifact;
-      const isLatest = visibleIndex === entries.length - 1;
       return `
-        <article class="artifact-card ${isLatest ? "latest" : ""} ${isExpanded ? "expanded" : ""}" data-artifact-index="${visibleIndex}" data-source-index="${entry.sourceIndex}">
+        <article class="artifact-card ${isExpanded ? "expanded" : ""}" data-artifact-index="${visibleIndex}" data-source-index="${entry.sourceIndex}">
           <div class="artifact-header">
             <button class="artifact-toggle" type="button" aria-expanded="${isExpanded}">
-              <span class="artifact-title"><strong>${escapeHtml(artifact.name)}</strong><span>Updated ${escapeHtml(formatDateTime(artifact.updated))}</span></span>
+              <span class="artifact-title">
+                <strong>${escapeHtml(artifact.name)}</strong>
+              </span>
             </button>
             <span class="artifact-header-actions">
-              ${isLatest ? '<span class="artifact-label">Latest</span>' : ""}
               <button class="artifact-log-link edit-artifact-button" type="button">Edit</button>
+              <span class="artifact-updated">Updated: ${escapeHtml(formatDateTime(artifact.updated))}</span>
             </span>
             <button class="artifact-chevron-button" type="button" aria-label="Toggle artifact" aria-expanded="${isExpanded}">
               <span class="artifact-chevron">⌃</span>
