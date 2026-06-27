@@ -107,8 +107,30 @@ function currentStep(feature) {
   return workflow[feature.step];
 }
 
+function hasSuccessfulRunForStep(feature, stepIndex) {
+  return Boolean(
+    feature.runs?.some(
+      (run) => run.step === stepIndex && run.status === "succeeded",
+    ),
+  );
+}
+
 async function moveFeature(feature, nextStep) {
   nextStep = clampStep(nextStep);
+  if (feature.activeRunId) {
+    throw httpError(409, "Cancel the active run before changing steps.");
+  }
+
+  const currentStepIndex = feature.step;
+  const currentWorkflowStep = currentStep(feature);
+  if (
+    nextStep > currentStepIndex &&
+    currentWorkflowStep?.agent &&
+    !hasSuccessfulRunForStep(feature, currentStepIndex)
+  ) {
+    throw httpError(409, "Run the current agent step before moving to the next step.");
+  }
+
   feature.step = nextStep;
   feature.updated = formatDateTime();
   const step = currentStep(feature);

@@ -10,6 +10,7 @@ import {
   openArtifactSaveDialog,
   openFeatureDialog,
   openFeatureSettings,
+  runCurrentStep,
   savePendingArtifact,
   setFeaturesPanelHidden,
   setWorkflowVisible,
@@ -32,6 +33,7 @@ import {
   renderValidation,
 } from "./render.js";
 import {
+  currentAgentStepRequiresRun,
   localState,
   restoreViewFromUrl,
   selectedFeature,
@@ -231,6 +233,10 @@ export function bindEvents() {
     const feature = selectedFeature();
     if (!feature || feature.activeRunId || feature.step >= state.workflow.length - 1)
       return;
+    if (currentAgentStepRequiresRun(feature)) {
+      await runCurrentStep(feature);
+      return;
+    }
     await moveToStep(feature, feature.step + 1);
   });
 

@@ -8,6 +8,7 @@ import { closeMenus, elements, showToast } from "./dom.js";
 import { currentDateTime } from "./format.js";
 import { render } from "./render.js";
 import {
+  currentAgentStepRequiresRun,
   isAgentStep,
   localState,
   selectedFeature,
@@ -27,6 +28,15 @@ export async function moveToStep(feature, nextStep) {
       ? `${state.workflow[nextStep].agent} queued`
       : `Moved to ${state.workflow[nextStep].state}`,
   );
+}
+
+export async function runCurrentStep(feature) {
+  if (!currentAgentStepRequiresRun(feature)) return;
+  await api(`/features/${feature.id}/runs`, { method: "POST" });
+  await loadState({ preserveView: true });
+  const updated = selectedFeature();
+  if (updated) setView(updated.id, updated.step);
+  showToast(`${state.workflow[feature.step].agent} queued`);
 }
 
 export function openFeatureDialog() {

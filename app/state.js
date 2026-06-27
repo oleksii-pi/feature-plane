@@ -51,19 +51,26 @@ export function isAgentStep(step) {
   return Boolean(step?.agent);
 }
 
-export function stepSlug(step) {
-  return step.state
-    .replace(/^@/, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+export function hasSuccessfulRunForStep(feature, stepIndex) {
+  return Boolean(
+    feature?.runs?.some(
+      (run) => run.step === stepIndex && run.status === "succeeded",
+    ),
+  );
 }
 
-export function viewUrl(featureId, stepIndex) {
+export function currentAgentStepRequiresRun(feature) {
+  return Boolean(
+    feature &&
+    isAgentStep(state.workflow[feature.step]) &&
+    !hasSuccessfulRunForStep(feature, feature.step),
+  );
+}
+
+export function viewUrl(featureId) {
   const url = new URL(window.location.href);
   if (featureId) url.searchParams.set("featureId", featureId);
-  if (state.workflow[stepIndex])
-    url.searchParams.set("step", stepSlug(state.workflow[stepIndex]));
+  url.searchParams.delete("step");
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
@@ -77,7 +84,7 @@ export function setView(featureId, stepIndex, { replace = false } = {}) {
   });
   if (!featureId || !state.workflow[stepIndex]) return;
   const method = replace ? "replaceState" : "pushState";
-  window.history[method](null, "", viewUrl(featureId, stepIndex));
+  window.history[method](null, "", viewUrl(featureId));
 }
 
 export function restoreViewFromUrl() {
@@ -96,16 +103,14 @@ export function restoreViewFromUrl() {
     return;
   }
 
-  const requestedStep = state.workflow.findIndex(
-    (step) => stepSlug(step) === params.get("step"),
-  );
   const savedStep = Number.isInteger(saved.selectedStepIndex)
     ? saved.selectedStepIndex
     : feature.step;
-  state.selectedStepIndex = Math.min(
-    requestedStep >= 0 ? requestedStep : savedStep,
-    feature.step,
-  );
+  state.selectedStepIndex = Math.min(savedStep, feature.step);
+
+  if (params.has("step")) {
+    window.history.replaceState(null, "", viewUrl(feature.id));
+  }
 }
 
 export function displayStep(feature) {

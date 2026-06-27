@@ -8,6 +8,7 @@ import {
   markdownToHtml,
 } from "./format.js";
 import {
+  currentAgentStepRequiresRun,
   displayStep,
   isAgentStep,
   latestCost,
@@ -369,12 +370,15 @@ export function renderDetails() {
   elements.advanceButton.textContent =
     feature.step === state.workflow.length - 1
       ? "Feature complete"
+      : currentAgentStepRequiresRun(feature)
+        ? `Run ${state.workflow[feature.step].agent}`
       : "Move to next step";
   const run = latestRun(feature);
   elements.retryRunButton.classList.toggle(
     "visible",
     Boolean(
       run &&
+      run.step === feature.step &&
       TERMINAL_RUN_STATUSES.has(run.status) &&
       isAgentStep(state.workflow[feature.step]),
     ),
