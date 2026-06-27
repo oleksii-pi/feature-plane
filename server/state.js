@@ -86,7 +86,15 @@ function savedFeatureMetadataNeedsRewrite(saved) {
       ("prompt" in feature ||
         typeof feature.artifactFolder !== "string" ||
         feature.artifactFolder === feature.workspace ||
-        isLegacyNestedArtifactFolder(feature)),
+        isLegacyNestedArtifactFolder(feature) ||
+        artifactsNeedCreationMetadata(feature.artifacts)),
+  );
+}
+
+function artifactsNeedCreationMetadata(artifacts) {
+  return (
+    Array.isArray(artifacts) &&
+    artifacts.some((artifact) => artifact && typeof artifact === "object" && !artifact.createdAt)
   );
 }
 
@@ -131,6 +139,7 @@ function normalizeFeature(feature) {
     storedArtifactFolder === workspace || storedArtifactFolder === `${workspace}/${branch}`
       ? branchArtifactFolder(branch, slug)
       : storedArtifactFolder;
+  const runs = Array.isArray(feature.runs) ? feature.runs.map(normalizeRun) : [];
   return {
     id: String(feature.id),
     name: String(feature.name ?? feature.title ?? "Untitled feature"),
@@ -144,8 +153,8 @@ function normalizeFeature(feature) {
     environmentUrl:
       typeof feature.environmentUrl === "string" ? feature.environmentUrl : null,
     cost: feature.cost ?? null,
-    artifacts: normalizeArtifacts(feature.artifacts, artifactFolder),
-    runs: Array.isArray(feature.runs) ? feature.runs.map(normalizeRun) : [],
+    artifacts: normalizeArtifacts(feature.artifacts, artifactFolder, runs),
+    runs,
   };
 }
 
@@ -180,7 +189,16 @@ function storedRunLogSize(run) {
   }
 }
 
-function normalizeArtifacts(artifacts, artifactFolder) {
+function inferArtifactCreatedAt(artifact, runs) {
+  if (artifact.createdAt) return formatDateTime(artifact.createdAt);
+  if ((artifact.availableAtStep ?? 0) === 0) return "1970-01-01 00:00:00";
+  const producingRun = runs.find(
+    (run) => run.artifact === artifact.name || run.step === artifact.availableAtStep,
+  );
+  return producingRun?.finishedAt || producingRun?.startedAt || formatDateTime(artifact.updated);
+}
+
+function normalizeArtifacts(artifacts, artifactFolder, runs = []) {
   if (!Array.isArray(artifacts)) return [];
   return artifacts.map((artifact) => {
     if (!artifact || typeof artifact !== "object") return artifact;
@@ -190,6 +208,7 @@ function normalizeArtifacts(artifacts, artifactFolder) {
       ...artifact,
       name,
       path: `${artifactFolder}/${name}`,
+      createdAt: inferArtifactCreatedAt(artifact, runs),
       updated: artifact.updated ? formatDateTime(artifact.updated) : formatDateTime(),
     };
   });

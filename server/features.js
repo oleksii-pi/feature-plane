@@ -74,6 +74,7 @@ async function createFeature({ title, prompt }) {
         name: "prompt.md",
         path: `${artifactFolder}/prompt.md`,
         availableAtStep: 0,
+        createdAt: timestamp,
         updated: timestamp,
         content: prompt,
       },

@@ -148,6 +148,7 @@ async function updateCompletedRun(feature, run, step, content) {
     name: step.artifact,
     path: `${getFeatureArtifactFolder(feature)}/${step.artifact}`,
     availableAtStep: run.step,
+    createdAt: existing?.createdAt ?? formatDateTime(),
     updated: formatDateTime(),
     content,
   };

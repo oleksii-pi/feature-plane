@@ -215,6 +215,11 @@ function renderRunLog(run, index, isExpanded) {
   `;
 }
 
+function creationOrderValue(entry) {
+  if (entry.kind === "run") return entry.run.startedAt ?? "";
+  return entry.artifact.createdAt ?? entry.artifact.updated ?? "";
+}
+
 export function entriesForFeature(feature) {
   if (!feature) return [];
   const artifacts = feature.artifacts.map((artifact, index) => ({
@@ -222,16 +227,23 @@ export function entriesForFeature(feature) {
     artifact,
     sourceIndex: index,
     order: artifact.availableAtStep ?? 0,
+    createdOrder: index * 2 + 1,
   }));
   const runs = feature.runs.map((run, index) => ({
     kind: "run",
     run,
     sourceIndex: index,
     order: run.step,
+    createdOrder: index * 2,
   }));
   return [...artifacts, ...runs]
     .filter((entry) => entry.order <= state.selectedStepIndex)
-    .sort((a, b) => a.order - b.order || a.kind.localeCompare(b.kind));
+    .sort(
+      (a, b) =>
+        creationOrderValue(a).localeCompare(creationOrderValue(b)) ||
+        a.order - b.order ||
+        a.createdOrder - b.createdOrder,
+    );
 }
 
 export function artifactIndexForStep(feature) {
