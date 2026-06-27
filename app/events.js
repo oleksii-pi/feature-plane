@@ -234,12 +234,6 @@ export function bindEvents() {
     await moveToStep(feature, feature.step + 1);
   });
 
-  elements.backStepButton.addEventListener("click", async () => {
-    const feature = selectedFeature();
-    if (!feature || feature.activeRunId || feature.step <= 0) return;
-    await moveToStep(feature, feature.step - 1);
-  });
-
   elements.retryRunButton.addEventListener("click", async () => {
     const feature = selectedFeature();
     if (!feature) return;

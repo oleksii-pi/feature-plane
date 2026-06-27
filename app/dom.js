@@ -11,7 +11,6 @@ export const elements = {
   workflowButton: document.querySelector("#toggle-workflow-button"),
   artifactList: document.querySelector("#artifact-list"),
   advanceButton: document.querySelector("#advance-button"),
-  backStepButton: document.querySelector("#back-step-button"),
   retryRunButton: document.querySelector("#retry-run-button"),
   cancelRunButton: document.querySelector("#cancel-run-button"),
   dialog: document.querySelector("#feature-dialog"),

@@ -200,7 +200,6 @@ function renderRunLog(run, index, isExpanded) {
         </button>
         <span class="artifact-header-actions">
           <a class="artifact-log-link" href="${logViewUrl}" target="_blank" rel="noopener">View logs</a>
-          <a class="artifact-log-link" href="${logUrl}?download=1" download>Download</a>
         </span>
         <button class="artifact-chevron-button" type="button" aria-label="Toggle run log" aria-expanded="${isExpanded}">
           <span class="artifact-chevron">⌃</span>
@@ -309,7 +308,6 @@ export function renderDetails() {
     elements.featureMeta.textContent = "";
     elements.stateBadge.textContent = "";
     elements.advanceButton.disabled = true;
-    elements.backStepButton.disabled = true;
     elements.retryRunButton.classList.remove("visible");
     elements.cancelRunButton.classList.remove("visible");
     elements.artifactList.innerHTML =
@@ -354,8 +352,6 @@ export function renderDetails() {
     feature.step === state.workflow.length - 1
       ? "Feature complete"
       : "Move to next step";
-  elements.backStepButton.disabled =
-    Boolean(feature.activeRunId) || feature.step === 0;
   const run = latestRun(feature);
   elements.retryRunButton.classList.toggle(
     "visible",
