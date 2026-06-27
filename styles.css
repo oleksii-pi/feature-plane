@@ -723,7 +723,7 @@ button.artifact-header,
 
 .artifact-toggle {
   min-width: 0;
-  flex: 1;
+  flex: 0 1 auto;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -738,6 +738,10 @@ button.artifact-header,
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
+}
+
+.artifact-chevron-button {
+  margin-left: auto;
 }
 
 .artifact-log-link {
@@ -795,11 +799,18 @@ button.artifact-header,
   font-size: 9.9px;
 }
 
-.artifact-title .execution-price {
-  display: inline;
-  margin-left: 6px;
-  color: var(--blue-soft);
+.execution-actions {
+  font-size: 10px;
   font-weight: 700;
+  white-space: nowrap;
+}
+
+.execution-price {
+  color: var(--blue-soft);
+}
+
+.execution-duration {
+  color: var(--muted);
 }
 
 .artifact-label {

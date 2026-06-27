@@ -14,6 +14,16 @@ export function formatLogSize(bytes) {
   return `${(size / 1024 / 1024).toFixed(1).replace(/\.0$/, "")}mb`;
 }
 
+export function formatDuration(startedAt, finishedAt = new Date()) {
+  const start = new Date(startedAt);
+  const end = finishedAt ? new Date(finishedAt) : new Date();
+  if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf())) return "--:--";
+  const totalSeconds = Math.max(0, Math.floor((end - start) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 function padDatePart(value) {
   return String(value).padStart(2, "0");
 }

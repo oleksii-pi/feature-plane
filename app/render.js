@@ -3,6 +3,7 @@ import {
   escapeHtml,
   formatDateTime,
   formatDateTimeParts,
+  formatDuration,
   formatLogSize,
   markdownToHtml,
 } from "./format.js";
@@ -179,6 +180,10 @@ function displayRunPrice(run) {
   return run.cost ?? "TBD";
 }
 
+function displayRunDuration(run) {
+  return formatDuration(run.startedAt, run.finishedAt);
+}
+
 function renderRunLog(run, index, isExpanded) {
   const step = state.workflow[run.step] ?? selectedStep();
   const eventMarkup = displayEvents(run).join("");
@@ -195,10 +200,12 @@ function renderRunLog(run, index, isExpanded) {
         <button class="artifact-toggle" type="button" aria-expanded="${isExpanded}">
           <span class="artifact-label">${escapeHtml(runLabel(run))}</span>
           <span class="artifact-title">
-            <strong>${escapeHtml(displayRunTitle(step))}<span class="execution-price">${escapeHtml(displayRunPrice(run))}</span></strong>
+            <strong>${escapeHtml(displayRunTitle(step))}</strong>
           </span>
         </button>
-        <span class="artifact-header-actions">
+        <span class="artifact-header-actions execution-actions">
+        <span class="execution-duration">${escapeHtml(displayRunDuration(run))}</span>
+          <span class="execution-price">${escapeHtml(displayRunPrice(run))}</span>
           <a class="artifact-log-link" href="${logViewUrl}" target="_blank" rel="noopener">View logs</a>
         </span>
         <button class="artifact-chevron-button" type="button" aria-label="Toggle run log" aria-expanded="${isExpanded}">
