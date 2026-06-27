@@ -263,9 +263,13 @@ export function artifactIndexForStep(feature) {
   return entries.length ? entries.length - 1 : null;
 }
 
+function isEntryExpandedByDefault(entry) {
+  if (entry.kind === "artifact") return true;
+  return !TERMINAL_RUN_STATUSES.has(entry.run.status);
+}
+
 export function renderArtifacts(feature) {
   const entries = entriesForFeature(feature);
-  const expandedArtifactIndex = artifactIndexForStep(feature);
 
   if (!entries.length) {
     elements.artifactList.innerHTML =
@@ -275,7 +279,7 @@ export function renderArtifacts(feature) {
 
   elements.artifactList.innerHTML = entries
     .map((entry, visibleIndex) => {
-      const isExpanded = visibleIndex === expandedArtifactIndex;
+      const isExpanded = isEntryExpandedByDefault(entry);
       if (entry.kind === "run") {
         return renderRunLog(entry.run, visibleIndex, isExpanded);
       }
