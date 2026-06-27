@@ -196,7 +196,7 @@ function renderRunLog(run, index, isExpanded) {
   const logUrl = `/runs/${encodeURIComponent(run.id)}/log`;
   const logViewUrl = `${logUrl}/view`;
   return `
-    <article class="artifact-card run-log ${run.status} ${isExpanded ? "expanded" : ""}" data-artifact-index="${index}">
+    <article class="artifact-card run-log ${run.status} ${isExpanded ? "expanded" : ""}" data-artifact-index="${index}" data-run-id="${escapeHtml(run.id)}">
       <div class="artifact-header">
         <button class="artifact-toggle" type="button" aria-expanded="${isExpanded}">
           <span class="artifact-title">

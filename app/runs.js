@@ -1,4 +1,5 @@
 import { loadState } from "./api.js";
+import { formatDuration } from "./format.js";
 import { render } from "./render.js";
 import {
   findRunById,
@@ -42,12 +43,35 @@ function findFeatureByRunId(runId) {
   );
 }
 
+function updateActiveRunDurations() {
+  document.querySelectorAll(".run-log[data-run-id]").forEach((card) => {
+    const run = findRunById(card.dataset.runId);
+    if (!run || TERMINAL_RUN_STATUSES.has(run.status)) return;
+    const duration = card.querySelector(".execution-duration");
+    if (duration) duration.textContent = formatDuration(run.startedAt);
+  });
+}
+
+function syncRunDurationTimer(activeRunIds) {
+  if (!activeRunIds.size) {
+    if (state.runDurationTimer) {
+      window.clearInterval(state.runDurationTimer);
+      state.runDurationTimer = null;
+    }
+    return;
+  }
+
+  if (state.runDurationTimer) return;
+  state.runDurationTimer = window.setInterval(updateActiveRunDurations, 1000);
+}
+
 export function syncRunStreams() {
   const activeRunIds = new Set(
     state.features.flatMap((feature) =>
       feature.activeRunId ? [feature.activeRunId] : [],
     ),
   );
+  syncRunDurationTimer(activeRunIds);
   state.eventSources.forEach((source, runId) => {
     if (!activeRunIds.has(runId)) {
       source.close();

@@ -19,6 +19,7 @@ export const state = {
   validation: null,
   eventSources: new Map(),
   runStreamRenderPending: false,
+  runDurationTimer: null,
   pendingArtifactSaveCard: null,
 };
 

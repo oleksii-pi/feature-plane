@@ -51,6 +51,10 @@ export function openFeatureSettings() {
   const feature = selectedFeature();
   if (!feature) return;
   elements.settingsFeatureName.textContent = feature.name;
+  elements.settingsFeatureName.hidden = false;
+  elements.settingsFeatureNameInput.value = feature.name;
+  elements.settingsFeatureNameInput.hidden = true;
+  elements.editFeatureTitleButton.hidden = false;
   elements.branchInput.value = feature.branch;
   elements.settingsDialog.showModal();
   elements.branchInput.focus();

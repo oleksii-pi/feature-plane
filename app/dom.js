@@ -20,6 +20,8 @@ export const elements = {
   settingsDialog: document.querySelector("#feature-settings-dialog"),
   settingsForm: document.querySelector("#feature-settings-form"),
   settingsFeatureName: document.querySelector("#settings-feature-name"),
+  settingsFeatureNameInput: document.querySelector("#settings-feature-name-input"),
+  editFeatureTitleButton: document.querySelector("#edit-feature-title-button"),
   branchInput: document.querySelector("#feature-branch-name"),
   deleteDialog: document.querySelector("#delete-feature-dialog"),
   deleteForm: document.querySelector("#delete-feature-form"),

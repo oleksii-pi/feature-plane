@@ -133,7 +133,16 @@
         <div class="dialog-heading">
           <div>
             <p class="eyebrow">Feature settings</p>
-            <h2 id="settings-feature-name"></h2>
+            <div class="settings-title-row">
+              <h2 id="settings-feature-name"></h2>
+              <input id="settings-feature-name-input" name="name" required maxlength="80" hidden />
+              <button class="icon-button" id="edit-feature-title-button" type="button" aria-label="Edit feature title">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 20h9" />
+                  <path d="m16.5 3.5 4 4L7 21l-4 1 1-4Z" />
+                </svg>
+              </button>
+            </div>
           </div>
           <button class="icon-button" id="close-settings-button" type="button" aria-label="Close feature settings">×</button>
         </div>

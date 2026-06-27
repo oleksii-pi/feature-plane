@@ -113,6 +113,16 @@ function hasOpenModalDialog() {
   return Boolean(document.querySelector("dialog[open]"));
 }
 
+function setFeatureTitleEditMode(editing) {
+  elements.settingsFeatureName.hidden = editing;
+  elements.settingsFeatureNameInput.hidden = !editing;
+  elements.editFeatureTitleButton.hidden = editing;
+  if (!editing) return;
+  const length = elements.settingsFeatureNameInput.value.length;
+  elements.settingsFeatureNameInput.focus();
+  elements.settingsFeatureNameInput.setSelectionRange(length, length);
+}
+
 function bindMenuKeyboardShortcuts() {
   document.addEventListener("keydown", (event) => {
     if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey)
@@ -390,6 +400,12 @@ export function bindEvents() {
   document
     .querySelector("#cancel-settings-button")
     .addEventListener("click", () => elements.settingsDialog.close());
+  elements.settingsDialog.addEventListener("close", () => {
+    setFeatureTitleEditMode(false);
+  });
+  elements.editFeatureTitleButton.addEventListener("click", () => {
+    setFeatureTitleEditMode(true);
+  });
   document
     .querySelector("#request-delete-feature-button")
     .addEventListener("click", () => {
@@ -432,11 +448,12 @@ export function bindEvents() {
   elements.settingsForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const feature = selectedFeature();
+    const name = elements.settingsFeatureNameInput.value.trim();
     const branch = elements.branchInput.value.trim();
-    if (!feature || !branch) return;
+    if (!feature || !name || !branch) return;
     await api(`/features/${feature.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ branch }),
+      body: JSON.stringify({ name, branch }),
     });
     elements.settingsDialog.close();
     await loadState({ preserveView: true });
