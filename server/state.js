@@ -3,10 +3,7 @@ const fsp = require("node:fs/promises");
 const path = require("node:path");
 const {
   FEATURE_ROOT,
-  FEATURES_HOME,
-  LEGACY_FEATURE_ROOTS,
   RUN_LOG_ROOT,
-  ROOT,
   STATE_FILE,
   workflow,
 } = require("./config");
@@ -32,15 +29,12 @@ function configureState(dependencies) {
 }
 
 async function ensureStorage() {
-  const migratedLegacyRoot = await migrateLegacyFeatureRoot();
   await fsp.mkdir(FEATURE_ROOT, { recursive: true });
   try {
     const saved = JSON.parse(await fsp.readFile(STATE_FILE, "utf8"));
-    if (migratedLegacyRoot) rewriteLegacyFeatureState(saved);
     if (Array.isArray(saved.features)) state.features = saved.features.map(normalizeFeature);
     const repricedRuns = await repriceCompletedRuns();
     const needsRewrite =
-      migratedLegacyRoot ||
       repricedRuns ||
       savedFeatureMetadataNeedsRewrite(saved) ||
       savedTimestampsNeedRewrite(saved);
@@ -82,65 +76,6 @@ async function repriceCompletedRuns() {
   return changed;
 }
 
-async function migrateLegacyFeatureRoot() {
-  try {
-    const featureStat = await fsp.stat(FEATURE_ROOT);
-    if (featureStat.isDirectory()) return false;
-  } catch (error) {
-    if (error.code !== "ENOENT") throw error;
-  }
-
-  for (const legacyRootName of LEGACY_FEATURE_ROOTS) {
-    const legacyRoot = path.join(ROOT, legacyRootName);
-    try {
-      const legacyStat = await fsp.stat(legacyRoot);
-      if (!legacyStat.isDirectory()) continue;
-    } catch (error) {
-      if (error.code === "ENOENT") continue;
-      throw error;
-    }
-
-    await fsp.rename(legacyRoot, FEATURE_ROOT);
-    return true;
-  }
-
-  return false;
-}
-
-function rewriteLegacyFeatureState(saved) {
-  if (!saved || typeof saved !== "object") return;
-  if (!Array.isArray(saved.features)) return;
-  saved.features = saved.features.map(rewriteLegacyFeaturePaths);
-}
-
-function rewriteLegacyFeaturePaths(feature) {
-  if (!feature || typeof feature !== "object") return feature;
-  const rewritten = { ...feature };
-  if (typeof rewritten.workspace === "string") rewritten.workspace = rewriteLegacyWorkspacePath(rewritten.workspace);
-  if (typeof rewritten.artifactFolder === "string") {
-    rewritten.artifactFolder = rewriteLegacyWorkspacePath(rewritten.artifactFolder);
-  }
-  if (Array.isArray(rewritten.artifacts)) {
-    rewritten.artifacts = rewritten.artifacts.map((artifact) => {
-      if (!artifact || typeof artifact !== "object") return artifact;
-      const next = { ...artifact };
-      if (typeof next.path === "string") next.path = rewriteLegacyWorkspacePath(next.path);
-      return next;
-    });
-  }
-  return rewritten;
-}
-
-function rewriteLegacyWorkspacePath(value) {
-  for (const legacyRootName of LEGACY_FEATURE_ROOTS) {
-    const legacyPrefix = `${legacyRootName}/`;
-    if (value.startsWith(legacyPrefix)) {
-      return `${FEATURES_HOME}/${value.slice(legacyPrefix.length)}`;
-    }
-  }
-  return value;
-}
-
 function savedFeatureMetadataNeedsRewrite(saved) {
   if (!saved || typeof saved !== "object") return false;
   if (!Array.isArray(saved.features)) return false;
@@ -150,8 +85,18 @@ function savedFeatureMetadataNeedsRewrite(saved) {
       typeof feature === "object" &&
       ("prompt" in feature ||
         typeof feature.artifactFolder !== "string" ||
-        feature.artifactFolder === feature.workspace),
+        feature.artifactFolder === feature.workspace ||
+        isLegacyNestedArtifactFolder(feature)),
   );
+}
+
+function isLegacyNestedArtifactFolder(feature) {
+  if (!feature || typeof feature !== "object") return false;
+  const slug = String(feature.slug ?? slugify(feature.name ?? feature.title ?? "feature"));
+  const branch = String(feature.branch ?? `feature/${slug}`);
+  const workspace = String(feature.workspace ?? branchWorkspaceFolder(branch, slug));
+  const artifactFolder = String(feature.artifactFolder ?? "");
+  return artifactFolder === `${workspace}/${branch}`;
 }
 
 function savedTimestampsNeedRewrite(saved) {
@@ -180,14 +125,12 @@ function timestampNeedsRewrite(value) {
 function normalizeFeature(feature) {
   const slug = String(feature.slug ?? slugify(feature.name ?? feature.title ?? "feature"));
   const branch = String(feature.branch ?? `feature/${slug}`);
-  const workspace = rewriteLegacyWorkspacePath(
-    String(feature.workspace ?? branchWorkspaceFolder(branch, slug)),
-  );
-  const storedArtifactFolder = rewriteLegacyWorkspacePath(
-    String(feature.artifactFolder ?? branchArtifactFolder(branch, slug)),
-  );
+  const workspace = String(feature.workspace ?? branchWorkspaceFolder(branch, slug));
+  const storedArtifactFolder = String(feature.artifactFolder ?? branchArtifactFolder(branch, slug));
   const artifactFolder =
-    storedArtifactFolder === workspace ? branchArtifactFolder(branch, slug) : storedArtifactFolder;
+    storedArtifactFolder === workspace || storedArtifactFolder === `${workspace}/${branch}`
+      ? branchArtifactFolder(branch, slug)
+      : storedArtifactFolder;
   return {
     id: String(feature.id),
     name: String(feature.name ?? feature.title ?? "Untitled feature"),
@@ -303,7 +246,6 @@ module.exports = {
   ensureStorage,
   normalizeFeature,
   publicState,
-  rewriteLegacyWorkspacePath,
   saveState,
   slugify,
   state,

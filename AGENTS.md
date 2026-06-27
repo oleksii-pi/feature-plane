@@ -36,7 +36,7 @@ The server loads `.env` from the repo root before reading `SDLC.yaml`.
 Useful variables:
 
 - `features_home`: relative folder for persisted app data. `.env.example` uses
-  `.features`, which is ignored by git; the code fallback is `feature`.
+  `.features`, which is ignored by git; the code fallback is `.features`.
 - `agent_run_command`: optional shell command for real agent execution. If it is
   unset, runs are simulated.
 - `PORT` or `port`: server port fallback.
@@ -85,7 +85,7 @@ Keep route changes aligned with `server/router.js`. The active endpoints are:
 - Keep server code in CommonJS and browser code in ES modules.
 - Prefer small modules that match the existing boundaries: routing, state,
   features, runs, validation, static serving, and UI rendering/events.
-- Treat `.features/`, `feature/`, run logs, and `.env` as generated or local
+- Treat `.features/`, run logs, and `.env` as generated or local
   data. Do not commit secrets or generated run output.
 - When editing workflow behavior, update `SDLC.yaml`, validation, run handling,
   and UI state assumptions together.

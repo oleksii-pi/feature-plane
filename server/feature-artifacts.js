@@ -16,8 +16,7 @@ function assertSafeRelativePath(relativePath) {
 }
 
 function branchArtifactFolder(branch, slug) {
-  const branchName = normalizeFeatureBranch(branch, slug);
-  return `${branchWorkspaceFolder(branchName, slug)}/${branchName}`;
+  return `${branchWorkspaceFolder(branch, slug)}/.artifacts`;
 }
 
 function branchWorkspaceFolder(branch, slug) {

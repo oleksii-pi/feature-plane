@@ -12,11 +12,10 @@ const PORT = resolvePort(process.argv.slice(2));
 const FEATURES_HOME = resolveFeaturesHome(process.env.features_home);
 const FEATURE_ROOT = path.join(ROOT, FEATURES_HOME);
 const RUN_LOG_ROOT = path.join(FEATURE_ROOT, "run-logs");
-const LEGACY_FEATURE_ROOTS = ["feature", ".features"].filter((entry) => entry !== FEATURES_HOME);
 const STATE_FILE = path.join(FEATURE_ROOT, "state.json");
 const AGENT_PRICING = resolveAgentPricing();
 const { workflow } = sdlcConfig;
-const WORKSPACE_COPY_EXCLUDES = new Set([FEATURES_HOME, ...LEGACY_FEATURE_ROOTS, ".git", ".env"]);
+const WORKSPACE_COPY_EXCLUDES = new Set([FEATURES_HOME, ".git", ".env"]);
 
 function loadDotEnv(filePath) {
   let source;
@@ -97,7 +96,7 @@ function parsePort(value) {
 }
 
 function resolveFeaturesHome(rawValue) {
-  const fallback = "feature";
+  const fallback = ".features";
   const original = String(rawValue ?? fallback).trim();
   if (!original || original === "." || path.isAbsolute(original)) return fallback;
 
@@ -135,7 +134,6 @@ module.exports = {
   FEATURES_HOME,
   FEATURE_ROOT,
   RUN_LOG_ROOT,
-  LEGACY_FEATURE_ROOTS,
   STATE_FILE,
   AGENT_PRICING,
   WORKSPACE_COPY_EXCLUDES,

@@ -1,10 +1,10 @@
 const fsp = require("node:fs/promises");
 const { createHash } = require("node:crypto");
 const path = require("node:path");
-const { FEATURES_HOME, LEGACY_FEATURE_ROOTS } = require("./config");
+const { FEATURES_HOME } = require("./config");
 const { getFeatureWorkspaceFolderPath } = require("./feature-artifacts");
 
-const GENERATED_ROOTS = new Set([FEATURES_HOME, ...LEGACY_FEATURE_ROOTS]);
+const GENERATED_ROOTS = new Set([FEATURES_HOME, ".artifacts"]);
 
 async function createWorkspaceSnapshot(feature) {
   const files = await listFiles(getFeatureWorkspaceFolderPath(feature));
