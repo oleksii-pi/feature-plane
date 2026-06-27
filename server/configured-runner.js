@@ -16,6 +16,7 @@ const {
 
 const runProcesses = new Map();
 const outputBuffers = new Map();
+const STOP_TIMEOUT_MS = 5000;
 
 async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) {
   const context = buildAgentContext(feature, run);
@@ -49,6 +50,7 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
     child = spawn(command, {
       cwd: context.workspace_path,
       env: childEnv,
+      detached: process.platform !== "win32",
       shell: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -57,7 +59,7 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
     return;
   }
 
-  runProcesses.set(run.id, child);
+  runProcesses.set(run.id, { child, stopTimer: null });
   await queueRunEvent(feature, run, "Executing", "Agent executing.");
 
   child.stdout?.on("data", (chunk) => {
@@ -70,7 +72,7 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
 
   child.once("error", (error) => {
     void (async () => {
-      runProcesses.delete(run.id);
+      forgetConfiguredRun(run.id);
       outputBuffers.delete(run.id);
       if (run.status === "cancelled") return;
       await handlers.failRun(feature, run, `Agent command failed to start: ${error.message}`);
@@ -112,7 +114,7 @@ function buildChildEnv(feature, run, context) {
 }
 
 async function handleClose(feature, run, code, signal, handlers) {
-  runProcesses.delete(run.id);
+  forgetRunProcess(run.id);
   await flushAgentControlOutput(feature, run);
   if (run.status === "cancelled") return;
   if (code !== 0) {
@@ -163,24 +165,54 @@ function normalizeEnvironmentUrl(value) {
 }
 
 function stopConfiguredRun(runId) {
-  const child = runProcesses.get(runId);
-  if (!child) return false;
-  try {
-    child.kill("SIGTERM");
-  } catch {
-    // Ignore best-effort cancellation failures.
-  }
-  runProcesses.delete(runId);
+  const processInfo = runProcesses.get(runId);
+  if (!processInfo) return false;
+  if (processInfo.stopTimer) clearTimeout(processInfo.stopTimer);
+  terminateRunProcess(processInfo, "SIGTERM");
+  processInfo.stopTimer = setTimeout(() => {
+    terminateRunProcess(processInfo, "SIGKILL");
+  }, STOP_TIMEOUT_MS);
   return true;
 }
 
 function forgetConfiguredRun(runId) {
-  runProcesses.delete(runId);
+  forgetRunProcess(runId);
   outputBuffers.delete(runId);
+}
+
+function forgetRunProcess(runId) {
+  const processInfo = runProcesses.get(runId);
+  if (processInfo?.stopTimer) clearTimeout(processInfo.stopTimer);
+  runProcesses.delete(runId);
+}
+
+function stopAllConfiguredRuns() {
+  for (const runId of runProcesses.keys()) {
+    stopConfiguredRun(runId);
+  }
+}
+
+function terminateRunProcess(processInfo, signal) {
+  const { child } = processInfo;
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+  try {
+    if (process.platform !== "win32") {
+      process.kill(-child.pid, signal);
+      return;
+    }
+    child.kill(signal);
+  } catch {
+    try {
+      child.kill(signal);
+    } catch {
+      // Ignore best-effort cancellation failures.
+    }
+  }
 }
 
 module.exports = {
   forgetConfiguredRun,
   startConfiguredAgentRun,
+  stopAllConfiguredRuns,
   stopConfiguredRun,
 };

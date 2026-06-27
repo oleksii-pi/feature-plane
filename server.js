@@ -6,6 +6,7 @@ const { startRun } = require("./server/runs");
 const { configureState, ensureStorage, saveState } = require("./server/state");
 const { handle } = require("./server/router");
 const { validateRepository } = require("./server/validation");
+const { stopAllConfiguredRuns } = require("./server/configured-runner");
 
 function formatLocalDateTime(date = new Date()) {
   const pad = (value) => String(value).padStart(2, "0");
@@ -18,7 +19,9 @@ configureState({ saveFeatureFiles, validateRepository });
 
 ensureStorage()
   .then(() => {
-    http.createServer(handle).listen(PORT, "127.0.0.1", () => {
+    const server = http.createServer(handle);
+    configureShutdown(server);
+    server.listen(PORT, "127.0.0.1", () => {
       console.log(`${formatLocalDateTime()} Control Plane PoC listening on http://127.0.0.1:${PORT}`);
     });
   })
@@ -26,3 +29,21 @@ ensureStorage()
     console.error(error);
     process.exitCode = 1;
   });
+
+function configureShutdown(server) {
+  let shuttingDown = false;
+  const shutdown = () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    stopAllConfiguredRuns();
+    server.close(() => {
+      process.exit(0);
+    });
+    setTimeout(() => {
+      process.exit(0);
+    }, 6000).unref();
+  };
+
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
+}
