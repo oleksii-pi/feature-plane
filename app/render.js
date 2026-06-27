@@ -2,7 +2,6 @@ import { elements, showToast } from "./dom.js";
 import {
   escapeHtml,
   formatDateTime,
-  formatDateTimeParts,
   formatDuration,
   formatLogSize,
   markdownToHtml,
@@ -107,7 +106,7 @@ function displayRunDetails(run) {
     ? `IN=${usage.inputTokens ?? 0}${cachedDetails} OUT=${usage.outputTokens ?? 0}`
     : "token usage unavailable";
   const changeDetails = displayFileChanges(run.fileChanges);
-  return [`Price ${cost}`, `Tokens: ${tokenDetails}`, changeDetails]
+  return [`price ${cost}`, `tokens: ${tokenDetails}`, changeDetails]
     .filter(Boolean)
     .join(", ");
 }
@@ -141,8 +140,9 @@ function displayEvents(run) {
         return status !== "stdout" && status !== "stderr";
       });
   const runDetails = summaryEventIndex >= 0 ? displayRunDetails(run) : "";
+  const runDuration = formatDuration(run.startedAt, run.finishedAt);
   return events.map((event, index) => {
-    const timestamp = formatDateTimeParts(event.timestamp);
+    const timestamp = formatDateTime(event.timestamp);
     const status = String(event.status ?? "");
     const isOutput = status === "stdout" || status === "stderr";
     const isActiveEvent = index === activeEventIndex;
@@ -153,17 +153,11 @@ function displayEvents(run) {
       index === summaryEventIndex &&
       status === "Done" &&
       event.message === "Done."
-        ? `${status}: ${runDetails}`
+        ? `${status} in ${runDuration}, ${runDetails}`
         : index === summaryEventIndex
           ? `${baseMessage} ${runDetails}`
           : baseMessage;
-    return `
-      <div class="run-event ${isActiveEvent ? "active" : ""} ${isOutput ? "output" : ""}">
-        <span class="run-event-time"><span>${escapeHtml(timestamp.date)}</span><span>${escapeHtml(timestamp.time)}</span></span>
-        ${isActiveEvent ? '<span class="event-dot"></span>' : '<span aria-hidden="true"></span>'}
-        <span>${escapeHtml(message)}</span>
-      </div>
-    `;
+    return `<span class="run-event ${isActiveEvent ? "active" : ""} ${isOutput ? "output" : ""}">${escapeHtml(`${timestamp} ${message}`)}</span>`;
   });
 }
 
@@ -187,7 +181,7 @@ function displayRunDuration(run) {
 
 function renderRunLog(run, index, isExpanded) {
   const step = state.workflow[run.step] ?? selectedStep();
-  const eventMarkup = displayEvents(run).join("");
+  const eventMarkup = displayEvents(run).join("\n");
   const eventCount = run.events?.length ?? 0;
   const hiddenCount = Math.max(0, eventCount - RUN_LOG_PREVIEW_LINE_LIMIT);
   const previewNote = hiddenCount
@@ -209,7 +203,6 @@ function renderRunLog(run, index, isExpanded) {
         <span class="artifact-header-actions execution-actions">
         <span class="execution-duration">${escapeHtml(displayRunDuration(run))}</span>
           <span class="execution-price">${escapeHtml(displayRunPrice(run))}</span>
-          <a class="artifact-log-link" href="${logViewUrl}" target="_blank" rel="noopener">View logs</a>
         </span>
         <button class="artifact-chevron-button" type="button" aria-label="Toggle run log" aria-expanded="${isExpanded}">
           <span class="artifact-chevron">⌃</span>
@@ -217,8 +210,11 @@ function renderRunLog(run, index, isExpanded) {
       </div>
       <div class="artifact-body">
         ${previewNote}
-        <div class="run-events">${eventMarkup || "<p>No events recorded.</p>"}</div>
-        <p class="run-log-size">${escapeHtml(formatLogSize(run.logSizeBytes))} of logs</p>
+        <pre class="run-events" tabindex="0">${eventMarkup || "No events recorded."}</pre>
+        <div class="run-log-footer">
+          <span class="run-log-size">${escapeHtml(formatLogSize(run.logSizeBytes))} of logs</span>
+          <a class="artifact-log-link" href="${logViewUrl}" target="_blank" rel="noopener">View logs</a>
+        </div>
       </div>
     </article>
   `;

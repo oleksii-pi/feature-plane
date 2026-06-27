@@ -232,6 +232,7 @@ function sendRunLogView(res, run) {
       position: sticky;
       top: 0;
       display: flex;
+      align-items: center;
       justify-content: space-between;
       gap: 16px;
       padding: 10px 14px;
@@ -239,49 +240,35 @@ function sendRunLogView(res, run) {
       background: #111824;
     }
     strong { color: #ffffff; }
-    a { color: #8cc8ff; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    a,
+    button {
+      color: #8cc8ff;
+      text-decoration: none;
+    }
+    button {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font: inherit;
+      cursor: pointer;
+    }
+    a:hover,
+    button:hover { text-decoration: underline; }
     #log {
       box-sizing: border-box;
       min-height: calc(100vh - 42px);
       margin: 0;
       padding: 14px;
       overflow-x: auto;
-    }
-    .log-line {
-      display: grid;
-      grid-template-columns: 86px 74px minmax(0, 1fr);
-      gap: 12px;
-      align-items: start;
-      min-height: 38px;
-      padding: 2px 0;
-    }
-    .log-line.raw {
-      min-height: 0;
-      padding: 0;
-    }
-    .log-time {
-      color: #9fb0c6;
-      line-height: 1.25;
-      white-space: nowrap;
-    }
-    .log-time span {
-      display: block;
-    }
-    .log-date {
-      color: #8d98aa;
-    }
-    .log-clock {
-      color: #e7edf7;
-    }
-    .log-stream {
-      color: #8cc8ff;
-      white-space: nowrap;
-    }
-    .log-message {
-      min-width: 0;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
+      tab-size: 2;
+      user-select: text;
     }
     .log-empty {
       margin: 0;
@@ -292,46 +279,24 @@ function sendRunLogView(res, run) {
 <body>
   <header>
     <span><strong>${escapeHtml(run.agent ?? "run")}</strong> ${escapeHtml(run.status)}</span>
-    <a href="${logUrl}?download=1" download>Download</a>
+    <nav>
+      <button id="copy-log" type="button">Copy</button>
+      <a href="${logUrl}?download=1" download>Download</a>
+    </nav>
   </header>
-  <main id="log"><p class="log-empty">Loading...</p></main>
+  <pre id="log" tabindex="0">Loading...</pre>
   <script>
     const logUrl = ${JSON.stringify(logUrl)};
     const log = document.getElementById("log");
-    function appendText(parent, className, value) {
-      const element = document.createElement("span");
-      element.className = className;
-      element.textContent = value;
-      parent.appendChild(element);
-      return element;
-    }
+    const copyButton = document.getElementById("copy-log");
     function renderLog(text) {
-      log.replaceChildren();
       if (!text) {
-        const empty = document.createElement("p");
-        empty.className = "log-empty";
-        empty.textContent = "No log output yet.";
-        log.appendChild(empty);
+        log.className = "log-empty";
+        log.textContent = "No log output yet.";
         return;
       }
-
-      text.replace(/\\n$/, "").split("\\n").forEach((line) => {
-        const match = line.match(/^\\[(\\d{4}-\\d{2}-\\d{2}) (\\d{2}:\\d{2}:\\d{2})\\] \\[([^\\]]+)\\](?:\\s?(.*))?$/);
-        const row = document.createElement("div");
-        row.className = match ? "log-line" : "log-line raw";
-
-        const time = document.createElement("span");
-        time.className = "log-time";
-        if (match) {
-          appendText(time, "log-date", match[1]);
-          appendText(time, "log-clock", match[2]);
-        }
-
-        appendText(row, "log-stream", match ? match[3] : "");
-        appendText(row, "log-message", match ? (match[4] ?? "") : line);
-        row.prepend(time);
-        log.appendChild(row);
-      });
+      log.className = "";
+      log.textContent = text;
     }
     async function refreshLog() {
       const pinnedToBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 24;
@@ -347,6 +312,23 @@ function sendRunLogView(res, run) {
         if (pinnedToBottom) window.scrollTo(0, document.body.scrollHeight);
       }
     }
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(log.dataset.raw || "");
+        copyButton.textContent = "Copied";
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents(log);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        log.focus();
+        copyButton.textContent = "Selected";
+      }
+      window.setTimeout(() => {
+        copyButton.textContent = "Copy";
+      }, 1200);
+    });
     refreshLog();
     window.setInterval(refreshLog, 1000);
   </script>
