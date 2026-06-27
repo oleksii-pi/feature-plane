@@ -34,6 +34,14 @@ function appendPreviewEvent(run, payload) {
   run.events = [...events, payload].slice(-RUN_LOG_PREVIEW_LINE_LIMIT);
 }
 
+function findFeatureByRunId(runId) {
+  return (
+    state.features.find((feature) =>
+      feature.runs?.some((run) => run.id === runId),
+    ) ?? null
+  );
+}
+
 export function syncRunStreams() {
   const activeRunIds = new Set(
     state.features.flatMap((feature) =>
@@ -53,6 +61,10 @@ export function syncRunStreams() {
       const payload = JSON.parse(event.data);
       const run = findRunById(payload.run_id);
       if (run) {
+        const feature = findFeatureByRunId(payload.run_id);
+        if (feature && payload.feature_environment_url) {
+          feature.environmentUrl = payload.feature_environment_url;
+        }
         run.status = payload.run_status ?? run.status;
         run.logSizeBytes = payload.log_size_bytes ?? run.logSizeBytes ?? 0;
         if (payload.preview !== false) {

@@ -1,4 +1,4 @@
-import { elements } from "./dom.js";
+import { elements, showToast } from "./dom.js";
 import {
   escapeHtml,
   formatDateTime,
@@ -98,7 +98,9 @@ export function renderTimeline(feature) {
 function displayRunDetails(run) {
   const usage = run.usage ?? {};
   const cost = run.cost ?? "TBD";
-  const cachedDetails = usage.cachedInputTokens ? ` (${usage.cachedInputTokens} cached)` : "";
+  const cachedDetails = usage.cachedInputTokens
+    ? ` (${usage.cachedInputTokens} cached)`
+    : "";
   const tokenDetails = usage.totalTokens
     ? `IN=${usage.inputTokens ?? 0}${cachedDetails} OUT=${usage.outputTokens ?? 0}`
     : "token usage unavailable";
@@ -115,7 +117,9 @@ function displayFileChanges(fileChanges) {
     ["deleted", fileChanges?.deleted],
   ]
     .filter(([, count]) => Number(count) > 0)
-    .map(([label, count]) => `${label} ${count} ${count === 1 ? "file" : "files"}`);
+    .map(
+      ([label, count]) => `${label} ${count} ${count === 1 ? "file" : "files"}`,
+    );
   return changes.length ? `Changed files: ${changes.join(", ")}` : "";
 }
 
@@ -144,7 +148,9 @@ function displayEvents(run) {
       ? event.message
       : `${status}${status ? ": " : ""}${event.message}`;
     const message =
-      index === summaryEventIndex && status === "Done" && event.message === "Done."
+      index === summaryEventIndex &&
+      status === "Done" &&
+      event.message === "Done."
         ? `${status}: ${runDetails}`
         : index === summaryEventIndex
           ? `${baseMessage} ${runDetails}`
@@ -171,15 +177,6 @@ function displayRunTitle(step) {
 
 function displayRunPrice(run) {
   return run.cost ?? "TBD";
-}
-
-function displayRelativePath(path, feature) {
-  const value = String(path ?? "");
-  const workspace = String(feature?.workspace ?? "").replace(/\/+$/g, "");
-  if (!workspace) return value;
-  if (value === workspace) return ".";
-  const prefix = `${workspace}/`;
-  return value.startsWith(prefix) ? value.slice(prefix.length) : value;
 }
 
 function renderRunLog(run, index, isExpanded) {
@@ -311,13 +308,32 @@ export function renderDetails() {
 
   elements.featureTitle.textContent = feature.name;
   elements.featureMeta.replaceChildren();
-  const branchLink = document.createElement("a");
-  branchLink.href = `#${feature.branch}`;
-  branchLink.textContent = feature.branch;
+  const branchButton = document.createElement("button");
+  branchButton.className = "link-button branch-copy-button";
+  branchButton.type = "button";
+  branchButton.textContent = feature.branch;
+  branchButton.title = "Copy branch name";
+  branchButton.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(feature.branch);
+      showToast("Branch copied to clipboard");
+    } catch {
+      showToast("Clipboard access was not available");
+    }
+  });
   elements.featureMeta.append(
-    branchLink,
-    ` · ${formatDateTime(feature.updated)} · ${displayRelativePath(feature.artifactFolder || feature.workspace, feature)}`,
+    branchButton,
+    ` · ${formatDateTime(feature.updated)}`,
   );
+  if (feature.environmentUrl) {
+    const environmentLink = document.createElement("a");
+    environmentLink.className = "environment-link";
+    environmentLink.href = feature.environmentUrl;
+    environmentLink.target = "_blank";
+    environmentLink.rel = "noopener";
+    environmentLink.textContent = "Open environment";
+    elements.featureMeta.append(" · ", environmentLink);
+  }
   elements.stateBadge.textContent = displayStep(feature);
   elements.stateBadge.classList.toggle("running", Boolean(feature.activeRunId));
   elements.advanceButton.disabled =
@@ -333,8 +349,8 @@ export function renderDetails() {
     "visible",
     Boolean(
       run &&
-        TERMINAL_RUN_STATUSES.has(run.status) &&
-        isAgentStep(state.workflow[feature.step]),
+      TERMINAL_RUN_STATUSES.has(run.status) &&
+      isAgentStep(state.workflow[feature.step]),
     ),
   );
   elements.cancelRunButton.classList.toggle(

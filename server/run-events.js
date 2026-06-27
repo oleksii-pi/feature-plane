@@ -121,6 +121,26 @@ async function queueRunOutput(feature, run, stream, chunk) {
   });
 }
 
+async function queueFeatureEnvironmentUrl(feature, run, url) {
+  return enqueueRunTask(run.id, async () => {
+    if (feature.environmentUrl === url) return null;
+    feature.environmentUrl = url;
+    return persistRunEvent(
+      feature,
+      run,
+      {
+        ...createRunEvent(run, "Environment", "Feature environment URL updated."),
+        feature_environment_url: url,
+      },
+      {
+        appendLog: true,
+        broadcast: true,
+        saveState: true,
+      },
+    );
+  });
+}
+
 function broadcastRunEvent(run, event) {
   const clients = eventClients.get(run.id);
   if (!clients) return;
@@ -165,6 +185,7 @@ module.exports = {
   addEvent,
   configureRunEvents,
   isVerboseRunEvent,
+  queueFeatureEnvironmentUrl,
   queueRunEvent,
   queueRunOutput,
   RUN_LOG_PREVIEW_LINE_LIMIT,

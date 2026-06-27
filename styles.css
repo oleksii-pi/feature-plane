@@ -552,17 +552,32 @@ h3 {
   font-size: 11px;
 }
 
-.details-header p a {
+.details-header p a,
+.details-header p .link-button {
   color: #3f72b8;
   font-weight: 600;
   text-decoration: none;
 }
 
 .details-header p a:hover,
-.details-header p a:focus-visible {
+.details-header p a:focus-visible,
+.details-header p .link-button:hover,
+.details-header p .link-button:focus-visible {
   color: #285f9f;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.details-header p .link-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.details-header p .environment-link {
+  color: var(--accent-dark);
 }
 
 .feature-price-detail {
@@ -664,7 +679,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 0 18px;
+  padding: 8px;
 }
 
 .artifact-card {
@@ -1556,7 +1571,6 @@ dialog form {
   .details-actions button {
     flex: 1;
   }
-
 }
 
 @media (prefers-reduced-motion: reduce) {

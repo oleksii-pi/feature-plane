@@ -141,6 +141,8 @@ function normalizeFeature(feature) {
     step: clampStep(feature.step),
     updated: formatDateTime(feature.updated || undefined),
     activeRunId: feature.activeRunId ?? null,
+    environmentUrl:
+      typeof feature.environmentUrl === "string" ? feature.environmentUrl : null,
     cost: feature.cost ?? null,
     artifacts: normalizeArtifacts(feature.artifacts, artifactFolder),
     runs: Array.isArray(feature.runs) ? feature.runs.map(normalizeRun) : [],

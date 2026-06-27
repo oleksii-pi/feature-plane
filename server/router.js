@@ -12,7 +12,7 @@ const { serveStatic } = require("./static");
 const { normalizeFeature, publicState, saveState, state } = require("./state");
 const { createFeature, findFeature, moveFeature, saveFeatureFiles, updateArtifact } = require("./features");
 const { cancelRun, findRun, startRun } = require("./runs");
-const { streamRunEvents } = require("./run-events");
+const { queueFeatureEnvironmentUrl, streamRunEvents } = require("./run-events");
 const { formatDateTime } = require("./time");
 const { validateRepository } = require("./validation");
 
@@ -133,7 +133,7 @@ async function route(req, res) {
   }
 
   if (parts[0] === "runs" && parts[1]) {
-    const { run } = findRun(parts[1]);
+    const { feature, run } = findRun(parts[1]);
 
     if (req.method === "GET" && parts.length === 2) {
       sendJson(res, 200, run);
@@ -142,6 +142,18 @@ async function route(req, res) {
 
     if (req.method === "GET" && parts[2] === "events") {
       streamRunEvents(req, res, run);
+      return;
+    }
+
+    if (req.method === "POST" && parts[2] === "events") {
+      const body = await readJson(req);
+      if (body.type !== "environment") {
+        throw httpError(400, "Unsupported run event type.");
+      }
+      const environmentUrl = normalizeEnvironmentUrl(body.url);
+      if (!environmentUrl) throw httpError(422, "Environment URL must be http or https.");
+      await queueFeatureEnvironmentUrl(feature, run, environmentUrl);
+      sendJson(res, 202, { environmentUrl });
       return;
     }
 
@@ -184,6 +196,16 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+function normalizeEnvironmentUrl(value) {
+  try {
+    const parsed = new URL(String(value));
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
+    return parsed.href;
+  } catch {
+    return "";
+  }
 }
 
 function sendRunLogView(res, run) {

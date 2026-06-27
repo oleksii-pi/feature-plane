@@ -67,6 +67,7 @@ async function createFeature({ title, prompt }) {
     step: 0,
     updated: timestamp,
     activeRunId: null,
+    environmentUrl: null,
     cost: null,
     artifacts: [
       {

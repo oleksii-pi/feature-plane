@@ -15,7 +15,19 @@
 
 4. Verify the application responds by loading its `/state` endpoint.
 
-5. Write environment state to `$CONTROL_PLANE_ARTIFACT_PATH`.
+5. Publish the prepared app URL to Control Plane after verification succeeds:
+
+   ```sh
+   curl -fsS -X POST "$CONTROL_PLANE_RUN_EVENT_URL" \
+     -H 'Content-Type: application/json' \
+     -d "{\"type\":\"environment\",\"url\":\"<localhost-url>\"}"
+   ```
+
+   If the callback cannot be used, write this exact fallback line to stdout:
+
+   `CONTROL_PLANE_ENVIRONMENT_URL=<localhost-url>`
+
+6. Write environment state to `$CONTROL_PLANE_ARTIFACT_PATH`.
    Include the localhost URL, selected port, PID, log path, workspace path, and
    verification result.
 

@@ -2,7 +2,9 @@ const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 const { spawn } = require("node:child_process");
 const path = require("node:path");
+const { PORT } = require("./config");
 const {
+  queueFeatureEnvironmentUrl,
   queueRunEvent,
   queueRunOutput,
 } = require("./run-events");
@@ -13,6 +15,7 @@ const {
 } = require("./agent-command");
 
 const runProcesses = new Map();
+const outputBuffers = new Map();
 
 async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) {
   const context = buildAgentContext(feature, run);
@@ -58,6 +61,7 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
   await queueRunEvent(feature, run, "Executing", "Agent executing.");
 
   child.stdout?.on("data", (chunk) => {
+    handleAgentControlOutput(feature, run, chunk);
     void queueRunOutput(feature, run, "stdout", chunk);
   });
   child.stderr?.on("data", (chunk) => {
@@ -67,6 +71,7 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
   child.once("error", (error) => {
     void (async () => {
       runProcesses.delete(run.id);
+      outputBuffers.delete(run.id);
       if (run.status === "cancelled") return;
       await handlers.failRun(feature, run, `Agent command failed to start: ${error.message}`);
     })().catch((handlerError) => {
@@ -100,6 +105,7 @@ function buildChildEnv(feature, run, context) {
     CONTROL_PLANE_PROMPT_PATH: context.prompt_path,
     CONTROL_PLANE_REQUIRED_ARTIFACT: run.artifact,
     CONTROL_PLANE_RUN_ID: run.id,
+    CONTROL_PLANE_RUN_EVENT_URL: `http://127.0.0.1:${PORT}/runs/${encodeURIComponent(run.id)}/events`,
     CONTROL_PLANE_STATE: context.state,
     CONTROL_PLANE_WORKSPACE_PATH: context.workspace_path,
   };
@@ -107,6 +113,7 @@ function buildChildEnv(feature, run, context) {
 
 async function handleClose(feature, run, code, signal, handlers) {
   runProcesses.delete(run.id);
+  await flushAgentControlOutput(feature, run);
   if (run.status === "cancelled") return;
   if (code !== 0) {
     await handlers.failRun(
@@ -118,6 +125,41 @@ async function handleClose(feature, run, code, signal, handlers) {
   }
 
   await handlers.completeConfiguredRun(feature, run);
+}
+
+function handleAgentControlOutput(feature, run, chunk) {
+  const text = Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk ?? "");
+  if (!text) return;
+  const buffer = `${outputBuffers.get(run.id) ?? ""}${text}`;
+  const lines = buffer.split(/\r?\n/);
+  outputBuffers.set(run.id, lines.pop() ?? "");
+  lines.forEach((line) => {
+    void processAgentControlLine(feature, run, line);
+  });
+}
+
+function flushAgentControlOutput(feature, run) {
+  const remaining = outputBuffers.get(run.id);
+  outputBuffers.delete(run.id);
+  return remaining ? processAgentControlLine(feature, run, remaining) : Promise.resolve();
+}
+
+function processAgentControlLine(feature, run, line) {
+  const match = String(line).match(/^\s*CONTROL_PLANE_ENVIRONMENT_URL=(\S+)\s*$/);
+  if (!match) return Promise.resolve();
+  const url = normalizeEnvironmentUrl(match[1]);
+  if (!url) return Promise.resolve();
+  return queueFeatureEnvironmentUrl(feature, run, url);
+}
+
+function normalizeEnvironmentUrl(value) {
+  try {
+    const url = new URL(String(value));
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    return url.href;
+  } catch {
+    return "";
+  }
 }
 
 function stopConfiguredRun(runId) {
@@ -134,6 +176,7 @@ function stopConfiguredRun(runId) {
 
 function forgetConfiguredRun(runId) {
   runProcesses.delete(runId);
+  outputBuffers.delete(runId);
 }
 
 module.exports = {
