@@ -1,6 +1,5 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
-const { randomUUID } = require("node:crypto");
 const { ROOT, WORKSPACE_COPY_EXCLUDES, workflow } = require("./config");
 const {
   branchArtifactFolder,
@@ -8,6 +7,7 @@ const {
   getFeatureArtifactFolderPath,
 } = require("./feature-artifacts");
 const { httpError } = require("./http");
+const { createId } = require("./ids");
 const { clampStep, saveState, slugify, state } = require("./state");
 const { updateFeatureCost } = require("./pricing");
 const { formatDateTime } = require("./time");
@@ -58,7 +58,7 @@ async function createFeature({ title, prompt }) {
   await fsp.writeFile(path.join(artifactDir, "prompt.md"), prompt);
 
   const feature = {
-    id: `feature-${randomUUID()}`,
+    id: createId("feature"),
     name: title,
     slug,
     branch,

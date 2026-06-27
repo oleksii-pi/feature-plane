@@ -1,10 +1,10 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
-const { randomUUID } = require("node:crypto");
 const { getAgentRunCommand, workflow } = require("./config");
 const { getFeatureArtifactFolder, getFeatureArtifactFolderPath } = require("./feature-artifacts");
 const { createWorkspaceSnapshot, summarizeWorkspaceChanges } = require("./file-changes");
 const { httpError } = require("./http");
+const { createId } = require("./ids");
 const { state, saveState } = require("./state");
 const { currentStep, saveFeatureFiles } = require("./features");
 const { addEvent, queueRunEvent } = require("./run-events");
@@ -38,7 +38,7 @@ function assertAgentStep(feature) {
 async function startRun(feature) {
   const step = assertAgentStep(feature);
   const run = {
-    id: `run-${randomUUID()}`,
+    id: createId("run"),
     featureId: feature.id,
     step: feature.step,
     agent: step.agent,
