@@ -198,9 +198,11 @@ function renderRunLog(run, index, isExpanded) {
     <article class="artifact-card run-log ${run.status} ${isExpanded ? "expanded" : ""}" data-artifact-index="${index}">
       <div class="artifact-header">
         <button class="artifact-toggle" type="button" aria-expanded="${isExpanded}">
-          <span class="artifact-label">${escapeHtml(runLabel(run))}</span>
           <span class="artifact-title">
-            <strong>${escapeHtml(displayRunTitle(step))}</strong>
+            <span class="artifact-title-main">
+              <strong>${escapeHtml(displayRunTitle(step))}</strong>
+              <span class="artifact-label">${escapeHtml(runLabel(run))}</span>
+            </span>
           </span>
         </button>
         <span class="artifact-header-actions execution-actions">

@@ -785,15 +785,26 @@ button.artifact-header,
 }
 
 .artifact-title strong,
-.artifact-title > span {
+.artifact-title > span:not(.artifact-title-main) {
   display: block;
+}
+
+.artifact-title > .artifact-title-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.artifact-title-main strong {
+  flex: 0 1 auto;
 }
 
 .artifact-title strong {
   font-size: 12.1px;
 }
 
-.artifact-title > span {
+.artifact-title > span:not(.artifact-title-main) {
   margin-top: 2px;
   color: var(--muted);
   font-size: 9.9px;
