@@ -229,8 +229,9 @@ async function ensureNextStepsDiscarded(featureId, editedStep) {
 export async function updateArtifact(card, { discardNextSteps = false } = {}) {
   const feature = selectedFeature();
   const sourceIndex = Number(card.dataset.sourceIndex);
-  const value = card.querySelector(".artifact-editor").value.trim();
-  if (!feature || !Number.isInteger(sourceIndex) || !value) return;
+  const preview = card.querySelector(".artifact-preview");
+  const value = preview?.innerText ?? preview?.textContent ?? "";
+  if (!feature || !Number.isInteger(sourceIndex) || !value.trim()) return;
   const artifactName = feature.artifacts[sourceIndex]?.name ?? "Artifact";
   const editedStep = feature.artifacts[sourceIndex]?.availableAtStep ?? 0;
   await api(`/features/${feature.id}/artifacts/${sourceIndex}`, {

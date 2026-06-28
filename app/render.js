@@ -106,7 +106,7 @@ function restoreStepMenuMarkup(feature, stepIndex) {
     kind: "step",
     label: agentStep
       ? `${step.agent ?? step.state ?? "Agent"} run`
-      : step.state ?? `Step ${stepIndex + 1}`,
+      : (step.state ?? `Step ${stepIndex + 1}`),
     detail: agentStep
       ? `Step ${stepIndex + 1} · reset to ${shortCommit(commit)}`
       : `Step ${stepIndex + 1} · ${shortCommit(commit)}`,
@@ -143,8 +143,14 @@ function restoreRunMenuMarkup(feature, run) {
 }
 
 function restoreArtifactMenuMarkup(feature, artifact, sourceIndex) {
-  const commit = artifact.commitSha ?? commitForStep(feature, artifact.availableAtStep ?? 0);
-  if (!commit || feature.activeRunId || commitsMatch(commit, feature.headCommit)) return "";
+  const commit =
+    artifact.commitSha ?? commitForStep(feature, artifact.availableAtStep ?? 0);
+  if (
+    !commit ||
+    feature.activeRunId ||
+    commitsMatch(commit, feature.headCommit)
+  )
+    return "";
   return restoreMenuMarkup({
     className: "artifact-card-menu",
     kind: "artifact",
@@ -154,7 +160,14 @@ function restoreArtifactMenuMarkup(feature, artifact, sourceIndex) {
   });
 }
 
-function restoreMenuMarkup({ className, kind, label, detail, attrs, actionLabel = "Revert to state" }) {
+function restoreMenuMarkup({
+  className,
+  kind,
+  label,
+  detail,
+  attrs,
+  actionLabel = "Revert to state",
+}) {
   return `
     <div class="menu ${className}" data-menu>
       <button class="menu-button" type="button" aria-label="State actions" aria-haspopup="menu" aria-expanded="false">
@@ -181,7 +194,10 @@ function restoreMenuMarkup({ className, kind, label, detail, attrs, actionLabel 
 
 function commitsMatch(left, right) {
   if (!left || !right) return false;
-  return String(left).startsWith(String(right)) || String(right).startsWith(String(left));
+  return (
+    String(left).startsWith(String(right)) ||
+    String(right).startsWith(String(left))
+  );
 }
 
 function commitBeforeStep(feature, stepIndex) {
@@ -197,7 +213,10 @@ export function commitForStep(feature, stepIndex) {
   }
   const run = [...(feature.runs ?? [])]
     .reverse()
-    .find((item) => item.status === "succeeded" && item.step <= stepIndex && item.commitSha);
+    .find(
+      (item) =>
+        item.status === "succeeded" && item.step <= stepIndex && item.commitSha,
+    );
   if (run) return run.commitSha;
   const artifact = [...(feature.artifacts ?? [])]
     .reverse()
@@ -281,7 +300,7 @@ function runLabel(run) {
 
 function displayRunTitle(step) {
   const title = String(step?.agent ?? step?.state ?? "Run");
-  return title.charAt(0).toUpperCase() + title.slice(1);
+  return title;
 }
 
 function displayRunPrice(run) {
@@ -296,7 +315,8 @@ function displayRunProducedMarkup(run) {
 function updatedArtifactForRun(run, feature) {
   if (run.status !== "succeeded" || !run.artifact) return "";
   return feature?.artifacts?.find(
-    (item) => item.name === run.artifact && (item.availableAtStep ?? 0) === run.step,
+    (item) =>
+      item.name === run.artifact && (item.availableAtStep ?? 0) === run.step,
   );
 }
 
@@ -440,6 +460,10 @@ export function renderArtifacts(feature) {
               </span>
             </button>
             <button class="artifact-log-link edit-artifact-button" type="button">Edit</button>
+            <span class="artifact-edit-actions" hidden>
+              <button class="artifact-log-link cancel-edit-button" type="button">Cancel</button>
+              <button class="artifact-log-link save-artifact-button" type="button">Save</button>
+            </span>
             ${restoreArtifactMenuMarkup(feature, artifact, entry.sourceIndex)}
             <button class="artifact-chevron-button" type="button" aria-label="Toggle artifact" aria-expanded="${isExpanded}">
               <span class="artifact-chevron">⌃</span>
@@ -447,13 +471,6 @@ export function renderArtifacts(feature) {
           </div>
           <div class="artifact-body">
             <div class="artifact-preview">${markdownToHtml(artifact.content)}</div>
-            <div class="artifact-edit" hidden>
-              <textarea class="artifact-editor" aria-label="Edit ${escapeHtml(artifact.name)}">${escapeHtml(artifact.content)}</textarea>
-              <div class="artifact-toolbar">
-                <button class="secondary-button cancel-edit-button" type="button">Cancel</button>
-                <button class="primary-button save-artifact-button" type="button">Save changes</button>
-              </div>
-            </div>
           </div>
         </article>
       `;
@@ -513,7 +530,7 @@ export function renderDetails() {
       ? "Feature complete"
       : currentAgentStepRequiresRun(feature)
         ? `Run ${state.workflow[feature.step].agent}`
-      : "Move to next step";
+        : "Move to next step";
   const run = latestRun(feature);
   elements.retryRunButton.classList.toggle(
     "visible",

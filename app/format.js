@@ -79,6 +79,10 @@ export function markdownToHtml(content) {
       if (inList) html += "</ul>";
       inList = false;
       html += `<p>${line}</p>`;
+    } else {
+      if (inList) html += "</ul>";
+      inList = false;
+      html += '<p class="artifact-blank-line"><br></p>';
     }
   });
 

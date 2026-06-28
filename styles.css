@@ -800,6 +800,21 @@ button.artifact-header,
   text-decoration: underline;
 }
 
+.artifact-edit-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.cancel-edit-button {
+  color: var(--danger);
+}
+
+.save-artifact-button {
+  color: var(--text);
+}
+
 .artifact-chevron-button {
   display: grid;
   place-items: center;
@@ -963,20 +978,34 @@ button.artifact-header,
 }
 
 .artifact-preview {
+  color: #354056;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  padding: 2px;
+  line-height: 1.5;
+}
+
+.artifact-preview[contenteditable="true"] {
+  min-height: 1em;
+  white-space: pre-wrap;
 }
 
 .artifact-body p,
 .artifact-body li {
   color: #354056;
   font-size: 12px;
-  line-height: 1;
+  line-height: 1.5;
   margin-block-end: 0;
 }
 
 .artifact-body p:last-child,
 .artifact-body ul:last-child {
   margin-bottom: 0;
+}
+
+.artifact-body .artifact-blank-line {
+  margin: 0;
+  min-height: 1.5em;
 }
 
 .artifact-body h4 {
@@ -987,27 +1016,6 @@ button.artifact-header,
 .artifact-body ul {
   margin: 3px 0 8px;
   padding-left: 17px;
-}
-
-.artifact-editor {
-  width: 100%;
-  min-height: 120px;
-  resize: vertical;
-  padding: 9px;
-  color: #354056;
-  border: 1px solid var(--border-strong);
-  border-radius: 7px;
-  background: #fff;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
-  line-height: 1.55;
-}
-
-.artifact-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  margin-top: 7px;
 }
 
 .run-log {

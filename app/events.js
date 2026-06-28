@@ -26,6 +26,7 @@ import {
   openMenuElement,
   showToast,
 } from "./dom.js";
+import { markdownToHtml } from "./format.js";
 import {
   artifactIndexForStep,
   entriesForFeature,
@@ -155,6 +156,58 @@ function revertTargetFromButton(button) {
     target.step = Number(button.dataset.revertStep);
   }
   return target;
+}
+
+function setArtifactExpanded(card, expanded) {
+  card.classList.toggle("expanded", expanded);
+  card
+    .querySelectorAll(".artifact-header, .artifact-toggle, .artifact-chevron-button")
+    .forEach((element) => element.setAttribute("aria-expanded", String(expanded)));
+}
+
+function focusEditablePreview(preview) {
+  preview.focus();
+  const selection = window.getSelection();
+  if (!selection) return;
+  const range = document.createRange();
+  range.selectNodeContents(preview);
+  range.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function setArtifactEditMode(card, editing) {
+  const feature = selectedFeature();
+  const sourceIndex = Number(card.dataset.sourceIndex);
+  const artifact = feature?.artifacts?.[sourceIndex];
+  const preview = card.querySelector(".artifact-preview");
+  const editButton = card.querySelector(".edit-artifact-button");
+  const editActions = card.querySelector(".artifact-edit-actions");
+  if (!artifact || !preview || !editButton || !editActions) return;
+
+  editButton.hidden = editing;
+  editActions.hidden = !editing;
+  card.classList.toggle("editing", editing);
+
+  if (editing) {
+    closeMenus();
+    setArtifactExpanded(card, true);
+    preview.textContent = artifact.content ?? "";
+    preview.setAttribute("contenteditable", "true");
+    preview.setAttribute("role", "textbox");
+    preview.setAttribute("aria-multiline", "true");
+    preview.setAttribute("aria-label", `Edit ${artifact.name}`);
+    preview.spellcheck = false;
+    focusEditablePreview(preview);
+    return;
+  }
+
+  preview.removeAttribute("contenteditable");
+  preview.removeAttribute("role");
+  preview.removeAttribute("aria-multiline");
+  preview.removeAttribute("aria-label");
+  preview.removeAttribute("spellcheck");
+  preview.innerHTML = markdownToHtml(artifact.content);
 }
 
 function bindMenuKeyboardShortcuts() {
@@ -336,38 +389,25 @@ export function bindEvents() {
 
     if (event.target.closest("a.artifact-log-link")) return;
 
-    const preview = card.querySelector(".artifact-preview");
-    const editorWrap = card.querySelector(".artifact-edit");
-
     if (event.target.closest(".edit-artifact-button")) {
-      preview.hidden = true;
-      editorWrap.hidden = false;
-      card.classList.add("expanded");
-      card
-        .querySelectorAll(".artifact-toggle, .artifact-chevron-button")
-        .forEach((element) => element.setAttribute("aria-expanded", "true"));
-      card.querySelector(".artifact-editor").focus();
+      setArtifactEditMode(card, true);
+      return;
+    }
+
+    if (event.target.closest(".cancel-edit-button")) {
+      setArtifactEditMode(card, false);
+      return;
+    }
+
+    if (event.target.closest(".save-artifact-button")) {
+      saveArtifactFromCard(card).catch((error) => showToast(error.message));
       return;
     }
 
     if (event.target.closest(".artifact-header")) {
       state.selectedArtifactIndex = Number(card.dataset.artifactIndex);
-      card.classList.toggle("expanded");
-      card
-        .querySelectorAll(".artifact-header, .artifact-toggle, .artifact-chevron-button")
-        .forEach((element) =>
-          element.setAttribute("aria-expanded", card.classList.contains("expanded")),
-        );
+      setArtifactExpanded(card, !card.classList.contains("expanded"));
       return;
-    }
-
-    if (event.target.closest(".cancel-edit-button")) {
-      editorWrap.hidden = true;
-      preview.hidden = false;
-    }
-
-    if (event.target.closest(".save-artifact-button")) {
-      saveArtifactFromCard(card).catch((error) => showToast(error.message));
     }
   });
 
