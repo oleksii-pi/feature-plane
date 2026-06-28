@@ -93,6 +93,36 @@ export function closeArtifactSaveDialog() {
   if (elements.artifactSaveDialog.open) elements.artifactSaveDialog.close();
 }
 
+function artifactStep(feature, sourceIndex) {
+  const artifact = feature?.artifacts?.[sourceIndex];
+  return artifact ? artifact.availableAtStep ?? 0 : null;
+}
+
+function featureHasLaterGeneratedWork(feature, editedStep) {
+  return (
+    (feature.artifacts ?? []).some(
+      (artifact) => (artifact.availableAtStep ?? 0) > editedStep,
+    ) || (feature.runs ?? []).some((run) => run.step > editedStep)
+  );
+}
+
+export async function saveArtifactFromCard(card) {
+  const feature = selectedFeature();
+  const sourceIndex = Number(card.dataset.sourceIndex);
+  const editedStep = artifactStep(feature, sourceIndex);
+  if (
+    feature &&
+    Number.isInteger(sourceIndex) &&
+    editedStep !== null &&
+    featureHasLaterGeneratedWork(feature, editedStep)
+  ) {
+    openArtifactSaveDialog(card);
+    return;
+  }
+
+  await updateArtifact(card);
+}
+
 export function openRevertDialog(target) {
   closeMenus();
   const feature = selectedFeature();
@@ -172,10 +202,7 @@ export async function confirmPendingRevert() {
 
 function featureHasNextStepEntries(feature, editedStep) {
   return (
-    feature.artifacts.some(
-      (artifact) => (artifact.availableAtStep ?? 0) > editedStep,
-    ) ||
-    feature.runs.some((run) => run.step > editedStep) ||
+    featureHasLaterGeneratedWork(feature, editedStep) ||
     feature.step > editedStep
   );
 }

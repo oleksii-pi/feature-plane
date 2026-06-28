@@ -9,11 +9,11 @@ import {
   closeRevertDialog,
   confirmPendingRevert,
   moveToStep,
-  openArtifactSaveDialog,
   openFeatureDialog,
   openFeatureSettings,
   openRevertDialog,
   runCurrentStep,
+  saveArtifactFromCard,
   savePendingArtifact,
   setFeaturesPanelHidden,
   setWorkflowVisible,
@@ -367,7 +367,7 @@ export function bindEvents() {
     }
 
     if (event.target.closest(".save-artifact-button")) {
-      openArtifactSaveDialog(card);
+      saveArtifactFromCard(card).catch((error) => showToast(error.message));
     }
   });
 

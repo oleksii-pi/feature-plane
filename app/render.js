@@ -293,13 +293,19 @@ function displayRunProducedMarkup(run) {
   return `<span class="run-produced-text">produced <strong>${escapeHtml(run.artifact)}</strong></span>`;
 }
 
-function displayRunUpdatedMarkup(run, feature) {
+function updatedArtifactForRun(run, feature) {
   if (run.status !== "succeeded" || !run.artifact) return "";
-  const artifact = feature?.artifacts?.find(
+  return feature?.artifacts?.find(
     (item) => item.name === run.artifact && (item.availableAtStep ?? 0) === run.step,
   );
+}
+
+function displayRunUpdatedMarkup(run, feature) {
+  const artifact = updatedArtifactForRun(run, feature);
   if (!artifact?.updated) return "";
-  return `<span class="run-updated-text">Updated: ${escapeHtml(formatDateTime(artifact.updated))}</span>`;
+  const updatedTime = displayArtifactUpdatedTime(artifact.updated);
+  const updatedTitle = displayArtifactUpdatedTitle(artifact.updated);
+  return `<span class="artifact-updated" title="${escapeHtml(updatedTitle)}">${escapeHtml(updatedTime)}</span>`;
 }
 
 function displayRunDuration(run) {
@@ -319,6 +325,7 @@ function renderRunLog(run, index, isExpanded, feature) {
   return `
     <article class="artifact-card run-log ${run.status} ${isExpanded ? "expanded" : ""}" data-artifact-index="${index}" data-run-id="${escapeHtml(run.id)}">
       <div class="artifact-header">
+        ${displayRunUpdatedMarkup(run, feature)}
         <button class="artifact-toggle" type="button" aria-expanded="${isExpanded}">
           <span class="artifact-title">
             <span class="artifact-title-main">
@@ -330,9 +337,6 @@ function renderRunLog(run, index, isExpanded, feature) {
             </span>
           </span>
         </button>
-        <span class="artifact-header-actions">
-          ${displayRunUpdatedMarkup(run, feature)}
-        </span>
         ${restoreRunMenuMarkup(feature, run)}
         <button class="artifact-chevron-button" type="button" aria-label="Toggle run log" aria-expanded="${isExpanded}">
           <span class="artifact-chevron">⌃</span>
