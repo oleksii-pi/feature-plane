@@ -397,6 +397,16 @@ function isEntryExpandedByDefault(entry) {
   return !TERMINAL_RUN_STATUSES.has(entry.run.status);
 }
 
+function displayArtifactUpdatedTime(value) {
+  const updated = formatDateTime(value);
+  const match = updated.match(/\b(\d{2}:\d{2})(?::\d{2})?$/);
+  return match ? match[1] : updated;
+}
+
+function displayArtifactUpdatedTitle(value) {
+  return `Updated: ${formatDateTime(value)}`;
+}
+
 export function renderArtifacts(feature) {
   const entries = entriesForFeature(feature);
 
@@ -414,18 +424,18 @@ export function renderArtifacts(feature) {
       }
 
       const artifact = entry.artifact;
+      const updatedTime = displayArtifactUpdatedTime(artifact.updated);
+      const updatedTitle = displayArtifactUpdatedTitle(artifact.updated);
       return `
         <article class="artifact-card ${isExpanded ? "expanded" : ""}" data-artifact-index="${visibleIndex}" data-source-index="${entry.sourceIndex}">
           <div class="artifact-header">
+            <span class="artifact-updated" title="${escapeHtml(updatedTitle)}">${escapeHtml(updatedTime)}</span>
             <button class="artifact-toggle" type="button" aria-expanded="${isExpanded}">
               <span class="artifact-title">
                 <strong>${escapeHtml(artifact.name)}</strong>
               </span>
             </button>
             <button class="artifact-log-link edit-artifact-button" type="button">Edit</button>
-            <span class="artifact-header-actions">
-              <span class="artifact-updated">Updated: ${escapeHtml(formatDateTime(artifact.updated))}</span>
-            </span>
             ${restoreArtifactMenuMarkup(feature, artifact, entry.sourceIndex)}
             <button class="artifact-chevron-button" type="button" aria-label="Toggle artifact" aria-expanded="${isExpanded}">
               <span class="artifact-chevron">⌃</span>

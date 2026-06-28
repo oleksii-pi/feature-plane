@@ -767,6 +767,10 @@ button.artifact-header,
   text-align: left;
 }
 
+.artifact-header > .artifact-updated + .artifact-toggle {
+  flex: 1 1 auto;
+}
+
 .artifact-header-actions {
   display: inline-flex;
   align-items: center;
@@ -876,9 +880,11 @@ button.artifact-header,
 }
 
 .artifact-updated {
+  flex: 0 0 auto;
   color: var(--muted);
   font-size: 12px;
   font-weight: 200;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
