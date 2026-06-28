@@ -704,11 +704,11 @@ h3 {
 
 .artifact-header {
   width: 100%;
-  min-height: 42px;
+  min-height: 30px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 11px;
+  padding: 0 4px;
   border: 0;
   background: #fff;
   text-align: left;
@@ -741,11 +741,13 @@ button.artifact-header,
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .artifact-chevron-button {
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .artifact-log-link {
@@ -793,13 +795,15 @@ button.artifact-header,
   flex: 1;
 }
 
-.artifact-title strong {
+.artifact-title > strong,
+.artifact-title-main > strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.artifact-title strong,
+.artifact-title > strong,
+.artifact-title-main > strong,
 .artifact-title > span:not(.artifact-title-main) {
   display: block;
 }
@@ -811,11 +815,12 @@ button.artifact-header,
   gap: 6px;
 }
 
-.artifact-title-main strong {
+.artifact-title-main > strong {
   flex: 0 1 auto;
 }
 
-.artifact-title strong {
+.artifact-title > strong,
+.artifact-title-main > strong {
   font-size: 12.1px;
 }
 
@@ -827,23 +832,39 @@ button.artifact-header,
 
 .artifact-updated {
   color: var(--muted);
-  font-size: 9.9px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.execution-actions {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 200;
   white-space: nowrap;
 }
 
 .execution-price {
   color: var(--blue-soft);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .execution-duration {
   color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.run-produced-text {
+  color: var(--muted);
+  font-weight: 300;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.run-updated-text {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 300;
+  white-space: nowrap;
+}
+
+.run-produced-text strong {
+  font-weight: 800;
 }
 
 .artifact-label {

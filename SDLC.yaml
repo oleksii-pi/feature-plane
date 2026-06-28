@@ -5,7 +5,7 @@ sdlc:
     - merge
     - cleanup-environment
   workflow:
-    - state: Draft
+    - state: draft
       artifact: prompt.md
     - state: "@prepare-environment"
       agent: prepare-environment
@@ -13,11 +13,11 @@ sdlc:
     - state: "@implementation"
       agent: implementation
       artifact: implementation-details.md
-    - state: Review implementation
+    - state: review implementation
     - state: "@merge"
       agent: merge
       artifact: change-log.md
     - state: "@cleanup-environment"
       agent: cleanup-environment
       artifact: cleanup-environment.md
-    - state: Done
+    - state: done

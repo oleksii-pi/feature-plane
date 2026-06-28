@@ -175,11 +175,25 @@ function displayRunPrice(run) {
   return run.cost ?? "TBD";
 }
 
+function displayRunProducedMarkup(run) {
+  if (run.status !== "succeeded" || !run.artifact) return "";
+  return `<span class="run-produced-text">produced <strong>${escapeHtml(run.artifact)}</strong></span>`;
+}
+
+function displayRunUpdatedMarkup(run, feature) {
+  if (run.status !== "succeeded" || !run.artifact) return "";
+  const artifact = feature?.artifacts?.find(
+    (item) => item.name === run.artifact && (item.availableAtStep ?? 0) === run.step,
+  );
+  if (!artifact?.updated) return "";
+  return `<span class="run-updated-text">Updated: ${escapeHtml(formatDateTime(artifact.updated))}</span>`;
+}
+
 function displayRunDuration(run) {
   return formatDuration(run.startedAt, run.finishedAt);
 }
 
-function renderRunLog(run, index, isExpanded) {
+function renderRunLog(run, index, isExpanded, feature) {
   const step = state.workflow[run.step] ?? selectedStep();
   const eventMarkup = displayEvents(run).join("\n");
   const eventCount = run.events?.length ?? 0;
@@ -197,12 +211,14 @@ function renderRunLog(run, index, isExpanded) {
             <span class="artifact-title-main">
               <strong>${escapeHtml(displayRunTitle(step))}</strong>
               <span class="artifact-label">${escapeHtml(runLabel(run))}</span>
+              <span class="execution-duration">${escapeHtml(displayRunDuration(run))}</span>
+              <span class="execution-price">${escapeHtml(displayRunPrice(run))}</span>
+              ${displayRunProducedMarkup(run)}
             </span>
           </span>
         </button>
-        <span class="artifact-header-actions execution-actions">
-        <span class="execution-duration">${escapeHtml(displayRunDuration(run))}</span>
-          <span class="execution-price">${escapeHtml(displayRunPrice(run))}</span>
+        <span class="artifact-header-actions">
+          ${displayRunUpdatedMarkup(run, feature)}
         </span>
         <button class="artifact-chevron-button" type="button" aria-label="Toggle run log" aria-expanded="${isExpanded}">
           <span class="artifact-chevron">⌃</span>
@@ -280,7 +296,7 @@ export function renderArtifacts(feature) {
     .map((entry, visibleIndex) => {
       const isExpanded = isEntryExpandedByDefault(entry);
       if (entry.kind === "run") {
-        return renderRunLog(entry.run, visibleIndex, isExpanded);
+        return renderRunLog(entry.run, visibleIndex, isExpanded, feature);
       }
 
       const artifact = entry.artifact;
@@ -292,8 +308,8 @@ export function renderArtifacts(feature) {
                 <strong>${escapeHtml(artifact.name)}</strong>
               </span>
             </button>
+            <button class="artifact-log-link edit-artifact-button" type="button">Edit</button>
             <span class="artifact-header-actions">
-              <button class="artifact-log-link edit-artifact-button" type="button">Edit</button>
               <span class="artifact-updated">Updated: ${escapeHtml(formatDateTime(artifact.updated))}</span>
             </span>
             <button class="artifact-chevron-button" type="button" aria-label="Toggle artifact" aria-expanded="${isExpanded}">
