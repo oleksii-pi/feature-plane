@@ -93,11 +93,81 @@ export function closeArtifactSaveDialog() {
   if (elements.artifactSaveDialog.open) elements.artifactSaveDialog.close();
 }
 
+export function openRevertDialog(target) {
+  closeMenus();
+  const feature = selectedFeature();
+  if (!feature || feature.activeRunId) return;
+  const rerun = Boolean(target.rerun);
+  state.pendingRevertTarget = {
+    ...target,
+    featureId: feature.id,
+  };
+  elements.revertTargetName.textContent = target.label ?? "this state";
+  elements.revertDialogTitle.textContent = rerun
+    ? "Rerun agent step?"
+    : "Revert to state?";
+  elements.revertDialogCopy.replaceChildren(
+    rerun
+      ? "This will reset the feature workspace and branch to before "
+      : "This will reset the feature workspace and branch to ",
+    elements.revertTargetName,
+    rerun
+      ? ", remove artifacts and runs from this step onward, then queue the agent again."
+      : ". Files not present in that commit will be removed.",
+  );
+  elements.revertTargetDetail.textContent =
+    target.detail ??
+    "The feature workspace will be hard reset to the selected commit.";
+  elements.revertConfirmLabel.textContent = rerun
+    ? "I understand this will discard this agent run and later workflow work, then queue a new run."
+    : "I understand this will run a hard reset and clean the feature workspace.";
+  elements.confirmRevertButton.textContent = rerun
+    ? "Rerun"
+    : "Revert to state";
+  elements.revertReasonInput.value = "";
+  elements.revertConfirmCheckbox.checked = false;
+  elements.confirmRevertButton.disabled = true;
+  elements.revertDialog.showModal();
+  elements.revertConfirmCheckbox.focus();
+}
+
+export function closeRevertDialog() {
+  state.pendingRevertTarget = null;
+  if (elements.revertDialog.open) elements.revertDialog.close();
+}
+
 export async function savePendingArtifact({ discardNextSteps }) {
   const card = state.pendingArtifactSaveCard;
   closeArtifactSaveDialog();
   if (!card) return;
   await updateArtifact(card, { discardNextSteps });
+}
+
+export async function confirmPendingRevert() {
+  const target = state.pendingRevertTarget;
+  if (!target?.featureId || !elements.revertConfirmCheckbox.checked) return;
+  const body = {
+    confirmHardReset: true,
+    reason: elements.revertReasonInput.value.trim(),
+  };
+  if (target.rerun) {
+    body.rerun = true;
+    body.step = target.step;
+  } else if (target.kind === "run") body.runId = target.runId;
+  else if (target.kind === "artifact") body.artifactIndex = target.artifactIndex;
+  else body.step = target.step;
+
+  const result = await api(`/features/${target.featureId}/revert`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  closeRevertDialog();
+  await loadState({ preserveView: true });
+  const updated = state.features.find((feature) => feature.id === target.featureId);
+  if (updated) setView(updated.id, updated.step, { replace: true });
+  const environmentMessage = result.restore?.environment?.message;
+  const actionMessage = target.rerun ? "Agent rerun queued" : "State restored";
+  showToast(environmentMessage ? `${actionMessage}. ${environmentMessage}` : actionMessage);
 }
 
 function featureHasNextStepEntries(feature, editedStep) {

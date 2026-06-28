@@ -21,6 +21,7 @@ export const state = {
   runStreamRenderPending: false,
   runDurationTimer: null,
   pendingArtifactSaveCard: null,
+  pendingRevertTarget: null,
 };
 
 export const localState = {

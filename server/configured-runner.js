@@ -126,7 +126,15 @@ async function handleClose(feature, run, code, signal, handlers) {
     return;
   }
 
-  await handlers.completeConfiguredRun(feature, run);
+  try {
+    await handlers.completeConfiguredRun(feature, run);
+  } catch (error) {
+    await handlers.failRun(
+      feature,
+      run,
+      `Agent completion failed: ${error.message}`,
+    );
+  }
 }
 
 function handleAgentControlOutput(feature, run, chunk) {

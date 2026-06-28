@@ -4,6 +4,7 @@ const { configureFeatures, saveFeatureFiles } = require("./server/features");
 const { configureRunEvents } = require("./server/run-events");
 const { startRun } = require("./server/runs");
 const { configureState, ensureStorage, saveState } = require("./server/state");
+const { configureRevert } = require("./server/revert");
 const { handle } = require("./server/router");
 const { validateRepository } = require("./server/validation");
 const { stopAllConfiguredRuns } = require("./server/configured-runner");
@@ -14,6 +15,7 @@ function formatLocalDateTime(date = new Date()) {
 }
 
 configureFeatures({ startRun });
+configureRevert({ saveFeatureFiles, startRun });
 configureRunEvents({ saveFeatureFiles, saveState });
 configureState({ saveFeatureFiles, validateRepository });
 

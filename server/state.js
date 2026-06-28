@@ -12,6 +12,7 @@ const {
   branchWorkspaceFolder,
   getFeatureArtifactFolder,
 } = require("./feature-artifacts");
+const { commitFeatureWorkspace } = require("./git");
 const { priceRun, updateFeatureCost } = require("./pricing");
 const { addEvent, RUN_LOG_PREVIEW_LINE_LIMIT } = require("./run-events");
 const { formatDateTime } = require("./time");
@@ -34,8 +35,10 @@ async function ensureStorage() {
     const saved = JSON.parse(await fsp.readFile(STATE_FILE, "utf8"));
     if (Array.isArray(saved.features)) state.features = saved.features.map(normalizeFeature);
     const repricedRuns = await repriceCompletedRuns();
+    const backfilledRestorePoints = await backfillMissingRestorePoints();
     const needsRewrite =
       repricedRuns ||
+      backfilledRestorePoints ||
       savedFeatureMetadataNeedsRewrite(saved) ||
       savedTimestampsNeedRewrite(saved);
     if (needsRewrite) {
@@ -72,6 +75,30 @@ async function repriceCompletedRuns() {
       updateFeatureCost(feature);
       changed = true;
     }
+  }
+  return changed;
+}
+
+async function backfillMissingRestorePoints() {
+  let changed = false;
+  for (const feature of state.features) {
+    if (feature.headCommit && feature.stepCommits?.["0"]) continue;
+    await saveFeatureFiles(feature);
+    const commit = await commitFeatureWorkspace(
+      feature,
+      `Create restore baseline: ${feature.name}`,
+    );
+    feature.headCommit = commit.sha;
+    feature.stepCommits = {
+      ...(feature.stepCommits ?? {}),
+      "0": commit.sha,
+    };
+    feature.artifacts.forEach((artifact) => {
+      if (!artifact.commitSha) artifact.commitSha = commit.sha;
+      const step = String(artifact.availableAtStep ?? 0);
+      if (!feature.stepCommits[step]) feature.stepCommits[step] = commit.sha;
+    });
+    changed = true;
   }
   return changed;
 }
@@ -153,8 +180,37 @@ function normalizeFeature(feature) {
     environmentUrl:
       typeof feature.environmentUrl === "string" ? feature.environmentUrl : null,
     cost: feature.cost ?? null,
+    headCommit: normalizeCommit(feature.headCommit),
+    stepCommits: normalizeStepCommits(feature.stepCommits),
+    restoreHistory: Array.isArray(feature.restoreHistory)
+      ? feature.restoreHistory.map(normalizeRestoreEvent)
+      : [],
     artifacts: normalizeArtifacts(feature.artifacts, artifactFolder, runs),
     runs,
+  };
+}
+
+function normalizeCommit(value) {
+  const commit = String(value ?? "").trim();
+  return /^[0-9a-f]{7,40}$/i.test(commit) ? commit : null;
+}
+
+function normalizeStepCommits(value) {
+  if (!value || typeof value !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([step, commit]) => [String(clampStep(step)), normalizeCommit(commit)])
+      .filter(([, commit]) => commit),
+  );
+}
+
+function normalizeRestoreEvent(event) {
+  if (!event || typeof event !== "object") return event;
+  return {
+    ...event,
+    createdAt: event.createdAt ? formatDateTime(event.createdAt) : formatDateTime(),
+    commitSha: normalizeCommit(event.commitSha),
+    previousCommit: normalizeCommit(event.previousCommit),
   };
 }
 

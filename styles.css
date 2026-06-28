@@ -224,6 +224,16 @@ h3 {
   background: #f0f2f5;
 }
 
+.menu-popover button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.menu-popover button:disabled:hover {
+  background: transparent;
+}
+
 .menu-popover [role="menuitemcheckbox"]::after {
   float: right;
   margin-left: 18px;
@@ -464,30 +474,36 @@ h3 {
   min-width: 0;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0;
-  overflow-x: auto;
+  overflow: visible;
   padding: 2px 4px;
-  scrollbar-width: thin;
 }
 
 .timeline[hidden] {
   display: none;
 }
 
-.timeline-item {
+.timeline-entry {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  margin-right: 32px;
+}
+
+.timeline-entry:last-child {
+  margin-right: 0;
+}
+
+.timeline-item {
   display: flex;
   align-items: center;
   padding: 2px 5px;
-  margin-right: 32px;
   color: var(--muted);
   font-size: 9.5px;
   font-weight: 400;
   white-space: nowrap;
-}
-
-.timeline-item:last-child {
-  margin-right: 0;
 }
 
 .timeline-item.done {
@@ -527,6 +543,21 @@ h3 {
 
 .timeline-item.done.selected {
   color: var(--text);
+}
+
+.timeline-menu .menu-button {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+}
+
+.timeline-menu .menu-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.timeline-menu .menu-popover {
+  top: calc(100% + 3px);
 }
 
 .details-panel {
@@ -687,9 +718,8 @@ h3 {
 }
 
 .artifact-card {
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  overflow: visible;
+  border-bottom: 1px solid var(--border);
 }
 
 .artifact-card.latest {
@@ -775,6 +805,21 @@ button.artifact-header,
   padding: 0;
   border: 0;
   background: transparent;
+}
+
+.artifact-card-menu .menu-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+}
+
+.artifact-card-menu .menu-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.artifact-card-menu .menu-popover {
+  top: calc(100% + 3px);
 }
 
 .file-icon {
@@ -904,8 +949,7 @@ button.artifact-header,
 .artifact-body {
   display: none;
   padding: 4px;
-  border-top: 1px solid var(--border);
-  background: #fbfcfd;
+  background: #e1f1fd92;
 }
 
 .artifact-card.expanded .artifact-body {
@@ -1278,6 +1322,30 @@ dialog form {
 
 .confirmation-dialog {
   width: min(440px, calc(100vw - 32px));
+}
+
+.revert-target-detail {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.confirm-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 14px 0;
+  color: #354056;
+  font-size: 12.1px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.confirm-check input {
+  margin-top: 1px;
+}
+
+.revert-reason-field {
+  margin-top: 14px;
+  margin-bottom: 12px;
 }
 
 .artifact-save-actions {

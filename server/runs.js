@@ -3,6 +3,7 @@ const path = require("node:path");
 const { getAgentRunCommand, workflow } = require("./config");
 const { getFeatureArtifactFolder, getFeatureArtifactFolderPath } = require("./feature-artifacts");
 const { createWorkspaceSnapshot, summarizeWorkspaceChanges } = require("./file-changes");
+const { commitFeatureWorkspace } = require("./git");
 const { httpError } = require("./http");
 const { createId } = require("./ids");
 const { state, saveState } = require("./state");
@@ -155,10 +156,21 @@ async function updateCompletedRun(feature, run, step, content) {
   if (existing) Object.assign(existing, artifact);
   else feature.artifacts.push(artifact);
 
-  run.status = "succeeded";
-  run.finishedAt = formatDateTime();
   run.fileChanges = await summarizeWorkspaceChanges(feature, run.fileBaseline);
   delete run.fileBaseline;
+  const commit = await commitFeatureWorkspace(
+    feature,
+    `Run ${run.agent}: ${step.artifact}`,
+  );
+  run.commitSha = commit.sha;
+  artifact.commitSha = commit.sha;
+  feature.headCommit = commit.sha;
+  feature.stepCommits = {
+    ...(feature.stepCommits ?? {}),
+    [String(run.step)]: commit.sha,
+  };
+  run.status = "succeeded";
+  run.finishedAt = formatDateTime();
   await priceRun(run);
   updateFeatureCost(feature);
   feature.activeRunId = null;

@@ -64,16 +64,9 @@ export function renderTimeline(feature) {
     elements.timeline.innerHTML = "";
     return;
   }
-  const start = Math.max(0, state.selectedStepIndex - 3);
-  const end = Math.min(
-    state.workflow.length,
-    Math.max(state.selectedStepIndex + 3, 6),
-  );
 
   elements.timeline.innerHTML = state.workflow
-    .slice(start, end)
-    .map((step, index) => {
-      const actualIndex = start + index;
+    .map((step, actualIndex) => {
       const stepState =
         actualIndex < feature.step
           ? "done"
@@ -86,14 +79,134 @@ export function renderTimeline(feature) {
         actualIndex === state.selectedStepIndex ? "selected" : "";
       const name = running ? displayStep(feature) : step.state;
       const classes = `timeline-item ${stepState} ${running} ${selected}`;
+      const menu = restoreStepMenuMarkup(feature, actualIndex);
+      const item =
+        actualIndex <= feature.step
+          ? `<a class="${classes}" href="${viewUrl(feature.id, actualIndex)}" data-step-index="${actualIndex}"${selected ? ' aria-current="page"' : ""}>${escapeHtml(name)}</a>`
+          : `<span class="${classes}">${escapeHtml(name)}</span>`;
 
-      if (actualIndex <= feature.step) {
-        return `<a class="${classes}" href="${viewUrl(feature.id, actualIndex)}" data-step-index="${actualIndex}"${selected ? ' aria-current="page"' : ""}>${escapeHtml(name)}</a>`;
-      }
-
-      return `<span class="${classes}">${escapeHtml(name)}</span>`;
+      return `<span class="timeline-entry">${item}${menu}</span>`;
     })
     .join("");
+}
+
+function restoreStepMenuMarkup(feature, stepIndex) {
+  const step = state.workflow[stepIndex] ?? {};
+  const agentStep = isAgentStep(step);
+  const hasRunForStep = (feature.runs ?? []).some(
+    (run) => run.step === stepIndex,
+  );
+  if (agentStep && !hasRunForStep) return "";
+  const commit = agentStep
+    ? commitBeforeStep(feature, stepIndex)
+    : commitForStep(feature, stepIndex);
+  if (!commit || feature.activeRunId || stepIndex > feature.step) return "";
+  return restoreMenuMarkup({
+    className: "timeline-menu",
+    kind: "step",
+    label: agentStep
+      ? `${step.agent ?? step.state ?? "Agent"} run`
+      : step.state ?? `Step ${stepIndex + 1}`,
+    detail: agentStep
+      ? `Step ${stepIndex + 1} · reset to ${shortCommit(commit)}`
+      : `Step ${stepIndex + 1} · ${shortCommit(commit)}`,
+    attrs: agentStep
+      ? `data-revert-step="${stepIndex}" data-revert-rerun="true"`
+      : `data-revert-step="${stepIndex}"`,
+    actionLabel: agentStep ? "Rerun" : "Revert to state",
+  });
+}
+
+function restoreRunMenuMarkup(feature, run) {
+  if (feature.activeRunId || run.status !== "succeeded") return "";
+  const step = state.workflow[run.step] ?? {};
+  if (isAgentStep(step)) {
+    const commit = commitBeforeStep(feature, run.step);
+    if (!commit) return "";
+    return restoreMenuMarkup({
+      className: "artifact-card-menu",
+      kind: "run",
+      label: `${displayRunTitle(step)} run`,
+      detail: `Step ${run.step + 1} · reset to ${shortCommit(commit)}`,
+      attrs: `data-revert-run-id="${escapeHtml(run.id)}" data-revert-step="${run.step}" data-revert-rerun="true"`,
+      actionLabel: "Rerun",
+    });
+  }
+  if (!run.commitSha) return "";
+  return restoreMenuMarkup({
+    className: "artifact-card-menu",
+    kind: "run",
+    label: `${displayRunTitle(step)} run`,
+    detail: `${run.agent} · ${shortCommit(run.commitSha)}`,
+    attrs: `data-revert-run-id="${escapeHtml(run.id)}"`,
+  });
+}
+
+function restoreArtifactMenuMarkup(feature, artifact, sourceIndex) {
+  const commit = artifact.commitSha ?? commitForStep(feature, artifact.availableAtStep ?? 0);
+  if (!commit || feature.activeRunId || commitsMatch(commit, feature.headCommit)) return "";
+  return restoreMenuMarkup({
+    className: "artifact-card-menu",
+    kind: "artifact",
+    label: artifact.name,
+    detail: `Step ${(artifact.availableAtStep ?? 0) + 1} · ${shortCommit(commit)}`,
+    attrs: `data-revert-artifact-index="${sourceIndex}"`,
+  });
+}
+
+function restoreMenuMarkup({ className, kind, label, detail, attrs, actionLabel = "Revert to state" }) {
+  return `
+    <div class="menu ${className}" data-menu>
+      <button class="menu-button" type="button" aria-label="State actions" aria-haspopup="menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="5" r="1.75" />
+          <circle cx="12" cy="12" r="1.75" />
+          <circle cx="12" cy="19" r="1.75" />
+        </svg>
+      </button>
+      <div class="menu-popover" role="menu" hidden>
+        <button
+          class="revert-state-button"
+          type="button"
+          role="menuitem"
+          data-revert-kind="${kind}"
+          data-revert-label="${escapeHtml(label)}"
+          data-revert-detail="${escapeHtml(detail)}"
+          ${attrs}
+        >${escapeHtml(actionLabel)}</button>
+      </div>
+    </div>
+  `;
+}
+
+function commitsMatch(left, right) {
+  if (!left || !right) return false;
+  return String(left).startsWith(String(right)) || String(right).startsWith(String(left));
+}
+
+function commitBeforeStep(feature, stepIndex) {
+  if (stepIndex <= 0) return null;
+  return commitForStep(feature, stepIndex - 1);
+}
+
+export function commitForStep(feature, stepIndex) {
+  const commits = feature.stepCommits ?? {};
+  if (commits[String(stepIndex)]) return commits[String(stepIndex)];
+  for (let index = stepIndex; index >= 0; index -= 1) {
+    if (commits[String(index)]) return commits[String(index)];
+  }
+  const run = [...(feature.runs ?? [])]
+    .reverse()
+    .find((item) => item.status === "succeeded" && item.step <= stepIndex && item.commitSha);
+  if (run) return run.commitSha;
+  const artifact = [...(feature.artifacts ?? [])]
+    .reverse()
+    .find((item) => (item.availableAtStep ?? 0) <= stepIndex && item.commitSha);
+  return artifact?.commitSha ?? feature.headCommit ?? null;
+}
+
+function shortCommit(commit) {
+  return String(commit ?? "").slice(0, 7);
 }
 
 function displayRunDetails(run) {
@@ -220,6 +333,7 @@ function renderRunLog(run, index, isExpanded, feature) {
         <span class="artifact-header-actions">
           ${displayRunUpdatedMarkup(run, feature)}
         </span>
+        ${restoreRunMenuMarkup(feature, run)}
         <button class="artifact-chevron-button" type="button" aria-label="Toggle run log" aria-expanded="${isExpanded}">
           <span class="artifact-chevron">⌃</span>
         </button>
@@ -312,6 +426,7 @@ export function renderArtifacts(feature) {
             <span class="artifact-header-actions">
               <span class="artifact-updated">Updated: ${escapeHtml(formatDateTime(artifact.updated))}</span>
             </span>
+            ${restoreArtifactMenuMarkup(feature, artifact, entry.sourceIndex)}
             <button class="artifact-chevron-button" type="button" aria-label="Toggle artifact" aria-expanded="${isExpanded}">
               <span class="artifact-chevron">⌃</span>
             </button>

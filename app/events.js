@@ -6,10 +6,13 @@ import {
 } from "./api.js";
 import {
   closeArtifactSaveDialog,
+  closeRevertDialog,
+  confirmPendingRevert,
   moveToStep,
   openArtifactSaveDialog,
   openFeatureDialog,
   openFeatureSettings,
+  openRevertDialog,
   runCurrentStep,
   savePendingArtifact,
   setFeaturesPanelHidden,
@@ -123,6 +126,37 @@ function setFeatureTitleEditMode(editing) {
   elements.settingsFeatureNameInput.setSelectionRange(length, length);
 }
 
+function toggleMenuFromButton(event, button) {
+  const menu = button.closest("[data-menu]");
+  if (!menu) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const popover = menu.querySelector(".menu-popover");
+  const opening = popover.hidden;
+  closeMenus(opening ? menu : null);
+  if (opening) openMenu(menu);
+}
+
+function revertTargetFromButton(button) {
+  const kind = button.dataset.revertKind;
+  const target = {
+    kind,
+    label: button.dataset.revertLabel,
+    detail: button.dataset.revertDetail,
+    rerun: button.dataset.revertRerun === "true",
+  };
+  if (button.dataset.revertStep !== undefined) {
+    target.step = Number(button.dataset.revertStep);
+  }
+  if (kind === "run") target.runId = button.dataset.revertRunId;
+  else if (kind === "artifact") {
+    target.artifactIndex = Number(button.dataset.revertArtifactIndex);
+  } else {
+    target.step = Number(button.dataset.revertStep);
+  }
+  return target;
+}
+
 function bindMenuKeyboardShortcuts() {
   document.addEventListener("keydown", (event) => {
     if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey)
@@ -175,6 +209,20 @@ export function bindEvents() {
   });
 
   elements.timeline.addEventListener("click", (event) => {
+    const menuButton = event.target.closest(".timeline-menu .menu-button");
+    if (menuButton) {
+      toggleMenuFromButton(event, menuButton);
+      return;
+    }
+
+    const revertButton = event.target.closest(".timeline-menu .revert-state-button");
+    if (revertButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      openRevertDialog(revertTargetFromButton(revertButton));
+      return;
+    }
+
     const tab = event.target.closest("[data-step-index]");
     if (!tab) return;
     if (
@@ -269,6 +317,22 @@ export function bindEvents() {
   elements.artifactList.addEventListener("click", async (event) => {
     const card = event.target.closest("[data-artifact-index]");
     if (!card) return;
+
+    const menuButton = event.target.closest(".artifact-card-menu .menu-button");
+    if (menuButton) {
+      toggleMenuFromButton(event, menuButton);
+      return;
+    }
+
+    const revertButton = event.target.closest(".artifact-card-menu .revert-state-button");
+    if (revertButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      openRevertDialog(revertTargetFromButton(revertButton));
+      return;
+    }
+
+    if (event.target.closest(".artifact-card-menu")) return;
 
     if (event.target.closest("a.artifact-log-link")) return;
 
@@ -443,6 +507,25 @@ export function bindEvents() {
       savePendingArtifact({ discardNextSteps: true }).catch((error) =>
         showToast(error.message),
       );
+    });
+
+  elements.revertDialog.addEventListener("close", () => {
+    state.pendingRevertTarget = null;
+  });
+  document
+    .querySelector("#close-revert-button")
+    .addEventListener("click", closeRevertDialog);
+  document
+    .querySelector("#cancel-revert-button")
+    .addEventListener("click", closeRevertDialog);
+  elements.revertConfirmCheckbox.addEventListener("change", () => {
+    elements.confirmRevertButton.disabled = !elements.revertConfirmCheckbox.checked;
+  });
+  document
+    .querySelector("#revert-state-form")
+    .addEventListener("submit", (event) => {
+      event.preventDefault();
+      confirmPendingRevert().catch((error) => showToast(error.message));
     });
 
   elements.settingsForm.addEventListener("submit", async (event) => {

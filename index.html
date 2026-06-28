@@ -200,6 +200,32 @@
       </div>
     </dialog>
 
+    <dialog id="revert-state-dialog" class="confirmation-dialog">
+      <form id="revert-state-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow danger-text">Hard reset</p>
+            <h2 id="revert-dialog-title">Revert to state?</h2>
+          </div>
+          <button class="icon-button" id="close-revert-button" type="button" aria-label="Close confirmation">×</button>
+        </div>
+        <p class="dialog-copy" id="revert-dialog-copy">This will reset the feature workspace and branch to <strong id="revert-target-name"></strong>. Files not present in that commit will be removed.</p>
+        <p class="dialog-copy revert-target-detail" id="revert-target-detail"></p>
+        <label class="confirm-check">
+          <input id="revert-confirm-checkbox" type="checkbox" />
+          <span id="revert-confirm-label">I understand this will run a hard reset and clean the feature workspace.</span>
+        </label>
+        <label class="form-field revert-reason-field">
+          Reason comment
+          <textarea id="revert-reason-comment" rows="4" maxlength="2000" placeholder="Optional"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-revert-button" type="button">Cancel</button>
+          <button class="danger-button" id="confirm-revert-button" type="submit" disabled>Revert to state</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="repository-workflow-dialog" class="repository-workflow-dialog" aria-labelledby="repository-workflow-title">
       <div class="dialog-content">
         <div class="dialog-heading workflow-dialog-heading" id="workflow-dialog-handle">

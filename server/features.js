@@ -6,6 +6,7 @@ const {
   branchWorkspaceFolder,
   getFeatureArtifactFolderPath,
 } = require("./feature-artifacts");
+const { commitFeatureWorkspace } = require("./git");
 const { httpError } = require("./http");
 const { createId } = require("./ids");
 const { clampStep, saveState, slugify, state } = require("./state");
@@ -69,6 +70,9 @@ async function createFeature({ title, prompt }) {
     activeRunId: null,
     environmentUrl: null,
     cost: null,
+    headCommit: null,
+    stepCommits: {},
+    restoreHistory: [],
     artifacts: [
       {
         name: "prompt.md",
@@ -81,8 +85,12 @@ async function createFeature({ title, prompt }) {
     ],
     runs: [],
   };
-  state.features.unshift(feature);
   await saveFeatureFiles(feature);
+  const commit = await commitFeatureWorkspace(feature, `Create feature: ${title}`);
+  feature.headCommit = commit.sha;
+  feature.stepCommits["0"] = commit.sha;
+  feature.artifacts[0].commitSha = commit.sha;
+  state.features.unshift(feature);
   await saveState();
   return feature;
 }
@@ -90,10 +98,27 @@ async function createFeature({ title, prompt }) {
 async function saveFeatureFiles(feature) {
   const featureDir = getFeatureArtifactFolderPath(feature);
   await fsp.mkdir(featureDir, { recursive: true });
+  await removeStaleMarkdownArtifacts(feature, featureDir);
   await Promise.all(
     feature.artifacts.map((artifact) =>
       fsp.writeFile(path.join(featureDir, artifact.name), artifact.content ?? ""),
     ),
+  );
+}
+
+async function removeStaleMarkdownArtifacts(feature, featureDir) {
+  const expected = new Set(feature.artifacts.map((artifact) => artifact.name));
+  let entries;
+  try {
+    entries = await fsp.readdir(featureDir, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT") return;
+    throw error;
+  }
+  await Promise.all(
+    entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".md") && !expected.has(entry.name))
+      .map((entry) => fsp.rm(path.join(featureDir, entry.name), { force: true })),
   );
 }
 
@@ -154,6 +179,9 @@ async function discardNextSteps(feature, editedStep) {
     (artifact) => (artifact.availableAtStep ?? 0) <= editedStep,
   );
   feature.runs = feature.runs.filter((run) => run.step <= editedStep);
+  feature.stepCommits = Object.fromEntries(
+    Object.entries(feature.stepCommits ?? {}).filter(([step]) => Number(step) <= editedStep),
+  );
   updateFeatureCost(feature);
   feature.step = Math.min(feature.step, editedStep);
 
@@ -176,6 +204,16 @@ async function updateArtifact(feature, index, content, options = {}) {
   feature.updated = formatDateTime();
   await fsp.writeFile(path.join(getFeatureArtifactFolderPath(feature), artifact.name), content);
   await saveFeatureFiles(feature);
+  const commit = await commitFeatureWorkspace(
+    feature,
+    `Update artifact: ${artifact.name}`,
+  );
+  artifact.commitSha = commit.sha;
+  feature.headCommit = commit.sha;
+  feature.stepCommits = {
+    ...(feature.stepCommits ?? {}),
+    [String(editedStep)]: commit.sha,
+  };
   await saveState();
   return artifact;
 }

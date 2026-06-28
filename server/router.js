@@ -11,6 +11,7 @@ const { httpError, readJson, sendJson, sendNoContent } = require("./http");
 const { serveStatic } = require("./static");
 const { normalizeFeature, publicState, saveState, state } = require("./state");
 const { createFeature, findFeature, moveFeature, saveFeatureFiles, updateArtifact } = require("./features");
+const { revertFeatureToState } = require("./revert");
 const { cancelRun, findRun, startRun } = require("./runs");
 const { queueFeatureEnvironmentUrl, streamRunEvents } = require("./run-events");
 const { formatDateTime } = require("./time");
@@ -117,6 +118,13 @@ async function route(req, res) {
         discardNextSteps: Boolean(body.discardNextSteps),
       });
       sendJson(res, 200, artifact);
+      return;
+    }
+
+    if (req.method === "POST" && parts[2] === "revert") {
+      const body = await readJson(req);
+      const result = await revertFeatureToState(feature, body);
+      sendJson(res, 200, result);
       return;
     }
 

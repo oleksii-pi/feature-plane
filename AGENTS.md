@@ -54,8 +54,8 @@ rejected because workflow runs do not have a TTY.
 
 - Creating a feature writes `prompt.md`, records metadata, and copies the
   current repo into a per-feature workspace.
-- Feature branches are represented as `feature/<slug>`, but this PoC does not
-  currently create git branches or git worktrees.
+- Feature branches are represented as `feature/<slug>` in each per-feature
+  workspace repository; this PoC does not currently create git worktrees.
 - Feature state is persisted as JSON in the feature home.
 - Agent steps are defined in `SDLC.yaml`; every configured agent must have a
   matching `.instructions/<agent>.agent.md` file.
@@ -74,6 +74,7 @@ Keep route changes aligned with `server/router.js`. The active endpoints are:
 - `GET /features/:id`, `PATCH /features/:id`, `DELETE /features/:id`
 - `GET /features/:id/steps`, `PATCH /features/:id/steps/:step`
 - `PATCH /features/:id/artifacts/:index`
+- `POST /features/:id/revert`
 - `GET /features/:id/runs`, `POST /features/:id/runs`
 - `GET /runs/:id`, `GET /runs/:id/events`, `GET /runs/:id/log`
 - `POST /runs/:id/cancel`

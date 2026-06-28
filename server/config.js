@@ -15,7 +15,7 @@ const RUN_LOG_ROOT = path.join(FEATURE_ROOT, "run-logs");
 const STATE_FILE = path.join(FEATURE_ROOT, "state.json");
 const AGENT_PRICING = resolveAgentPricing();
 const { workflow } = sdlcConfig;
-const WORKSPACE_COPY_EXCLUDES = new Set([FEATURES_HOME, ".git", ".env"]);
+const WORKSPACE_COPY_EXCLUDES = new Set([FEATURES_HOME, ".features", ".git", ".env"]);
 
 function loadDotEnv(filePath) {
   let source;

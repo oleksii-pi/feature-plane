@@ -4,7 +4,7 @@ const path = require("node:path");
 const { FEATURES_HOME } = require("./config");
 const { getFeatureWorkspaceFolderPath } = require("./feature-artifacts");
 
-const GENERATED_ROOTS = new Set([FEATURES_HOME, ".artifacts"]);
+const GENERATED_ROOTS = new Set([FEATURES_HOME, ".artifacts", ".git"]);
 
 async function createWorkspaceSnapshot(feature) {
   const files = await listFiles(getFeatureWorkspaceFolderPath(feature));
