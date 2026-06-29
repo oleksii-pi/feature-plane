@@ -1472,13 +1472,6 @@ dialog form {
   line-height: 1.2;
 }
 
-.workflow-title-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .read-only-badge {
   padding: 2px 5px;
   color: #526074;
