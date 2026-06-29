@@ -16,10 +16,10 @@
       <main class="workspace" id="workspace">
         <aside class="panel features-panel" aria-labelledby="features-heading">
           <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Workspace</p>
-              <h1 id="features-heading">Features</h1>
-            </div>
+            <label class="search-box">
+              <span class="sr-only">Search features</span>
+              <input id="feature-search" type="search" placeholder="Search features" autocomplete="off" />
+            </label>
             <div class="menu" data-menu data-menu-shortcut="Digit1">
               <button class="menu-button" type="button" aria-label="Feature actions" aria-haspopup="menu" aria-expanded="false">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -37,14 +37,7 @@
             </div>
           </div>
 
-          <label class="search-box">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-4-4" />
-            </svg>
-            <span class="sr-only">Search features</span>
-            <input id="feature-search" type="search" placeholder="Search features" autocomplete="off" />
-          </label>
+          
 
           <div class="feature-list" id="feature-list"></div>
         </aside>

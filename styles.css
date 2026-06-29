@@ -331,8 +331,6 @@ h3 {
 
 .search-box {
   height: 32px;
-  margin: 0 9px 8px;
-  padding: 0 9px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -340,6 +338,7 @@ h3 {
   background: #f7f8fa;
   border: 1px solid var(--border);
   border-radius: 7px;
+  width: stretch;
 }
 
 .search-box:focus-within {
