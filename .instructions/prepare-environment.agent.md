@@ -1,4 +1,7 @@
 1. Read the user request from the file at `$CONTROL_PLANE_PROMPT_PATH`.
+   The committed feature artifact folder inside the workspace is
+   `$CONTROL_PLANE_WORKSPACE_ARTIFACT_FOLDER` (`features/<feature-slug>/artifacts`);
+   the absolute path is `$CONTROL_PLANE_ARTIFACT_FOLDER_PATH`.
 
 2. From `$CONTROL_PLANE_WORKSPACE_PATH`, run the repository helper:
 

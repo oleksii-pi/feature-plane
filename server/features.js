@@ -5,6 +5,7 @@ const {
   branchArtifactFolder,
   branchWorkspaceFolder,
   getFeatureArtifactFolderPath,
+  getLegacyFeatureArtifactFolderPaths,
 } = require("./feature-artifacts");
 const { commitFeatureWorkspace } = require("./git");
 const { httpError } = require("./http");
@@ -99,6 +100,7 @@ async function saveFeatureFiles(feature) {
   const featureDir = getFeatureArtifactFolderPath(feature);
   await fsp.mkdir(featureDir, { recursive: true });
   await removeStaleMarkdownArtifacts(feature, featureDir);
+  await removeLegacyMarkdownArtifacts(feature);
   await Promise.all(
     feature.artifacts.map((artifact) =>
       fsp.writeFile(path.join(featureDir, artifact.name), artifact.content ?? ""),
@@ -119,6 +121,29 @@ async function removeStaleMarkdownArtifacts(feature, featureDir) {
     entries
       .filter((entry) => entry.isFile() && entry.name.endsWith(".md") && !expected.has(entry.name))
       .map((entry) => fsp.rm(path.join(featureDir, entry.name), { force: true })),
+  );
+}
+
+async function removeLegacyMarkdownArtifacts(feature) {
+  await Promise.all(
+    getLegacyFeatureArtifactFolderPaths(feature).map((legacyDir) =>
+      removeMarkdownFiles(legacyDir),
+    ),
+  );
+}
+
+async function removeMarkdownFiles(dir) {
+  let entries;
+  try {
+    entries = await fsp.readdir(dir, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT") return;
+    throw error;
+  }
+  await Promise.all(
+    entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+      .map((entry) => fsp.rm(path.join(dir, entry.name), { force: true })),
   );
 }
 

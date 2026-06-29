@@ -96,6 +96,7 @@ function buildChildEnv(feature, run, context) {
     CONTROL_PLANE_ARTIFACT_FOLDER: context.artifact_folder,
     CONTROL_PLANE_ARTIFACT_FOLDER_PATH: context.artifact_folder_path,
     CONTROL_PLANE_ARTIFACT_PATH: context.artifact_path,
+    CONTROL_PLANE_ARTIFACT_RELATIVE_PATH: context.artifact_relative_path,
     CONTROL_PLANE_BRANCH: feature.branch,
     CONTROL_PLANE_CONTEXT_FOLDER: context.context_folder,
     CONTROL_PLANE_CONTEXT_FOLDER_PATH: context.context_folder_path,
@@ -105,10 +106,14 @@ function buildChildEnv(feature, run, context) {
     CONTROL_PLANE_FEATURE_WORKSPACE: feature.workspace,
     CONTROL_PLANE_INSTRUCTION_PATH: context.instruction_path,
     CONTROL_PLANE_PROMPT_PATH: context.prompt_path,
+    CONTROL_PLANE_PROMPT_RELATIVE_PATH: context.prompt_relative_path,
     CONTROL_PLANE_REQUIRED_ARTIFACT: run.artifact,
     CONTROL_PLANE_RUN_ID: run.id,
     CONTROL_PLANE_RUN_EVENT_URL: `http://127.0.0.1:${PORT}/runs/${encodeURIComponent(run.id)}/events`,
     CONTROL_PLANE_STATE: context.state,
+    CONTROL_PLANE_STORED_ARTIFACT_FOLDER: context.stored_artifact_folder,
+    CONTROL_PLANE_WORKSPACE_ARTIFACT_FOLDER: context.workspace_artifact_folder,
+    CONTROL_PLANE_WORKSPACE_ARTIFACT_PATH: context.workspace_artifact_path,
     CONTROL_PLANE_WORKSPACE_PATH: context.workspace_path,
   };
 }

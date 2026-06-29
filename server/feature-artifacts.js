@@ -16,13 +16,18 @@ function assertSafeRelativePath(relativePath) {
 }
 
 function branchArtifactFolder(branch, slug) {
-  return `${branchWorkspaceFolder(branch, slug)}/.artifacts`;
+  return `${branchWorkspaceFolder(branch, slug)}/${workspaceArtifactFolder(slug)}`;
 }
 
 function branchWorkspaceFolder(branch, slug) {
   const branchName = normalizeFeatureBranch(branch, slug);
   const branchSuffix = assertSafeRelativePath(branchName.slice("feature/".length));
   return `${FEATURES_HOME}/${branchSuffix}`;
+}
+
+function workspaceArtifactFolder(slug) {
+  const featureSlug = assertSafeRelativePath(slug);
+  return `features/${featureSlug}/artifacts`;
 }
 
 function normalizeFeatureBranch(branch, slug) {
@@ -51,11 +56,32 @@ function getFeatureArtifactFolderPath(feature) {
   return path.join(ROOT, getFeatureArtifactFolder(feature));
 }
 
+function getFeatureWorkspaceArtifactFolder(feature) {
+  return workspaceArtifactFolder(feature.slug);
+}
+
+function legacyBranchArtifactFolders(branch, slug) {
+  const workspace = branchWorkspaceFolder(branch, slug);
+  const branchName = normalizeFeatureBranch(branch, slug);
+  return [`${workspace}/.artifacts`, `${workspace}/${branchName}`];
+}
+
+function getLegacyFeatureArtifactFolderPaths(feature) {
+  const current = getFeatureArtifactFolder(feature);
+  return legacyBranchArtifactFolders(feature.branch, feature.slug)
+    .filter((folder) => folder !== current)
+    .map((folder) => path.join(ROOT, folder));
+}
+
 module.exports = {
   branchArtifactFolder,
   branchWorkspaceFolder,
   getFeatureArtifactFolder,
   getFeatureArtifactFolderPath,
+  getLegacyFeatureArtifactFolderPaths,
+  getFeatureWorkspaceArtifactFolder,
   getFeatureWorkspaceFolder,
   getFeatureWorkspaceFolderPath,
+  legacyBranchArtifactFolders,
+  workspaceArtifactFolder,
 };

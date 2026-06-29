@@ -1,5 +1,8 @@
 1. Read environment state from `$CONTROL_PLANE_ARTIFACT_FOLDER_PATH` and locate
    the PID recorded in `environment.pid`.
+   The committed feature artifact folder inside the workspace is
+   `$CONTROL_PLANE_WORKSPACE_ARTIFACT_FOLDER` (`features/<feature-slug>/artifacts`);
+   the absolute path is `$CONTROL_PLANE_ARTIFACT_FOLDER_PATH`.
 
 2. Stop only the recorded feature instance process. Do not stop, reuse, or
    modify any other localhost server or feature instance.

@@ -11,6 +11,8 @@ const {
   branchArtifactFolder,
   branchWorkspaceFolder,
   getFeatureArtifactFolder,
+  getFeatureWorkspaceArtifactFolder,
+  legacyBranchArtifactFolders,
 } = require("./feature-artifacts");
 const { commitFeatureWorkspace } = require("./git");
 const { priceRun, updateFeatureCost } = require("./pricing");
@@ -33,6 +35,7 @@ async function ensureStorage() {
   await fsp.mkdir(FEATURE_ROOT, { recursive: true });
   try {
     const saved = JSON.parse(await fsp.readFile(STATE_FILE, "utf8"));
+    const legacyArtifactFeatureIds = savedLegacyArtifactFeatureIds(saved);
     if (Array.isArray(saved.features)) state.features = saved.features.map(normalizeFeature);
     const repricedRuns = await repriceCompletedRuns();
     const backfilledRestorePoints = await backfillMissingRestorePoints();
@@ -43,8 +46,9 @@ async function ensureStorage() {
       savedTimestampsNeedRewrite(saved);
     if (needsRewrite) {
       await Promise.all(state.features.map(saveFeatureFiles));
-      await saveState();
     }
+    const migratedArtifactFolders = await commitMigratedArtifactFolders(legacyArtifactFeatureIds);
+    if (needsRewrite || migratedArtifactFolders) await saveState();
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
     await saveState();
@@ -75,6 +79,40 @@ async function repriceCompletedRuns() {
       updateFeatureCost(feature);
       changed = true;
     }
+  }
+  return changed;
+}
+
+function savedLegacyArtifactFeatureIds(saved) {
+  if (!saved || typeof saved !== "object") return new Set();
+  if (!Array.isArray(saved.features)) return new Set();
+  return new Set(
+    saved.features
+      .filter(isLegacyArtifactFolder)
+      .map((feature) => String(feature.id ?? ""))
+      .filter(Boolean),
+  );
+}
+
+async function commitMigratedArtifactFolders(featureIds) {
+  if (!(featureIds instanceof Set) || !featureIds.size) return false;
+  let changed = false;
+  for (const feature of state.features) {
+    if (!featureIds.has(feature.id)) continue;
+    const commit = await commitFeatureWorkspace(
+      feature,
+      `Move artifacts into workspace branch: ${feature.name}`,
+    );
+    if (!commit.changed) continue;
+    feature.headCommit = commit.sha;
+    feature.stepCommits = {
+      ...(feature.stepCommits ?? {}),
+      [String(feature.step)]: commit.sha,
+    };
+    feature.artifacts.forEach((artifact) => {
+      artifact.commitSha = commit.sha;
+    });
+    changed = true;
   }
   return changed;
 }
@@ -113,7 +151,7 @@ function savedFeatureMetadataNeedsRewrite(saved) {
       ("prompt" in feature ||
         typeof feature.artifactFolder !== "string" ||
         feature.artifactFolder === feature.workspace ||
-        isLegacyNestedArtifactFolder(feature) ||
+        isLegacyArtifactFolder(feature) ||
         artifactsNeedCreationMetadata(feature.artifacts)),
   );
 }
@@ -125,13 +163,12 @@ function artifactsNeedCreationMetadata(artifacts) {
   );
 }
 
-function isLegacyNestedArtifactFolder(feature) {
+function isLegacyArtifactFolder(feature) {
   if (!feature || typeof feature !== "object") return false;
   const slug = String(feature.slug ?? slugify(feature.name ?? feature.title ?? "feature"));
   const branch = String(feature.branch ?? `feature/${slug}`);
-  const workspace = String(feature.workspace ?? branchWorkspaceFolder(branch, slug));
   const artifactFolder = String(feature.artifactFolder ?? "");
-  return artifactFolder === `${workspace}/${branch}`;
+  return legacyBranchArtifactFolders(branch, slug).includes(artifactFolder);
 }
 
 function savedTimestampsNeedRewrite(saved) {
@@ -163,7 +200,14 @@ function normalizeFeature(feature) {
   const workspace = String(feature.workspace ?? branchWorkspaceFolder(branch, slug));
   const storedArtifactFolder = String(feature.artifactFolder ?? branchArtifactFolder(branch, slug));
   const artifactFolder =
-    storedArtifactFolder === workspace || storedArtifactFolder === `${workspace}/${branch}`
+    storedArtifactFolder === workspace ||
+    isLegacyArtifactFolder({
+      ...feature,
+      slug,
+      branch,
+      workspace,
+      artifactFolder: storedArtifactFolder,
+    })
       ? branchArtifactFolder(branch, slug)
       : storedArtifactFolder;
   const runs = Array.isArray(feature.runs) ? feature.runs.map(normalizeRun) : [];
@@ -311,6 +355,7 @@ function publicState() {
       featureId: feature.id,
       path: feature.workspace,
       artifactFolder: getFeatureArtifactFolder(feature),
+      workspaceArtifactFolder: getFeatureWorkspaceArtifactFolder(feature),
       activeRunId: feature.activeRunId,
     })),
     validation: validateRepository(),

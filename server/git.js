@@ -8,7 +8,12 @@ const execFileAsync = promisify(execFile);
 const MAX_GIT_OUTPUT = 10 * 1024 * 1024;
 const COMMITTER_NAME = "Control Plane";
 const COMMITTER_EMAIL = "control-plane@local.invalid";
-const WORKSPACE_EXCLUDES = [".artifacts/*.log", ".artifacts/*.pid"];
+const WORKSPACE_EXCLUDES = [
+  ".artifacts/*.log",
+  ".artifacts/*.pid",
+  "features/**/artifacts/*.log",
+  "features/**/artifacts/*.pid",
+];
 
 async function runGit(feature, args, options = {}) {
   const cwd = getFeatureWorkspaceFolderPath(feature);

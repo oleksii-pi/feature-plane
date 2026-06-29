@@ -11,7 +11,7 @@ function validateRepository() {
     {
       name: "Feature artifact folders",
       status: fs.existsSync(FEATURE_ROOT) ? "passed" : "failed",
-      message: `${path.relative(ROOT, FEATURE_ROOT)} stores feature prompts, artifacts, and Control Plane run logs.`,
+      message: `${path.relative(ROOT, FEATURE_ROOT)} stores feature state and workspaces; workflow artifacts are committed under features/<feature-slug>/artifacts in each workspace.`,
     },
     {
       name: "Workflow structure",

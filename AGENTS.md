@@ -12,7 +12,8 @@ keeps feature state on disk under the configured feature home.
 - UI shell: `index.html`, `styles.css`
 - Workflow config: `SDLC.yaml`
 - Agent prompts: `.instructions/<agent>.agent.md`
-- Generated feature state, workspaces, artifacts, and run logs: `.features/` by default
+- Generated feature state, workspaces, and run logs: `.features/` by default (gitignored)
+- Feature artifacts inside each workspace branch: `features/<feature-slug>/artifacts`
 
 ## Run
 
@@ -43,8 +44,10 @@ Useful variables:
 
 `agent_run_command` supports placeholders from `server/agent-command.js`, such
 as `%instruction_path%`, `%prompt_path%`, `%artifact_path%`,
-`%artifact_folder_path%`, `%workspace_path%`, `%branch%`, `%agent%`,
-`%artifact%`, `%state%`, `%feature_name%`, and `%feature_id%`.
+`%artifact_folder%`, `%artifact_folder_path%`,
+`%workspace_artifact_folder%`, `%workspace_artifact_path%`,
+`%workspace_path%`, `%branch%`, `%agent%`, `%artifact%`, `%state%`,
+`%feature_name%`, and `%feature_id%`.
 Placeholders are shell-escaped by the app, so pass them as bare tokens.
 
 Use `codex exec ...` for configured Codex runs. Plain interactive `codex` is
@@ -54,6 +57,8 @@ rejected because workflow runs do not have a TTY.
 
 - Creating a feature writes `prompt.md`, records metadata, and copies the
   current repo into a per-feature workspace.
+- Workflow artifacts are written under `features/<feature-slug>/artifacts`
+  inside that workspace so they are committed on the feature branch.
 - Feature branches are represented as `feature/<slug>` in each per-feature
   workspace repository; this PoC does not currently create git worktrees.
 - Feature state is persisted as JSON in the feature home.

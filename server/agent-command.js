@@ -3,6 +3,7 @@ const { PORT, workflow } = require("./config");
 const {
   getFeatureArtifactFolder,
   getFeatureArtifactFolderPath,
+  getFeatureWorkspaceArtifactFolder,
   getFeatureWorkspaceFolderPath,
 } = require("./feature-artifacts");
 
@@ -21,14 +22,18 @@ function getAgentInstructionPath(feature, agent) {
 
 function buildAgentContext(feature, run) {
   const step = workflow[run.step] ?? {};
-  const artifactFolder = getFeatureArtifactFolder(feature);
+  const artifactFolder = getFeatureWorkspaceArtifactFolder(feature);
+  const storedArtifactFolder = getFeatureArtifactFolder(feature);
   const artifactFolderPath = getFeatureArtifactFolderPath(feature);
+  const artifactRelativePath = `${artifactFolder}/${run.artifact}`;
+  const promptRelativePath = `${artifactFolder}/prompt.md`;
   return {
     agent: run.agent,
     artifact: run.artifact,
     artifact_folder: artifactFolder,
     artifact_folder_path: artifactFolderPath,
     artifact_path: path.join(artifactFolderPath, run.artifact),
+    artifact_relative_path: artifactRelativePath,
     branch: feature.branch,
     context_folder: artifactFolder,
     context_folder_path: artifactFolderPath,
@@ -40,11 +45,15 @@ function buildAgentContext(feature, run) {
     instruction_path: getAgentInstructionPath(feature, run.agent),
     llm_model_name: String(process.env.llm_model_name ?? ""),
     prompt_path: path.join(artifactFolderPath, "prompt.md"),
+    prompt_relative_path: promptRelativePath,
     run_id: run.id,
     server_port: PORT,
     state: step.state,
+    stored_artifact_folder: storedArtifactFolder,
     workspace: feature.workspace,
     workspace_path: getFeatureWorkspacePath(feature),
+    workspace_artifact_folder: artifactFolder,
+    workspace_artifact_path: artifactRelativePath,
   };
 }
 

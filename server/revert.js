@@ -4,6 +4,7 @@ const { workflow } = require("./config");
 const {
   getFeatureArtifactFolder,
   getFeatureArtifactFolderPath,
+  getLegacyFeatureArtifactFolderPaths,
 } = require("./feature-artifacts");
 const { commitFeatureWorkspace, resetFeatureWorkspace } = require("./git");
 const { httpError } = require("./http");
@@ -288,7 +289,7 @@ async function reloadArtifactsFromWorkspace(feature, targetStep) {
   const previousByName = new Map(
     feature.artifacts.map((artifact) => [artifact.name, artifact]),
   );
-  const entries = await readMarkdownArtifacts(artifactDir);
+  const entries = await readWorkspaceArtifacts(feature, artifactDir);
 
   feature.artifacts = entries
     .map((entry) => {
@@ -316,6 +317,16 @@ async function reloadArtifactsFromWorkspace(feature, targetStep) {
         a.name.localeCompare(b.name),
     );
   feature.environmentUrl = environmentUrlFromArtifacts(feature.artifacts);
+}
+
+async function readWorkspaceArtifacts(feature, artifactDir) {
+  const currentEntries = await readMarkdownArtifacts(artifactDir);
+  if (currentEntries.length) return currentEntries;
+  for (const legacyDir of getLegacyFeatureArtifactFolderPaths(feature)) {
+    const legacyEntries = await readMarkdownArtifacts(legacyDir);
+    if (legacyEntries.length) return legacyEntries;
+  }
+  return currentEntries;
 }
 
 async function readMarkdownArtifacts(artifactDir) {
