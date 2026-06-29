@@ -15,7 +15,6 @@ export const elements = {
   cancelRunButton: document.querySelector("#cancel-run-button"),
   environmentPanelButton: document.querySelector("#environment-panel-button"),
   environmentTerminal: document.querySelector("#environment-terminal"),
-  environmentTerminalTitle: document.querySelector("#environment-terminal-title"),
   environmentCommandList: document.querySelector("#environment-command-list"),
   dialog: document.querySelector("#feature-dialog"),
   form: document.querySelector("#feature-form"),
@@ -24,7 +23,9 @@ export const elements = {
   settingsDialog: document.querySelector("#feature-settings-dialog"),
   settingsForm: document.querySelector("#feature-settings-form"),
   settingsFeatureName: document.querySelector("#settings-feature-name"),
-  settingsFeatureNameInput: document.querySelector("#settings-feature-name-input"),
+  settingsFeatureNameInput: document.querySelector(
+    "#settings-feature-name-input",
+  ),
   editFeatureTitleButton: document.querySelector("#edit-feature-title-button"),
   branchInput: document.querySelector("#feature-branch-name"),
   deleteDialog: document.querySelector("#delete-feature-dialog"),

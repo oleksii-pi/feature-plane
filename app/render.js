@@ -36,8 +36,6 @@ export function renderFeatureList() {
       const progress = Math.round(
         (feature.step / (state.workflow.length - 1)) * 100,
       );
-      const run = latestRun(feature);
-      const status = run ? `Last run: ${run.status}` : "No runs yet";
       return `
         <a
           class="feature-card ${feature.id === state.selectedFeatureId ? "selected" : ""} ${feature.activeRunId ? "running" : ""}"
@@ -46,12 +44,8 @@ export function renderFeatureList() {
         >
           <span class="feature-name">${escapeHtml(feature.name)}</span>
           <span class="feature-info">
-            <span class="feature-info-row">
-              <span class="feature-state">${escapeHtml(displayStep(feature))}</span>
-              <span class="feature-price">${escapeHtml(latestCost(feature))}</span>
-            </span>
-            <span class="feature-run-status">${escapeHtml(status)}</span>
             <span class="feature-progress" aria-label="${progress}% complete"><span style="width:${progress}%"></span></span>
+            <span class="feature-price">${escapeHtml(latestCost(feature))}</span>
           </span>
         </a>
       `;
@@ -456,10 +450,6 @@ export function renderEnvironmentPanel() {
     elements.environmentTerminal.hidden = true;
     return;
   }
-  elements.environmentTerminalTitle.textContent = feature
-    ? `${feature.name} commands`
-    : "Command history";
-
   if (state.environmentCommandsLoading) {
     elements.environmentCommandList.textContent = "Loading commands...";
     return;

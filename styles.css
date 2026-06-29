@@ -430,17 +430,18 @@ h3 {
 .feature-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 0 5px 9px;
+  gap: 0;
+  padding: 0 0 9px;
 }
 
 .feature-card {
   width: 100%;
   display: block;
-  padding: 8px 9px;
+  padding: 4px;
   text-align: left;
-  border: 1px solid transparent;
-  border-radius: 7px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 0;
   background: transparent;
   cursor: pointer;
   text-decoration: none;
@@ -452,47 +453,43 @@ h3 {
 
 .feature-card.selected {
   background: var(--accent-soft);
-  border-color: #b8e8d2;
+  border-left-color: var(--accent);
 }
 
 .feature-name {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   overflow: hidden;
   color: var(--text);
-  font-size: 13.2px;
+  font-size: 13px;
   font-weight: 650;
-  line-height: 1.35;
+  line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .feature-info {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 5px;
+  align-items: center;
+  gap: 8px;
   color: var(--muted);
   font-size: 9.9px;
+  line-height: 1;
+  min-width: 0;
 }
 
-.feature-info-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.feature-price,
-.feature-price-detail {
-  color: var(--blue-soft);
-  font-weight: 700;
+.feature-price {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-weight: 650;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .feature-progress {
-  flex: 0 0 4px;
-  height: 3px;
+  flex: 1 1 auto;
+  min-width: 36px;
+  height: 2px;
   overflow: hidden;
   border-radius: 0;
   background: rgba(105, 115, 134, 0.18);
@@ -509,15 +506,9 @@ h3 {
   background: var(--blue);
 }
 
-.feature-card.running .feature-state::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 5px;
-  border-radius: 999px;
-  background: var(--blue);
-  animation: pulse 1.5s ease-in-out infinite;
+.feature-price-detail {
+  color: var(--blue-soft);
+  font-weight: 700;
 }
 
 .empty-state {
