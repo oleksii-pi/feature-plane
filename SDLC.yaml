@@ -10,6 +10,10 @@ sdlc:
     - state: "@prepare-environment"
       agent: prepare-environment
       artifact: environment-state.md
+    - state: "@implementation-plan"
+      agent: implementation-plan
+      artifact: implementation-plan.md
+    - state: review implementation
     - state: "@implementation"
       agent: implementation
       artifact: implementation-details.md
