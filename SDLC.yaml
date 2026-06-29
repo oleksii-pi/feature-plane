@@ -1,6 +1,7 @@
 sdlc:
   agents:
     - prepare-environment
+    - implementation-plan
     - implementation
     - merge
     - cleanup-environment
