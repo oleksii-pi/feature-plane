@@ -6,11 +6,15 @@
 
 2. Merge main into the current branch and resolve all possible merge conflicts.
    Check that server can start without errors on a currently free localhost
-   port that you choose yourself. Stop only that server when done.
+   port that you choose yourself. Stop only that server when done. If you can not resolve merge conflicts STOP execution.
 
-3. Merge current branch into main.
+3. Write into `change-log.md` inside `$CONTROL_PLANE_ARTIFACT_PATH` what was changed from user perspective of view.
 
-4. Write into `$CONTROL_PLANE_ARTIFACT_PATH` what was changed from user
-   perspective of view.
+4. Write into `change-log.md` detailed list of changed files in this format:
+   \folder\some-code.ts +50, -34
+
+5. Commit
+
+6. Merge current branch into main.
 
 Available Control Plane parameters are exposed as environment variables.

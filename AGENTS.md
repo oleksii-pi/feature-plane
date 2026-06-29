@@ -77,6 +77,7 @@ Keep route changes aligned with `server/router.js`. The active endpoints are:
 - `GET /workspaces`, `POST /workspaces/:id/cleanup`
 - `GET /features`, `POST /features`
 - `GET /features/:id`, `PATCH /features/:id`, `DELETE /features/:id`
+- `POST /features/:id/clone`
 - `GET /features/:id/environment`
 - `GET /features/:id/steps`, `PATCH /features/:id/steps/:step`
 - `PATCH /features/:id/artifacts/:index`

@@ -435,6 +435,32 @@ export function bindEvents() {
     .querySelector("#add-feature-button")
     .addEventListener("click", openFeatureDialog);
   document
+    .querySelector("#clone-feature-button")
+    .addEventListener("click", async () => {
+      const feature = selectedFeature();
+      if (!feature) return;
+      closeMenus();
+      try {
+        const clone = await api(`/features/${feature.id}/clone`, {
+          method: "POST",
+        });
+        state.selectedFeatureId = clone.id;
+        state.selectedStepIndex = clone.step;
+        state.searchTerm = "";
+        localState.save({
+          selectedFeatureId: state.selectedFeatureId,
+          selectedStepIndex: state.selectedStepIndex,
+          searchTerm: state.searchTerm,
+        });
+        elements.featureSearch.value = "";
+        await loadState({ preserveView: true });
+        setView(clone.id, clone.step);
+        showToast("Feature cloned");
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+  document
     .querySelector("#feature-settings-button")
     .addEventListener("click", openFeatureSettings);
   document.querySelector("#hide-features-button").addEventListener("click", () => {

@@ -11,7 +11,14 @@ const {
 const { httpError, readJson, sendJson, sendNoContent } = require("./http");
 const { serveStatic } = require("./static");
 const { normalizeFeature, publicState, saveState, state } = require("./state");
-const { createFeature, findFeature, moveFeature, saveFeatureFiles, updateArtifact } = require("./features");
+const {
+  cloneFeature,
+  createFeature,
+  findFeature,
+  moveFeature,
+  saveFeatureFiles,
+  updateArtifact,
+} = require("./features");
 const { revertFeatureToState } = require("./revert");
 const { cancelRun, findRun, startRun } = require("./runs");
 const { queueFeatureEnvironmentUrl, streamRunEvents } = require("./run-events");
@@ -72,6 +79,12 @@ async function route(req, res) {
 
     if (req.method === "GET" && parts.length === 2) {
       sendJson(res, 200, feature);
+      return;
+    }
+
+    if (req.method === "POST" && parts[2] === "clone") {
+      const clone = await cloneFeature(feature);
+      sendJson(res, 201, clone);
       return;
     }
 

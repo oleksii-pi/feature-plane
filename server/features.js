@@ -97,6 +97,20 @@ async function createFeature({ title, prompt }) {
   return feature;
 }
 
+async function cloneFeature(sourceFeature) {
+  const promptArtifact = sourceFeature.artifacts.find(
+    (artifact) => artifact.name === "prompt.md",
+  );
+  const prompt = String(promptArtifact?.content ?? "");
+  if (!prompt.trim()) {
+    throw httpError(409, "The selected feature does not have a prompt to clone.");
+  }
+  return createFeature({
+    title: sourceFeature.name,
+    prompt,
+  });
+}
+
 async function saveFeatureFiles(feature) {
   const featureDir = getFeatureArtifactFolderPath(feature);
   await fsp.mkdir(featureDir, { recursive: true });
@@ -245,6 +259,7 @@ async function updateArtifact(feature, index, content, options = {}) {
 }
 
 module.exports = {
+  cloneFeature,
   configureFeatures,
   createFeature,
   currentStep,
