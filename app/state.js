@@ -82,7 +82,10 @@ export function viewUrl(featureId) {
 }
 
 export function setView(featureId, stepIndex, { replace = false } = {}) {
-  if (state.environmentPanelFeatureId && state.environmentPanelFeatureId !== featureId) {
+  if (
+    state.environmentPanelFeatureId &&
+    state.environmentPanelFeatureId !== featureId
+  ) {
     state.environmentPanelOpen = false;
     state.environmentPanelFeatureId = null;
     state.environmentCommands = [];
@@ -152,5 +155,5 @@ export function findRunById(runId) {
 }
 
 export function latestCost(feature) {
-  return feature?.cost ?? latestRun(feature)?.cost ?? "TBD";
+  return feature?.cost ?? latestRun(feature)?.cost ?? "";
 }

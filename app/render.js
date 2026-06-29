@@ -224,7 +224,7 @@ function shortCommit(commit) {
 
 function displayRunDetails(run) {
   const usage = run.usage ?? {};
-  const cost = run.cost ?? "TBD";
+  const cost = run.cost ?? "";
   const cachedDetails = usage.cachedInputTokens
     ? ` (${usage.cachedInputTokens} cached)`
     : "";
@@ -298,7 +298,7 @@ function displayRunTitle(step) {
 }
 
 function displayRunPrice(run) {
-  return run.cost ?? "TBD";
+  return run.cost ?? "";
 }
 
 function displayRunProducedMarkup(run) {
@@ -455,7 +455,8 @@ export function renderEnvironmentPanel() {
     return;
   }
   if (state.environmentCommandsError) {
-    elements.environmentCommandList.textContent = state.environmentCommandsError;
+    elements.environmentCommandList.textContent =
+      state.environmentCommandsError;
     return;
   }
   elements.environmentCommandList.textContent = state.environmentCommands.length

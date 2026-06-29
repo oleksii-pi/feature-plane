@@ -5,7 +5,9 @@ const { AGENT_PRICING, RUN_LOG_ROOT } = require("./config");
 
 function parseTokenCount(value) {
   if (value === undefined || value === null || value === "") return null;
-  const normalized = String(value ?? "").replace(/,/g, "").trim();
+  const normalized = String(value ?? "")
+    .replace(/,/g, "")
+    .trim();
   if (!normalized) return null;
   const parsed = Number(normalized);
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
@@ -25,15 +27,15 @@ function parseCodexTotalTokens(source) {
     .replace(/\r\n/g, "\n")
     .split("\n")
     .map((line) =>
-      line
-        .replace(/^\[[^\]]+\]\s+\[(?:stdout|stderr)\]\s*/, "")
-        .trim(),
+      line.replace(/^\[[^\]]+\]\s+\[(?:stdout|stderr)\]\s*/, "").trim(),
     );
 
   for (let index = 0; index < lines.length; index += 1) {
     if (!/^tokens used$/i.test(lines[index])) continue;
     for (let distance = 1; distance <= 8; distance += 1) {
-      const count = parseTokenCount(lines[index + distance]) ?? parseTokenCount(lines[index - distance]);
+      const count =
+        parseTokenCount(lines[index + distance]) ??
+        parseTokenCount(lines[index - distance]);
       if (count !== null) return count;
     }
   }
@@ -146,7 +148,8 @@ function parseUsageFromSession(source) {
 
   if (!latestUsage) return null;
   const inputTokens = parseTokenCount(latestUsage.input_tokens) ?? 0;
-  const cachedInputTokens = parseTokenCount(latestUsage.cached_input_tokens) ?? 0;
+  const cachedInputTokens =
+    parseTokenCount(latestUsage.cached_input_tokens) ?? 0;
   const outputTokens = parseTokenCount(latestUsage.output_tokens) ?? 0;
   return {
     inputTokens,
@@ -167,10 +170,17 @@ async function parseCodexSessionUsage(logSource) {
 }
 
 function calculateUsagePrice(usage) {
-  const cachedInputTokens = Math.min(usage.cachedInputTokens ?? 0, usage.inputTokens);
-  const uncachedInputTokens = Math.max(0, usage.inputTokens - cachedInputTokens);
+  const cachedInputTokens = Math.min(
+    usage.cachedInputTokens ?? 0,
+    usage.inputTokens,
+  );
+  const uncachedInputTokens = Math.max(
+    0,
+    usage.inputTokens - cachedInputTokens,
+  );
   const inputCostUsd = uncachedInputTokens * AGENT_PRICING.inputTokenPrice;
-  const cachedInputCostUsd = cachedInputTokens * AGENT_PRICING.cachedInputTokenPrice;
+  const cachedInputCostUsd =
+    cachedInputTokens * AGENT_PRICING.cachedInputTokenPrice;
   const outputCostUsd = usage.outputTokens * AGENT_PRICING.outputTokenPrice;
   const costUsd = inputCostUsd + cachedInputCostUsd + outputCostUsd;
   return {
@@ -188,7 +198,7 @@ function calculateUsagePrice(usage) {
 }
 
 function formatUsd(amount) {
-  if (!Number.isFinite(amount)) return "TBD";
+  if (!Number.isFinite(amount)) return "";
   if (amount > 0 && amount < 0.01) return `$${amount.toFixed(4)}`;
   return `$${amount.toFixed(2)}`;
 }
@@ -196,16 +206,20 @@ function formatUsd(amount) {
 async function priceRun(run) {
   let logSource = "";
   try {
-    logSource = await fsp.readFile(path.join(RUN_LOG_ROOT, `${run.id}.log`), "utf8");
+    logSource = await fsp.readFile(
+      path.join(RUN_LOG_ROOT, `${run.id}.log`),
+      "utf8",
+    );
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
 
-  const usage = (await parseCodexSessionUsage(logSource)) ?? parseUsageFromLog(logSource);
+  const usage =
+    (await parseCodexSessionUsage(logSource)) ?? parseUsageFromLog(logSource);
   const pricing = calculateUsagePrice(usage);
   run.usage = usage;
   run.pricing = pricing;
-  run.cost = usage.totalTokens ? formatUsd(pricing.costUsd) : "TBD";
+  run.cost = usage.totalTokens ? formatUsd(pricing.costUsd) : "";
   return run;
 }
 
