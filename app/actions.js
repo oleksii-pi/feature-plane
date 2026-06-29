@@ -6,7 +6,7 @@ import {
 } from "./api.js";
 import { closeMenus, elements, showToast } from "./dom.js";
 import { currentDateTime } from "./format.js";
-import { render } from "./render.js";
+import { render, renderEnvironmentPanel } from "./render.js";
 import {
   currentAgentStepRequiresRun,
   isAgentStep,
@@ -75,6 +75,40 @@ export function setWorkflowVisible(visible) {
   localState.save({ workflowVisible: state.workflowVisible });
   closeMenus();
   render();
+}
+
+export async function openEnvironmentPanel() {
+  closeMenus();
+  const feature = selectedFeature();
+  if (!feature) return;
+  state.environmentPanelOpen = true;
+  state.environmentPanelFeatureId = feature.id;
+  state.environmentCommands = [];
+  state.environmentCommandsError = "";
+  state.environmentCommandsLoading = true;
+  renderEnvironmentPanel();
+
+  try {
+    const payload = await api(`/features/${feature.id}/environment`);
+    if (state.environmentPanelFeatureId !== feature.id) return;
+    state.environmentCommands = payload.commands ?? [];
+  } catch (error) {
+    if (state.environmentPanelFeatureId !== feature.id) return;
+    state.environmentCommandsError = error.message;
+  } finally {
+    if (state.environmentPanelFeatureId === feature.id) {
+      state.environmentCommandsLoading = false;
+      renderEnvironmentPanel();
+      elements.environmentCommandList.focus();
+    }
+  }
+}
+
+export function closeEnvironmentPanel() {
+  state.environmentPanelOpen = false;
+  state.environmentCommandsLoading = false;
+  state.environmentCommandsError = "";
+  renderEnvironmentPanel();
 }
 
 export function openArtifactSaveDialog(card) {

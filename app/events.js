@@ -8,7 +8,9 @@ import {
   closeArtifactSaveDialog,
   closeRevertDialog,
   confirmPendingRevert,
+  closeEnvironmentPanel,
   moveToStep,
+  openEnvironmentPanel,
   openFeatureDialog,
   openFeatureSettings,
   openRevertDialog,
@@ -441,6 +443,12 @@ export function bindEvents() {
   elements.workflowButton.addEventListener("click", () => {
     setWorkflowVisible(!state.workflowVisible);
   });
+  elements.environmentPanelButton.addEventListener("click", () => {
+    openEnvironmentPanel().catch((error) => showToast(error.message));
+  });
+  document
+    .querySelector("#close-environment-terminal-button")
+    .addEventListener("click", closeEnvironmentPanel);
 
   document.querySelector("#save-state-button").addEventListener("click", () => {
     closeMenus();

@@ -68,6 +68,7 @@
                   </button>
                   <div class="menu-popover" role="menu" hidden>
                     <button id="toggle-workflow-button" type="button" role="menuitemcheckbox" aria-checked="false" data-menu-key="w"><u>W</u>orkflow</button>
+                    <button id="environment-panel-button" type="button" role="menuitem" data-menu-key="e"><u>E</u>nvironment</button>
                   </div>
                 </div>
               </div>
@@ -79,6 +80,17 @@
 
       </main>
     </div>
+
+    <section class="environment-terminal" id="environment-terminal" aria-labelledby="environment-terminal-title" hidden>
+      <div class="environment-terminal-header">
+        <div>
+          <p class="eyebrow">Environment</p>
+          <h2 id="environment-terminal-title">Command history</h2>
+        </div>
+        <button class="icon-button" id="close-environment-terminal-button" type="button" aria-label="Close environment panel">×</button>
+      </div>
+      <pre class="environment-command-list" id="environment-command-list" tabindex="0"></pre>
+    </section>
 
     <div class="global-menu menu" data-menu data-menu-shortcut="Digit3">
       <button class="menu-button" type="button" aria-label="Application actions" aria-haspopup="menu" aria-expanded="false">

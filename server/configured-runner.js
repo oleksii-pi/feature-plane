@@ -3,6 +3,7 @@ const fsp = require("node:fs/promises");
 const { spawn } = require("node:child_process");
 const path = require("node:path");
 const { PORT } = require("./config");
+const { formatShellCommand } = require("./command-history");
 const {
   queueFeatureEnvironmentUrl,
   queueRunEvent,
@@ -59,6 +60,7 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
     return;
   }
 
+  await recordConfiguredCommand(handlers, `${formatShellCommand("cd", [context.workspace_path])} && ${command}`);
   runProcesses.set(run.id, { child, stopTimer: null });
   await queueRunEvent(feature, run, "Executing", "Agent executing.");
 
@@ -86,6 +88,15 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
       console.error(handlerError);
     });
   });
+}
+
+async function recordConfiguredCommand(handlers, command) {
+  if (typeof handlers.recordEnvironmentCommand !== "function") return;
+  try {
+    await handlers.recordEnvironmentCommand(command);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 function buildChildEnv(feature, run, context) {

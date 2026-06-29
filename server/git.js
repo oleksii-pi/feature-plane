@@ -2,6 +2,10 @@ const { execFile } = require("node:child_process");
 const fsp = require("node:fs/promises");
 const path = require("node:path");
 const { promisify } = require("node:util");
+const {
+  formatShellCommand,
+  recordEnvironmentCommand,
+} = require("./command-history");
 const { getFeatureWorkspaceFolderPath } = require("./feature-artifacts");
 
 const execFileAsync = promisify(execFile);
@@ -17,6 +21,7 @@ const WORKSPACE_EXCLUDES = [
 
 async function runGit(feature, args, options = {}) {
   const cwd = getFeatureWorkspaceFolderPath(feature);
+  recordEnvironmentCommand(feature, formatShellCommand("git", ["-C", cwd, ...args]));
   try {
     const result = await execFileAsync("git", ["-C", cwd, ...args], {
       maxBuffer: MAX_GIT_OUTPUT,

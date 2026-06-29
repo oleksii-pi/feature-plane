@@ -7,6 +7,7 @@ const {
   STATE_FILE,
   workflow,
 } = require("./config");
+const { normalizeCommandHistory } = require("./command-history");
 const {
   branchArtifactFolder,
   branchWorkspaceFolder,
@@ -223,6 +224,7 @@ function normalizeFeature(feature) {
     activeRunId: feature.activeRunId ?? null,
     environmentUrl:
       typeof feature.environmentUrl === "string" ? feature.environmentUrl : null,
+    environmentCommands: normalizeCommandHistory(feature.environmentCommands),
     cost: feature.cost ?? null,
     headCommit: normalizeCommit(feature.headCommit),
     stepCommits: normalizeStepCommits(feature.stepCommits),

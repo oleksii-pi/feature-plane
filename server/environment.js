@@ -5,6 +5,10 @@ const path = require("node:path");
 const { execFile, spawn } = require("node:child_process");
 const { promisify } = require("node:util");
 const {
+  formatShellCommand,
+  recordEnvironmentCommand,
+} = require("./command-history");
+const {
   getFeatureArtifactFolderPath,
   getFeatureWorkspaceFolderPath,
 } = require("./feature-artifacts");
@@ -185,6 +189,10 @@ async function restartFeatureEnvironment(feature, environment) {
     fs.closeSync(logHandle);
   }
   child.unref();
+  recordEnvironmentCommand(
+    feature,
+    `${formatShellCommand("cd", [workspace])} && ${formatShellCommand(process.execPath, ["server.js", String(port)])}`,
+  );
   await fsp.writeFile(environment.pidPath, `${child.pid}\n`);
   return true;
 }

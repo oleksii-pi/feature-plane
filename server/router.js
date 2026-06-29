@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 const path = require("node:path");
 const { RUN_LOG_ROOT, workflow } = require("./config");
+const { normalizeCommandHistory } = require("./command-history");
 const {
   branchArtifactFolder,
   branchWorkspaceFolder,
@@ -71,6 +72,14 @@ async function route(req, res) {
 
     if (req.method === "GET" && parts.length === 2) {
       sendJson(res, 200, feature);
+      return;
+    }
+
+    if (req.method === "GET" && parts[2] === "environment") {
+      sendJson(res, 200, {
+        featureId: feature.id,
+        commands: normalizeCommandHistory(feature.environmentCommands),
+      });
       return;
     }
 

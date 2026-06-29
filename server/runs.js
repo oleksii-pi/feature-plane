@@ -1,6 +1,7 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
 const { getAgentRunCommand, workflow } = require("./config");
+const { recordEnvironmentCommand } = require("./command-history");
 const {
   getFeatureArtifactFolder,
   getFeatureArtifactFolderPath,
@@ -70,12 +71,19 @@ async function startRun(feature) {
     await startConfiguredAgentRun(feature, run, commandTemplate, {
       completeConfiguredRun,
       failRun,
+      recordEnvironmentCommand: (command) =>
+        recordFeatureEnvironmentCommand(feature, command),
     });
   } else {
     startSimulatedRun(feature, run);
   }
 
   return feature;
+}
+
+async function recordFeatureEnvironmentCommand(feature, command) {
+  recordEnvironmentCommand(feature, command);
+  await saveState();
 }
 
 function startSimulatedRun(feature, run) {

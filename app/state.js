@@ -22,6 +22,11 @@ export const state = {
   runDurationTimer: null,
   pendingArtifactSaveCard: null,
   pendingRevertTarget: null,
+  environmentPanelOpen: false,
+  environmentPanelFeatureId: null,
+  environmentCommands: [],
+  environmentCommandsLoading: false,
+  environmentCommandsError: "",
 };
 
 export const localState = {
@@ -77,6 +82,12 @@ export function viewUrl(featureId) {
 }
 
 export function setView(featureId, stepIndex, { replace = false } = {}) {
+  if (state.environmentPanelFeatureId && state.environmentPanelFeatureId !== featureId) {
+    state.environmentPanelOpen = false;
+    state.environmentPanelFeatureId = null;
+    state.environmentCommands = [];
+    state.environmentCommandsError = "";
+  }
   state.selectedFeatureId = featureId;
   state.selectedStepIndex = stepIndex;
   state.selectedArtifactIndex = null;

@@ -70,6 +70,7 @@ async function createFeature({ title, prompt }) {
     updated: timestamp,
     activeRunId: null,
     environmentUrl: null,
+    environmentCommands: [],
     cost: null,
     headCommit: null,
     stepCommits: {},

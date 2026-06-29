@@ -431,6 +431,50 @@ function displayArtifactUpdatedTitle(value) {
   return `Updated: ${formatDateTime(value)}`;
 }
 
+function commandTime(value) {
+  const formatted = formatDateTime(value);
+  const match = formatted.match(/\b(\d{2}:\d{2})(?::\d{2})?$/);
+  return match ? match[1] : "--:--";
+}
+
+export function renderEnvironmentPanel() {
+  document.body.classList.toggle(
+    "environment-panel-open",
+    state.environmentPanelOpen,
+  );
+  elements.environmentTerminal.hidden = !state.environmentPanelOpen;
+  if (!state.environmentPanelOpen) return;
+
+  const feature = state.features.find(
+    (item) => item.id === state.environmentPanelFeatureId,
+  );
+  if (state.environmentPanelFeatureId && !feature) {
+    state.environmentPanelOpen = false;
+    state.environmentPanelFeatureId = null;
+    state.environmentCommands = [];
+    document.body.classList.remove("environment-panel-open");
+    elements.environmentTerminal.hidden = true;
+    return;
+  }
+  elements.environmentTerminalTitle.textContent = feature
+    ? `${feature.name} commands`
+    : "Command history";
+
+  if (state.environmentCommandsLoading) {
+    elements.environmentCommandList.textContent = "Loading commands...";
+    return;
+  }
+  if (state.environmentCommandsError) {
+    elements.environmentCommandList.textContent = state.environmentCommandsError;
+    return;
+  }
+  elements.environmentCommandList.textContent = state.environmentCommands.length
+    ? state.environmentCommands
+        .map((entry) => `${commandTime(entry.timestamp)} ${entry.command}`)
+        .join("\n")
+    : "No commands recorded.";
+}
+
 export function renderArtifacts(feature) {
   const entries = entriesForFeature(feature);
 
@@ -487,6 +531,7 @@ export function renderDetails() {
     elements.advanceButton.disabled = true;
     elements.retryRunButton.classList.remove("visible");
     elements.cancelRunButton.classList.remove("visible");
+    elements.environmentPanelButton.disabled = true;
     elements.artifactList.innerHTML =
       '<div class="empty-state">Create a feature to start the workflow.</div>';
     renderTimeline(null);
@@ -523,6 +568,7 @@ export function renderDetails() {
   }
   elements.stateBadge.textContent = displayStep(feature);
   elements.stateBadge.classList.toggle("running", Boolean(feature.activeRunId));
+  elements.environmentPanelButton.disabled = false;
   elements.advanceButton.disabled =
     Boolean(feature.activeRunId) || feature.step === state.workflow.length - 1;
   elements.advanceButton.textContent =
@@ -609,4 +655,5 @@ export function render() {
   renderDetails();
   renderRepositoryWorkflow();
   renderValidation();
+  renderEnvironmentPanel();
 }
