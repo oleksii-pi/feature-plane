@@ -11,10 +11,6 @@ sdlc:
     - state: "@prepare-environment"
       agent: prepare-environment
       artifact: environment-state.md
-    - state: "@implementation-plan"
-      agent: implementation-plan
-      artifact: implementation-plan.md
-    - state: review implementation
     - state: "@implementation"
       agent: implementation
       artifact: implementation-details.md
@@ -22,7 +18,4 @@ sdlc:
     - state: "@merge"
       agent: merge
       artifact: change-log.md
-    - state: "@cleanup-environment"
-      agent: cleanup-environment
-      artifact: cleanup-environment.md
     - state: done

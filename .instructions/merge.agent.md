@@ -17,4 +17,6 @@
 
 6. Merge current branch into main.
 
+7. As part of this agent's run, also clean up the environment by following the instructions in `cleanup-environment.agent.md`.
+
 Available Control Plane parameters are exposed as environment variables.
