@@ -668,10 +668,21 @@ h3 {
 
 .details-header p .environment-link {
   color: var(--accent-dark);
+  font-size: 16px;
+  font-weight: 500;
+  color: #3f72b8;
 }
 
 .feature-price-detail {
   font-weight: 700;
+}
+
+.feature-update-time {
+  margin-top: 4px;
+}
+
+.branch-copy-button {
+  margin-left: 16px;
 }
 
 .state-badge {

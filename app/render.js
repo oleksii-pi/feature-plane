@@ -38,9 +38,7 @@ export function renderFeatureList() {
     .map((feature) => {
       const workflow = workflowForFeature(feature);
       const lastStep = Math.max(1, workflow.length - 1);
-      const progress = Math.round(
-        (feature.step / lastStep) * 100,
-      );
+      const progress = Math.round((feature.step / lastStep) * 100);
       return `
         <a
           class="feature-card ${feature.id === state.selectedFeatureId ? "selected" : ""} ${feature.activeRunId ? "running" : ""}"
@@ -108,8 +106,8 @@ function restoreStepMenuMarkup(feature, stepIndex) {
       ? `${step.agent ?? step.state ?? "Agent"} run`
       : (step.state ?? `Step ${stepIndex + 1}`),
     detail: agentStep
-      ? `Step ${stepIndex + 1} · reset to ${shortCommit(commit)}`
-      : `Step ${stepIndex + 1} · ${shortCommit(commit)}`,
+      ? `Step ${stepIndex + 1}  reset to ${shortCommit(commit)}`
+      : `Step ${stepIndex + 1}  ${shortCommit(commit)}`,
     attrs: agentStep
       ? `data-revert-step="${stepIndex}" data-revert-rerun="true"`
       : `data-revert-step="${stepIndex}"`,
@@ -128,7 +126,7 @@ function restoreRunMenuMarkup(feature, run) {
       className: "artifact-card-menu",
       kind: "run",
       label: `${displayRunTitle(step)} run`,
-      detail: `Step ${run.step + 1} · reset to ${shortCommit(commit)}`,
+      detail: `Step ${run.step + 1}  reset to ${shortCommit(commit)}`,
       attrs,
       actionLabel: "Rerun",
       extraActions: [
@@ -144,7 +142,7 @@ function restoreRunMenuMarkup(feature, run) {
     className: "artifact-card-menu",
     kind: "run",
     label: `${displayRunTitle(step)} run`,
-    detail: `${run.agent} · ${shortCommit(run.commitSha)}`,
+    detail: `${run.agent}  ${shortCommit(run.commitSha)}`,
     attrs: `data-revert-run-id="${escapeHtml(run.id)}"`,
   });
 }
@@ -162,7 +160,7 @@ function restoreArtifactMenuMarkup(feature, artifact, sourceIndex) {
     className: "artifact-card-menu",
     kind: "artifact",
     label: artifact.name,
-    detail: `Step ${(artifact.availableAtStep ?? 0) + 1} · ${shortCommit(commit)}`,
+    detail: `Step ${(artifact.availableAtStep ?? 0) + 1}  ${shortCommit(commit)}`,
     attrs: `data-revert-artifact-index="${sourceIndex}"`,
   });
 }
@@ -518,9 +516,12 @@ function textPosition(root, offset) {
 
 function restoreEditableArtifactSnapshot(snapshot) {
   if (!snapshot) return;
-  const card = [...elements.artifactList.querySelectorAll("[data-artifact-key]")]
-    .find((item) => item.dataset.artifactKey === snapshot.key);
-  const preview = card?.querySelector(".artifact-preview[contenteditable='true']");
+  const card = [
+    ...elements.artifactList.querySelectorAll("[data-artifact-key]"),
+  ].find((item) => item.dataset.artifactKey === snapshot.key);
+  const preview = card?.querySelector(
+    ".artifact-preview[contenteditable='true']",
+  );
   if (!preview) return;
   preview.focus();
 
@@ -631,9 +632,13 @@ export function renderArtifacts(feature) {
                 : ""
             }
             ${restoreArtifactMenuMarkup(feature, artifact, entry.sourceIndex)}
-            ${isEditing ? "" : `<button class="artifact-chevron-button" type="button" aria-label="Toggle artifact" aria-expanded="${isExpanded}">
+            ${
+              isEditing
+                ? ""
+                : `<button class="artifact-chevron-button" type="button" aria-label="Toggle artifact" aria-expanded="${isExpanded}">
               <span class="artifact-chevron">⌃</span>
-            </button>`}
+            </button>`
+            }
           </div>
           <div class="artifact-body">
             <div class="artifact-preview"${isEditing ? ` contenteditable="true" role="textbox" aria-multiline="true" aria-label="Edit ${escapeHtml(artifact.name)}" spellcheck="false"` : ""}>${isEditing ? escapeHtml(content) : markdownToHtml(content)}</div>
@@ -663,6 +668,16 @@ export function renderDetails() {
 
   elements.featureTitle.textContent = feature.name;
   elements.featureMeta.replaceChildren();
+
+  if (feature.environmentUrl) {
+    const environmentLink = document.createElement("a");
+    environmentLink.className = "environment-link";
+    environmentLink.href = feature.environmentUrl;
+    environmentLink.target = "_blank";
+    environmentLink.rel = "noopener";
+    environmentLink.textContent = "Open environment";
+    elements.featureMeta.append("  ", environmentLink);
+  }
   const branchButton = document.createElement("button");
   branchButton.className = "link-button branch-copy-button";
   branchButton.type = "button";
@@ -676,19 +691,15 @@ export function renderDetails() {
       showToast("Clipboard access was not available");
     }
   });
-  elements.featureMeta.append(
-    branchButton,
-    ` · ${formatDateTime(feature.updated)}`,
-  );
-  if (feature.environmentUrl) {
-    const environmentLink = document.createElement("a");
-    environmentLink.className = "environment-link";
-    environmentLink.href = feature.environmentUrl;
-    environmentLink.target = "_blank";
-    environmentLink.rel = "noopener";
-    environmentLink.textContent = "Open environment";
-    elements.featureMeta.append(" · ", environmentLink);
-  }
+  elements.featureMeta.append(branchButton);
+  elements.featureMeta.append(document.createElement("br"));
+
+  const updateTime = document.createElement("div");
+  updateTime.className = "feature-update-time";
+  updateTime.textContent = formatDateTime(feature.updated);
+
+  elements.featureMeta.append(updateTime);
+
   elements.stateBadge.textContent = displayStep(feature);
   elements.stateBadge.classList.toggle("running", Boolean(feature.activeRunId));
   elements.environmentPanelButton.disabled = false;
@@ -758,7 +769,7 @@ export function renderValidation() {
   `;
   elements.validationSummary.innerHTML = `
     <span class="validation-score">${state.validation.passed} of ${state.validation.checks.length} checks passed</span>
-    <span>${state.validation.errors} errors · ${state.validation.warnings} warnings</span>
+    <span>${state.validation.errors} errors  ${state.validation.warnings} warnings</span>
   `;
   elements.validationList.innerHTML = state.validation.checks
     .map(
