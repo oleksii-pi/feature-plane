@@ -1,0 +1,21 @@
+sdlc:
+  agents:
+    - prepare-environment
+    - implementation-plan
+    - implementation
+    - merge
+    - cleanup-environment
+  workflow:
+    - state: draft
+      artifact: prompt.md
+    - state: "@prepare-environment"
+      agent: prepare-environment
+      artifact: environment-state.md
+    - state: "@implementation"
+      agent: implementation
+      artifact: implementation-details.md
+    - state: review implementation
+    - state: "@merge"
+      agent: merge
+      artifact: change-log.md
+    - state: done

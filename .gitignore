@@ -1,0 +1,6 @@
+.features/
+# .features/**/*.log
+.env
+feature/**/*.log
+features/**/artifacts/*.log
+features/**/artifacts/*.pid
