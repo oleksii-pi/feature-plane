@@ -684,7 +684,7 @@ h3 {
 }
 
 .branch-copy-button {
-  margin-left: 0px;
+  display: none;
 }
 
 .state-badge {
