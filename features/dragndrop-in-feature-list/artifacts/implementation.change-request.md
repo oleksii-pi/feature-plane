@@ -1,0 +1,1 @@
+When I click with mouse on element, it is got selected. But when I press arrow up or down, nothing happens.

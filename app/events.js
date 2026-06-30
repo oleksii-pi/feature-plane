@@ -123,6 +123,76 @@ function hasOpenModalDialog() {
   return Boolean(document.querySelector("dialog[open]"));
 }
 
+function visibleFeatures() {
+  const term = state.searchTerm.toLowerCase();
+  return state.features.filter((feature) =>
+    feature.name.toLowerCase().includes(term),
+  );
+}
+
+function isFeaturePanelTarget(target) {
+  return Boolean(target?.closest(".features-panel"));
+}
+
+function scrollFeatureCardIntoView(featureId) {
+  const card = Array.from(
+    elements.featureList.querySelectorAll("[data-feature-id]"),
+  ).find((item) => item.dataset.featureId === featureId);
+  card?.scrollIntoView({ block: "nearest" });
+}
+
+function focusFeatureCard(featureId) {
+  const card = Array.from(
+    elements.featureList.querySelectorAll("[data-feature-id]"),
+  ).find((item) => item.dataset.featureId === featureId);
+  card?.focus({ preventScroll: true });
+}
+
+function selectFeatureFromList(direction, { focusSelected = false } = {}) {
+  const features = visibleFeatures();
+  if (!features.length) return;
+
+  const currentIndex = features.findIndex(
+    (feature) => feature.id === state.selectedFeatureId,
+  );
+  const baseIndex = currentIndex >= 0 ? currentIndex : direction < 0 ? features.length : -1;
+  const nextFeature = features[baseIndex + direction];
+  if (!nextFeature) return;
+
+  setView(nextFeature.id, nextFeature.step);
+  render();
+  if (focusSelected) focusFeatureCard(nextFeature.id);
+  requestAnimationFrame(() => {
+    scrollFeatureCardIntoView(nextFeature.id);
+  });
+}
+
+async function reorderSelectedFeature(direction, { focusSelected = false } = {}) {
+  const currentIndex = state.features.findIndex(
+    (feature) => feature.id === state.selectedFeatureId,
+  );
+  if (currentIndex < 0) return;
+
+  const nextIndex = currentIndex + direction;
+  if (nextIndex < 0 || nextIndex >= state.features.length) return;
+
+  const nextFeatures = state.features.slice();
+  [nextFeatures[currentIndex], nextFeatures[nextIndex]] = [
+    nextFeatures[nextIndex],
+    nextFeatures[currentIndex],
+  ];
+
+  await api("/state", {
+    method: "PUT",
+    body: JSON.stringify({ features: nextFeatures }),
+  });
+  await loadState({ preserveView: true });
+  if (focusSelected) focusFeatureCard(state.selectedFeatureId);
+  requestAnimationFrame(() => {
+    scrollFeatureCardIntoView(state.selectedFeatureId);
+  });
+}
+
 function setFeatureTitleEditMode(editing) {
   elements.settingsFeatureName.hidden = editing;
   elements.settingsFeatureNameInput.hidden = !editing;
@@ -307,6 +377,7 @@ export function bindEvents() {
     );
     setView(feature.id, feature.step);
     render();
+    focusFeatureCard(feature.id);
   });
 
   elements.timeline.addEventListener("click", (event) => {
@@ -340,6 +411,25 @@ export function bindEvents() {
   });
 
   document.addEventListener("keydown", (event) => {
+    const isFeaturePanelArrowKey =
+      (event.key === "ArrowUp" || event.key === "ArrowDown") &&
+      isFeaturePanelTarget(event.target);
+
+    if (isFeaturePanelArrowKey) {
+      event.preventDefault();
+      const direction = event.key === "ArrowUp" ? -1 : 1;
+      if (event.metaKey) {
+        reorderSelectedFeature(direction, {
+          focusSelected: !isTextEntryTarget(event.target),
+        }).catch((error) => showToast(error.message));
+      } else {
+        selectFeatureFromList(direction, {
+          focusSelected: !isTextEntryTarget(event.target),
+        });
+      }
+      return;
+    }
+
     if (
       event.defaultPrevented ||
       event.metaKey ||
