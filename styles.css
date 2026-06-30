@@ -458,7 +458,6 @@ h3 {
 
 .feature-name {
   display: block;
-  margin-bottom: 6px;
   overflow: hidden;
   color: var(--text);
   font-size: 13px;
