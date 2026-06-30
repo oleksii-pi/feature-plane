@@ -151,14 +151,10 @@ feature/**/*.log
 
 ## Workflow Definition
 
-`SDLC.yaml` defines the workflow and available agents:
+`SDLC.yaml` defines the workflow:
 
 ```yaml
 sdlc:
-  agents:
-    - acceptance-criteria
-    - implementation-plan
-    - implementation
   workflow:
     - state: Draft
       artifact: prompt.md
@@ -184,8 +180,7 @@ Rules:
 - Workflow states are ordered.
 - States beginning with `@` are agent states.
 - Other states are human states.
-- Agent states must reference an agent listed in `sdlc.agents`.
-- Every listed agent must have `.instructions/<agent-name>.agent.md`.
+- Every agent referenced by a workflow state must have `.instructions/<agent-name>.agent.md`.
 - `artifact`, when present, is the Markdown file required for that step.
 - The first state must produce `prompt.md`.
 

@@ -1,0 +1,112 @@
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: Search features
+          - searchbox "Search features" [ref=e8]
+        - button "Feature actions" [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+      - generic [ref=e15]:
+        - link "Testing change request testing feature 0% complete" [ref=e16] [cursor=pointer]:
+          - /url: /?featureId=70702279
+          - generic [ref=e17]: Testing change request testing feature
+          - generic "0% complete" [ref=e19]
+        - link "Add view feature workspace folder 0% complete" [ref=e20] [cursor=pointer]:
+          - /url: /?featureId=756305bb
+          - generic [ref=e21]: Add view feature workspace folder
+          - generic "0% complete" [ref=e23]
+        - link "Add filter \"In progress\" 0% complete" [ref=e24] [cursor=pointer]:
+          - /url: /?featureId=c777607d
+          - generic [ref=e25]: Add filter "In progress"
+          - generic "0% complete" [ref=e27]
+        - link "Improve menu and navigation experience for feature 0% complete" [ref=e28] [cursor=pointer]:
+          - /url: /?featureId=66edfef2
+          - generic [ref=e29]: Improve menu and navigation experience for feature
+          - generic "0% complete" [ref=e31]
+        - link "Improve add feature dialog 0% complete" [ref=e32] [cursor=pointer]:
+          - /url: /?featureId=372005b7
+          - generic [ref=e33]: Improve add feature dialog
+          - generic "0% complete" [ref=e35]
+        - link "Dragndrop in feature list 0% complete" [ref=e36] [cursor=pointer]:
+          - /url: /?featureId=3a5a5a23
+          - generic [ref=e37]: Dragndrop in feature list
+          - generic "0% complete" [ref=e39]
+        - link "Full text search when user search features 0% complete" [ref=e40] [cursor=pointer]:
+          - /url: /?featureId=dc8c5a7b
+          - generic [ref=e41]: Full text search when user search features
+          - generic "0% complete" [ref=e43]
+        - link "Improve feature settings dialog 0% complete" [ref=e44] [cursor=pointer]:
+          - /url: /?featureId=c64c91e1
+          - generic [ref=e45]: Improve feature settings dialog
+          - generic "0% complete" [ref=e47]
+        - link "3 Make next step button human friendly 63% complete $0.48" [ref=e48] [cursor=pointer]:
+          - /url: /?featureId=39f9c656
+          - generic [ref=e49]: 3 Make next step button human friendly
+          - generic [ref=e50]:
+            - generic "63% complete" [ref=e51]
+            - generic [ref=e53]: $0.48
+        - link "Add splitter between list of features and feature detail 0% complete" [ref=e54] [cursor=pointer]:
+          - /url: /?featureId=1c0c805b
+          - generic [ref=e55]: Add splitter between list of features and feature detail
+          - generic "0% complete" [ref=e57]
+        - link "Dark mode 0% complete" [ref=e58] [cursor=pointer]:
+          - /url: /?featureId=ed7efdd5
+          - generic [ref=e59]: Dark mode
+          - generic "0% complete" [ref=e61]
+        - link "Display workflow per feature 0% complete" [ref=e62] [cursor=pointer]:
+          - /url: /?featureId=098a640c
+          - generic [ref=e63]: Display workflow per feature
+          - generic "0% complete" [ref=e65]
+        - link "Improve usability of editing artifact 0% complete" [ref=e66] [cursor=pointer]:
+          - /url: /?featureId=7da3c247
+          - generic [ref=e67]: Improve usability of editing artifact
+          - generic "0% complete" [ref=e69]
+        - link "User should be able to create a change request 40% complete $0.07" [ref=e70] [cursor=pointer]:
+          - /url: /?featureId=34cf06d9
+          - generic [ref=e71]: User should be able to create a change request
+          - generic [ref=e72]:
+            - generic "40% complete" [ref=e73]
+            - generic [ref=e75]: $0.07
+        - link "Remove agents section from SDLC.yaml 0% complete" [ref=e76] [cursor=pointer]:
+          - /url: /?featureId=485f6389
+          - generic [ref=e77]: Remove agents section from SDLC.yaml
+          - generic "0% complete" [ref=e79]
+        - link "Improve price observability 0% complete" [ref=e80] [cursor=pointer]:
+          - /url: /?featureId=3c36b2c9
+          - generic [ref=e81]: Improve price observability
+          - generic "0% complete" [ref=e83]
+        - link "Make workflow top panel more useful 0% complete" [ref=e84] [cursor=pointer]:
+          - /url: /?featureId=0f6ae94c
+          - generic [ref=e85]: Make workflow top panel more useful
+          - generic "0% complete" [ref=e87]
+        - link "Make next step button human friendly 50% complete $0.37" [ref=e88] [cursor=pointer]:
+          - /url: /?featureId=d522967f
+          - generic [ref=e89]: Make next step button human friendly
+          - generic [ref=e90]:
+            - generic "50% complete" [ref=e91]
+            - generic [ref=e93]: $0.37
+    - region "Testing change request testing feature" [ref=e95]:
+      - generic [ref=e96]:
+        - generic [ref=e97]:
+          - generic [ref=e98]:
+            - heading "Testing change request testing feature" [level=2] [ref=e99]
+            - generic [ref=e100]: draft
+          - paragraph [ref=e101]:
+            - button "feature/testing-change-request-testing-feature" [ref=e102] [cursor=pointer]
+            - generic [ref=e103]: 2026-06-30 17:59:25
+        - generic [ref=e104]:
+          - button "Run @prepare-environment" [ref=e105] [cursor=pointer]
+          - button "Feature detail actions" [ref=e107] [cursor=pointer]:
+            - img [ref=e108]
+      - article [ref=e113]:
+        - generic [ref=e114]:
+          - 'generic "Updated: 2026-06-30 17:59:25" [ref=e115]': 17:59
+          - button "prompt.md" [expanded] [ref=e116] [cursor=pointer]:
+            - strong [ref=e118]: prompt.md
+          - button "Toggle artifact" [expanded] [ref=e119] [cursor=pointer]:
+            - generic [ref=e120]: ⌃
+        - paragraph [ref=e123]: Make cancel run button on feature panel red.
+  - button "Application actions" [ref=e125] [cursor=pointer]:
+    - img [ref=e126]
+  - status
