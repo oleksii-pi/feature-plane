@@ -7,7 +7,6 @@ const { formatDateTime } = require("./time");
 const FALLBACK_SDLC = {
   source: "fallback",
   createdAt: "1970-01-01 00:00:00",
-  agents: [],
   workflow: [
     { state: "draft", artifact: "prompt.md" },
     { state: "done" },
@@ -22,7 +21,6 @@ function snapshotSdlcFromConfig(sdlcConfig, source) {
   return {
     source,
     createdAt: formatDateTime(),
-    agents: cloneJson(sdlcConfig.agents ?? []),
     workflow: cloneJson(sdlcConfig.workflow),
   };
 }
@@ -50,7 +48,6 @@ function normalizeSdlcSnapshot(value) {
   return {
     source: String(value.source ?? "SDLC.yaml"),
     createdAt: value.createdAt ? formatDateTime(value.createdAt) : formatDateTime(),
-    agents: Array.isArray(value.agents) ? value.agents.map((agent) => String(agent)) : [],
     workflow,
   };
 }

@@ -42,13 +42,6 @@ function parseSdlcYaml(source, filePath) {
       continue;
     }
 
-    if (key === "agents") {
-      const parsed = parseScalarList(lines, index + 1, filePath, 4);
-      config.agents = parsed.items;
-      index = parsed.nextIndex;
-      continue;
-    }
-
     const skipped = skipIndentedBlock(lines, index + 1, 2);
     index = skipped.nextIndex;
   }
@@ -57,15 +50,9 @@ function parseSdlcYaml(source, filePath) {
     throw yamlError(filePath, lines.length, "Missing non-empty `sdlc.workflow`.");
   }
 
-  const agents = Array.isArray(config.agents) ? config.agents.map((agent) => String(agent).trim()) : [];
-  if (config.workflow.some((entry) => Boolean(entry.value.agent)) && !agents.length) {
-    throw yamlError(filePath, lines.length, "Workflow contains agent states but `sdlc.agents` is missing.");
-  }
-
   config.workflow = config.workflow.map((entry, workflowIndex) =>
-    normalizeWorkflowStep(entry.value, entry.lineNumber, workflowIndex, agents, filePath),
+    normalizeWorkflowStep(entry.value, entry.lineNumber, workflowIndex, filePath),
   );
-  if (agents.length) config.agents = agents;
 
   return config;
 }
@@ -173,7 +160,7 @@ function assignMappingEntry(target, text, filePath, lineNumber) {
   target[key] = parseScalar(value);
 }
 
-function normalizeWorkflowStep(step, lineNumber, workflowIndex, agents, filePath) {
+function normalizeWorkflowStep(step, lineNumber, workflowIndex, filePath) {
   if (!step || typeof step !== "object" || Array.isArray(step)) {
     throw yamlError(filePath, lineNumber, "Each workflow step must be a mapping.");
   }
@@ -204,13 +191,6 @@ function normalizeWorkflowStep(step, lineNumber, workflowIndex, agents, filePath
   }
   if (!isAgentState && normalized.agent) {
     throw yamlError(filePath, lineNumber, `Human workflow step \`${normalized.state}\` cannot declare an agent.`);
-  }
-  if (isAgentState && agents.length && !agents.includes(normalized.agent)) {
-    throw yamlError(
-      filePath,
-      lineNumber,
-      `Agent workflow step \`${normalized.state}\` references unknown agent \`${normalized.agent}\`.`,
-    );
   }
   if (workflowIndex === 0 && normalized.artifact !== "prompt.md") {
     throw yamlError(filePath, lineNumber, "The first workflow step must produce `prompt.md`.");
