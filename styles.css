@@ -28,6 +28,11 @@
   font-synthesis: none;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -40,6 +45,7 @@ body {
   margin: 0;
   min-width: 320px;
   background: var(--bg);
+  overflow: hidden;
 }
 
 button,
@@ -73,7 +79,7 @@ textarea:focus-visible {
 }
 
 .app-shell {
-  min-height: 100vh;
+  height: 100dvh;
 }
 
 .title-row,
@@ -83,11 +89,12 @@ textarea:focus-visible {
 }
 
 .workspace {
-  min-height: 100vh;
+  height: 100%;
   display: grid;
   grid-template-columns: minmax(220px, 0.52fr) minmax(490px, 1.8fr);
   gap: 6px;
   padding: 6px;
+  overflow: hidden;
 }
 
 .panel {
@@ -105,6 +112,14 @@ textarea:focus-visible {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.panel-heading,
+.details-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--panel);
 }
 
 .panel-heading {
@@ -519,8 +534,10 @@ h3 {
 
 .content-column {
   min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 3px;
 }
 
