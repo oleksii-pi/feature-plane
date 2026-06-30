@@ -704,7 +704,6 @@ export function renderDetails() {
     }
   });
   elements.featureMeta.append(branchButton);
-  elements.featureMeta.append(document.createElement("br"));
 
   const updateTime = document.createElement("div");
   updateTime.className = "feature-update-time";
