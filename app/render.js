@@ -123,13 +123,20 @@ function restoreRunMenuMarkup(feature, run) {
   if (isAgentStep(step)) {
     const commit = commitBeforeStep(feature, run.step);
     if (!commit) return "";
+    const attrs = `data-revert-run-id="${escapeHtml(run.id)}" data-revert-step="${run.step}" data-revert-rerun="true"`;
     return restoreMenuMarkup({
       className: "artifact-card-menu",
       kind: "run",
       label: `${displayRunTitle(step)} run`,
       detail: `Step ${run.step + 1} · reset to ${shortCommit(commit)}`,
-      attrs: `data-revert-run-id="${escapeHtml(run.id)}" data-revert-step="${run.step}" data-revert-rerun="true"`,
+      attrs,
       actionLabel: "Rerun",
+      extraActions: [
+        {
+          className: "change-request-button",
+          label: "Add change request",
+        },
+      ],
     });
   }
   if (!run.commitSha) return "";
@@ -167,7 +174,14 @@ function restoreMenuMarkup({
   detail,
   attrs,
   actionLabel = "Revert to state",
+  extraActions = [],
 }) {
+  const sharedAttrs = `
+          data-revert-kind="${kind}"
+          data-revert-label="${escapeHtml(label)}"
+          data-revert-detail="${escapeHtml(detail)}"
+          ${attrs}
+        `;
   return `
     <div class="menu ${className}" data-menu>
       <button class="menu-button" type="button" aria-label="State actions" aria-haspopup="menu" aria-expanded="false">
@@ -182,11 +196,19 @@ function restoreMenuMarkup({
           class="revert-state-button"
           type="button"
           role="menuitem"
-          data-revert-kind="${kind}"
-          data-revert-label="${escapeHtml(label)}"
-          data-revert-detail="${escapeHtml(detail)}"
-          ${attrs}
+          ${sharedAttrs}
         >${escapeHtml(actionLabel)}</button>
+        ${extraActions
+          .map(
+            (action) => `
+        <button
+          class="${escapeHtml(action.className)}"
+          type="button"
+          role="menuitem"
+          ${sharedAttrs}
+        >${escapeHtml(action.label)}</button>`,
+          )
+          .join("")}
       </div>
     </div>
   `;
@@ -374,19 +396,24 @@ function renderRunLog(run, index, isExpanded, feature) {
   `;
 }
 
-function creationOrderValue(entry) {
-  if (entry.kind === "run") return entry.run.startedAt ?? "";
-  return entry.artifact.createdAt ?? entry.artifact.updated ?? "";
+function sortTime(entry) {
+  return entry.sortTime ?? "";
 }
 
 export function entriesForFeature(feature) {
   if (!feature) return [];
+  const changeRequestRunIndex = new Map();
+  feature.runs.forEach((run, index) => {
+    if (run.changeRequestArtifact) {
+      changeRequestRunIndex.set(run.changeRequestArtifact, { run, index });
+    }
+  });
   const artifacts = feature.artifacts.map((artifact, index) => ({
     kind: "artifact",
     artifact,
     sourceIndex: index,
     order: artifact.availableAtStep ?? 0,
-    createdOrder: index * 2 + 1,
+    ...artifactSortPosition(artifact, index, changeRequestRunIndex),
   }));
   const runs = feature.runs.map((run, index) => ({
     kind: "run",
@@ -394,15 +421,35 @@ export function entriesForFeature(feature) {
     sourceIndex: index,
     order: run.step,
     createdOrder: index * 2,
+    sortTime: run.startedAt ?? "",
   }));
   return [...artifacts, ...runs]
     .filter((entry) => entry.order <= state.selectedStepIndex)
     .sort(
       (a, b) =>
-        creationOrderValue(a).localeCompare(creationOrderValue(b)) ||
+        sortTime(a).localeCompare(sortTime(b)) ||
         a.order - b.order ||
         a.createdOrder - b.createdOrder,
     );
+}
+
+function artifactSortPosition(artifact, index, changeRequestRunIndex) {
+  const defaultSortTime = artifact.createdAt ?? artifact.updated ?? "";
+  const attachedRun = changeRequestRunIndex.get(artifact.name);
+  if (!attachedRun) {
+    return {
+      createdOrder: index * 2 + 1,
+      sortTime: defaultSortTime,
+    };
+  }
+  const runSortTime = attachedRun.run.startedAt ?? "";
+  return {
+    createdOrder: attachedRun.index * 2 - 1,
+    sortTime:
+      runSortTime && defaultSortTime
+        ? [runSortTime, defaultSortTime].sort()[0]
+        : runSortTime || defaultSortTime,
+  };
 }
 
 export function artifactIndexForStep(feature) {

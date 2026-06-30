@@ -27,6 +27,10 @@ function buildAgentContext(feature, run) {
   const storedArtifactFolder = getFeatureArtifactFolder(feature);
   const artifactFolderPath = getFeatureArtifactFolderPath(feature);
   const artifactRelativePath = `${artifactFolder}/${run.artifact}`;
+  const changeRequestArtifact = run.changeRequestArtifact ?? "";
+  const changeRequestRelativePath = changeRequestArtifact
+    ? `${artifactFolder}/${changeRequestArtifact}`
+    : "";
   const promptRelativePath = `${artifactFolder}/prompt.md`;
   return {
     agent: run.agent,
@@ -36,6 +40,11 @@ function buildAgentContext(feature, run) {
     artifact_path: path.join(artifactFolderPath, run.artifact),
     artifact_relative_path: artifactRelativePath,
     branch: feature.branch,
+    change_request_artifact: changeRequestArtifact,
+    change_request_path: changeRequestArtifact
+      ? path.join(artifactFolderPath, changeRequestArtifact)
+      : "",
+    change_request_relative_path: changeRequestRelativePath,
     context_folder: artifactFolder,
     context_folder_path: artifactFolderPath,
     default_branch: String(process.env.default_branch ?? ""),

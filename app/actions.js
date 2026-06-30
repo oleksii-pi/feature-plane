@@ -22,6 +22,12 @@ import {
 
 export { restoreStateFromClipboard, saveStateToClipboard };
 
+function waitForPaint() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+}
+
 export async function moveToStep(feature, nextStep) {
   await api(`/features/${feature.id}/steps/${nextStep}`, { method: "PATCH" });
   await loadState({ preserveView: true });
@@ -168,37 +174,63 @@ export function openRevertDialog(target) {
   const feature = selectedFeature();
   if (!feature || feature.activeRunId) return;
   const rerun = Boolean(target.rerun);
+  const changeRequest = Boolean(target.changeRequest);
   state.pendingRevertTarget = {
     ...target,
     featureId: feature.id,
   };
+  elements.revertDialogEyebrow.textContent = changeRequest
+    ? "Change request"
+    : "Hard reset";
+  elements.revertDialogEyebrow.classList.toggle("danger-text", !changeRequest);
   elements.revertTargetName.textContent = target.label ?? "this state";
-  elements.revertDialogTitle.textContent = rerun
+  elements.revertDialogTitle.textContent = changeRequest
+    ? "Add change request?"
+    : rerun
     ? "Rerun agent step?"
     : "Revert to state?";
   elements.revertDialogCopy.replaceChildren(
-    rerun
+    changeRequest
+      ? "This will create a change request for "
+      : rerun
       ? "This will reset the feature workspace and branch to before "
       : "This will reset the feature workspace and branch to ",
     elements.revertTargetName,
-    rerun
+    changeRequest
+      ? ", preserve the current branch and run history, then queue that agent again."
+      : rerun
       ? ", remove artifacts and runs from this step onward, then queue the agent again."
       : ". Files not present in that commit will be removed.",
   );
   elements.revertTargetDetail.textContent =
-    target.detail ??
-    "The feature workspace will be hard reset to the selected commit.";
-  elements.revertConfirmLabel.textContent = rerun
+    changeRequest
+      ? "No reset will be performed. Existing artifacts and runs stay available."
+      : target.detail ??
+        "The feature workspace will be hard reset to the selected commit.";
+  elements.revertConfirmLabel.textContent = changeRequest
+    ? "I understand this will append a new agent run without reverting or deleting existing work."
+    : rerun
     ? "I understand this will discard this agent run and later workflow work, then queue a new run."
     : "I understand this will run a hard reset and clean the feature workspace.";
-  elements.confirmRevertButton.textContent = rerun
+  elements.confirmRevertButton.textContent = changeRequest
+    ? "Add change request"
+    : rerun
     ? "Rerun"
     : "Revert to state";
+  elements.confirmRevertButton.classList.toggle("danger-button", !changeRequest);
+  elements.confirmRevertButton.classList.toggle("primary-button", changeRequest);
+  elements.revertReasonLabel.textContent = changeRequest
+    ? "Change request"
+    : "Reason comment";
   elements.revertReasonInput.value = "";
+  elements.revertReasonInput.required = changeRequest;
+  elements.revertReasonInput.placeholder = changeRequest
+    ? "Describe what should be fixed or changed before rerunning this agent."
+    : "Optional";
   elements.revertConfirmCheckbox.checked = false;
   elements.confirmRevertButton.disabled = true;
   elements.revertDialog.showModal();
-  elements.revertConfirmCheckbox.focus();
+  (changeRequest ? elements.revertReasonInput : elements.revertConfirmCheckbox).focus();
 }
 
 export function closeRevertDialog() {
@@ -216,6 +248,40 @@ export async function savePendingArtifact({ discardNextSteps }) {
 export async function confirmPendingRevert() {
   const target = state.pendingRevertTarget;
   if (!target?.featureId || !elements.revertConfirmCheckbox.checked) return;
+  if (target.changeRequest) {
+    const result = await api(`/features/${target.featureId}/change-requests`, {
+      method: "POST",
+      body: JSON.stringify({
+        runId: target.runId,
+        step: target.step,
+        content: elements.revertReasonInput.value.trim(),
+      }),
+    });
+    closeRevertDialog();
+    await loadState({ preserveView: true });
+    const updated = state.features.find((feature) => feature.id === target.featureId);
+    if (updated) {
+      setView(updated.id, updated.step, { replace: true });
+      render();
+    }
+    await waitForPaint();
+    await api(`/features/${target.featureId}/runs`, {
+      method: "POST",
+      body: JSON.stringify({
+        step: result.target?.step ?? target.step,
+        changeRequestArtifact: result.changeRequestArtifact?.name,
+      }),
+    });
+    await loadState({ preserveView: true });
+    const rerunFeature = state.features.find((feature) => feature.id === target.featureId);
+    if (rerunFeature) {
+      setView(rerunFeature.id, rerunFeature.step, { replace: true });
+      render();
+    }
+    showToast("Change request added and agent rerun queued");
+    return;
+  }
+
   const body = {
     confirmHardReset: true,
     reason: elements.revertReasonInput.value.trim(),

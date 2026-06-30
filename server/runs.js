@@ -12,7 +12,7 @@ const { commitFeatureWorkspace } = require("./git");
 const { httpError } = require("./http");
 const { createId } = require("./ids");
 const { state, saveState } = require("./state");
-const { currentStep, saveFeatureFiles } = require("./features");
+const { saveFeatureFiles } = require("./features");
 const { addEvent, queueRunEvent } = require("./run-events");
 const {
   forgetConfiguredRun,
@@ -33,23 +33,34 @@ function findRun(id) {
   throw httpError(404, "Unknown run.");
 }
 
-function assertAgentStep(feature) {
-  const step = currentStep(feature);
+function assertAgentStep(feature, stepIndex = feature.step) {
+  const step = featureStep(feature, stepIndex);
   if (!step?.agent)
     throw httpError(409, "The current workflow step is not an agent step.");
   if (feature.activeRunId)
     throw httpError(409, "This feature already has an active run.");
-  return step;
+  return { step, stepIndex: Number(stepIndex) };
 }
 
-async function startRun(feature) {
-  const step = assertAgentStep(feature);
+async function startRun(feature, options = {}) {
+  const requestedStep = Number.isInteger(Number(options.step))
+    ? Number(options.step)
+    : feature.step;
+  const { step, stepIndex } = assertAgentStep(feature, requestedStep);
+  const changeRequestArtifact =
+    options.changeRequestArtifact ??
+    findChangeRequestArtifact(feature, stepIndex)?.name ??
+    null;
+  const artifact = nextRunArtifactName(feature, step.artifact, {
+    forceNew: Boolean(changeRequestArtifact),
+  });
   const run = {
     id: createId(),
     featureId: feature.id,
-    step: feature.step,
+    step: stepIndex,
     agent: step.agent,
-    artifact: step.artifact,
+    artifact,
+    changeRequestArtifact,
     status: "queued",
     startedAt: formatDateTime(),
     finishedAt: null,
@@ -65,6 +76,14 @@ async function startRun(feature) {
   await saveState();
 
   await addEvent(feature, run, "Started", `${run.agent} started.`);
+  if (run.changeRequestArtifact) {
+    await addEvent(
+      feature,
+      run,
+      "Context",
+      `Change request attached: ${run.changeRequestArtifact}.`,
+    );
+  }
   run.status = "running";
 
   const commandTemplate = getAgentRunCommand();
@@ -80,6 +99,38 @@ async function startRun(feature) {
   }
 
   return feature;
+}
+
+function findChangeRequestArtifact(feature, stepIndex = feature.step) {
+  return [...(feature.artifacts ?? [])]
+    .reverse()
+    .find(
+      (artifact) =>
+        isChangeRequestArtifact(artifact.name) &&
+        (artifact.availableAtStep ?? 0) <= stepIndex,
+    );
+}
+
+function isChangeRequestArtifact(name) {
+  return /^[a-z0-9._-]+\.change-request(?:\.v[0-9]+)?\.md$/.test(String(name ?? ""));
+}
+
+function nextRunArtifactName(feature, baseName, { forceNew = false } = {}) {
+  const name = String(baseName ?? "").trim();
+  if (!forceNew || !(feature.artifacts ?? []).some((artifact) => artifact.name === name)) {
+    return name;
+  }
+  const match = name.match(/^(.*?)(\.[^.]+)?$/);
+  const stem = match?.[1] || name;
+  const extension = match?.[2] || "";
+  const used = new Set((feature.artifacts ?? []).map((artifact) => artifact.name));
+  let index = 2;
+  let candidate = `${stem}-v${index}${extension}`;
+  while (used.has(candidate)) {
+    index += 1;
+    candidate = `${stem}-v${index}${extension}`;
+  }
+  return candidate;
 }
 
 async function recordFeatureEnvironmentCommand(feature, command) {
@@ -112,9 +163,9 @@ function startSimulatedRun(feature, run) {
 
 async function completeSimulatedRun(feature, run, status, message) {
   const step = featureStep(feature, run.step);
-  const content = renderArtifact(feature, run, step);
+  const content = renderArtifact(feature, run);
   const featureDir = getFeatureArtifactFolderPath(feature);
-  const artifactPath = path.join(featureDir, step.artifact);
+  const artifactPath = path.join(featureDir, run.artifact);
   await fsp.writeFile(artifactPath, content);
   await updateCompletedRun(feature, run, step, content);
   await addEvent(feature, run, status, message);
@@ -124,7 +175,7 @@ async function completeConfiguredRun(feature, run) {
   const step = featureStep(feature, run.step);
   const artifactPath = path.join(
     getFeatureArtifactFolderPath(feature),
-    step.artifact,
+    run.artifact,
   );
   await queueRunEvent(
     feature,
@@ -140,7 +191,7 @@ async function completeConfiguredRun(feature, run) {
     await failRun(
       feature,
       run,
-      `Required artifact ${step.artifact} was not created.`,
+      `Required artifact ${run.artifact} was not created.`,
     );
     return;
   }
@@ -156,11 +207,11 @@ async function completeConfiguredRun(feature, run) {
 
 async function updateCompletedRun(feature, run, step, content) {
   const existing = feature.artifacts.find(
-    (artifact) => artifact.name === step.artifact,
+    (artifact) => artifact.name === run.artifact,
   );
   const artifact = {
-    name: step.artifact,
-    path: `${getFeatureArtifactFolder(feature)}/${step.artifact}`,
+    name: run.artifact,
+    path: `${getFeatureArtifactFolder(feature)}/${run.artifact}`,
     availableAtStep: run.step,
     createdAt: existing?.createdAt ?? formatDateTime(),
     updated: formatDateTime(),
@@ -173,7 +224,7 @@ async function updateCompletedRun(feature, run, step, content) {
   delete run.fileBaseline;
   const commit = await commitFeatureWorkspace(
     feature,
-    `Run ${run.agent}: ${step.artifact}`,
+    `Run ${run.agent}: ${run.artifact}`,
   );
   run.commitSha = commit.sha;
   artifact.commitSha = commit.sha;
@@ -187,12 +238,15 @@ async function updateCompletedRun(feature, run, step, content) {
   await priceRun(run);
   updateFeatureCost(feature);
   feature.activeRunId = null;
-  feature.step = Math.min(run.step + 1, featureWorkflow(feature).length - 1);
+  feature.step = Math.max(
+    feature.step,
+    Math.min(run.step + 1, featureWorkflow(feature).length - 1),
+  );
   feature.updated = formatDateTime();
 }
 
-function renderArtifact(feature, run, step) {
-  const title = step.artifact.replace(/\.md$/, "").replaceAll("-", " ");
+function renderArtifact(feature, run) {
+  const title = run.artifact.replace(/\.md$/, "").replaceAll("-", " ");
   return [
     `## ${title.charAt(0).toUpperCase()}${title.slice(1)}`,
     "",

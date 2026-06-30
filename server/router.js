@@ -20,6 +20,7 @@ const {
 } = require("./state");
 const {
   cloneFeature,
+  createChangeRequest,
   createFeature,
   findFeature,
   moveFeature,
@@ -168,13 +169,24 @@ async function route(req, res) {
       return;
     }
 
+    if (req.method === "POST" && parts[2] === "change-requests") {
+      const body = await readJson(req);
+      const result = await createChangeRequest(feature, body);
+      sendJson(res, 201, result);
+      return;
+    }
+
     if (req.method === "GET" && parts[2] === "runs") {
       sendJson(res, 200, feature.runs);
       return;
     }
 
     if (req.method === "POST" && parts[2] === "runs") {
-      const updated = await startRun(feature);
+      const body = await readJson(req);
+      const updated = await startRun(feature, {
+        step: body.step,
+        changeRequestArtifact: body.changeRequestArtifact,
+      });
       sendJson(res, 201, updated);
       return;
     }

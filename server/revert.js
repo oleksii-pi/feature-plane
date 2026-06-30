@@ -35,6 +35,9 @@ async function revertFeatureToState(feature, body = {}) {
   }
 
   if (body.rerun === true) {
+    if (body.changeRequest !== undefined) {
+      throw httpError(400, "Use /features/:id/change-requests to add a change request without reverting state.");
+    }
     return rerunAgentStep(feature, body);
   }
 
@@ -226,6 +229,7 @@ function resolveAgentStepRerunTarget(feature, stepIndex) {
     step,
     commitSha,
     label: `${workflowStep.agent} run`,
+    agent: workflowStep.agent,
     reasonBase: `${safeFilePart(workflowStep.agent)}-step-${step + 1}`,
   };
 }

@@ -46,6 +46,8 @@ Useful variables:
 as `%instruction_path%`, `%prompt_path%`, `%artifact_path%`,
 `%artifact_folder%`, `%artifact_folder_path%`,
 `%workspace_artifact_folder%`, `%workspace_artifact_path%`,
+`%change_request_artifact%`, `%change_request_path%`,
+`%change_request_relative_path%`,
 `%workspace_path%`, `%branch%`, `%agent%`, `%artifact%`, `%state%`,
 `%feature_name%`, and `%feature_id%`.
 Placeholders are shell-escaped by the app, so pass them as bare tokens.
@@ -81,6 +83,7 @@ Keep route changes aligned with `server/router.js`. The active endpoints are:
 - `GET /features/:id/environment`
 - `GET /features/:id/steps`, `PATCH /features/:id/steps/:step`
 - `PATCH /features/:id/artifacts/:index`
+- `POST /features/:id/change-requests`
 - `POST /features/:id/revert`
 - `POST /features/:id/reset`
 - `GET /features/:id/runs`, `POST /features/:id/runs`

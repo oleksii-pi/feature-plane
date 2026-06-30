@@ -6,6 +6,7 @@ const http = require("node:http");
 const net = require("node:net");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
+const { requiredEnv } = require("./control-plane-env");
 
 const VERIFY_ATTEMPTS = 60;
 const VERIFY_DELAY_MS = 1000;
@@ -47,20 +48,15 @@ async function main() {
 }
 
 function getContext() {
-  const dir = required("CONTROL_PLANE_ARTIFACT_FOLDER_PATH");
+  const dir = requiredEnv("CONTROL_PLANE_ARTIFACT_FOLDER_PATH");
   return {
     dir,
-    artifact: required("CONTROL_PLANE_ARTIFACT_PATH"),
+    artifact: requiredEnv("CONTROL_PLANE_ARTIFACT_PATH"),
     log: path.join(dir, "environment.log"),
     pid: path.join(dir, "environment.pid"),
-    runEventUrl: required("CONTROL_PLANE_RUN_EVENT_URL"),
-    workspace: required("CONTROL_PLANE_WORKSPACE_PATH"),
+    runEventUrl: requiredEnv("CONTROL_PLANE_RUN_EVENT_URL"),
+    workspace: requiredEnv("CONTROL_PLANE_WORKSPACE_PATH"),
   };
-}
-
-function required(name) {
-  if (!process.env[name]) throw new Error(`${name} is required.`);
-  return process.env[name];
 }
 
 async function findPort() {

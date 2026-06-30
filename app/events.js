@@ -151,6 +151,7 @@ function revertTargetFromButton(button) {
     label: button.dataset.revertLabel,
     detail: button.dataset.revertDetail,
     rerun: button.dataset.revertRerun === "true",
+    changeRequest: button.classList.contains("change-request-button"),
   };
   if (button.dataset.revertStep !== undefined) {
     target.step = Number(button.dataset.revertStep);
@@ -162,6 +163,13 @@ function revertTargetFromButton(button) {
     target.step = Number(button.dataset.revertStep);
   }
   return target;
+}
+
+function updateRevertConfirmState() {
+  const requiresChangeRequest = Boolean(state.pendingRevertTarget?.changeRequest);
+  elements.confirmRevertButton.disabled =
+    !elements.revertConfirmCheckbox.checked ||
+    (requiresChangeRequest && !elements.revertReasonInput.value.trim());
 }
 
 function setArtifactExpanded(card, expanded) {
@@ -434,6 +442,14 @@ export function bindEvents() {
       return;
     }
 
+    const changeRequestButton = event.target.closest(".artifact-card-menu .change-request-button");
+    if (changeRequestButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      openRevertDialog(revertTargetFromButton(changeRequestButton));
+      return;
+    }
+
     if (event.target.closest(".artifact-card-menu")) return;
 
     if (event.target.closest("a.artifact-log-link")) return;
@@ -697,8 +713,9 @@ export function bindEvents() {
     .querySelector("#cancel-revert-button")
     .addEventListener("click", closeRevertDialog);
   elements.revertConfirmCheckbox.addEventListener("change", () => {
-    elements.confirmRevertButton.disabled = !elements.revertConfirmCheckbox.checked;
+    updateRevertConfirmState();
   });
+  elements.revertReasonInput.addEventListener("input", updateRevertConfirmState);
   document
     .querySelector("#revert-state-form")
     .addEventListener("submit", (event) => {

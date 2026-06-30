@@ -366,10 +366,123 @@ async function updateArtifact(feature, index, content, options = {}) {
   return artifact;
 }
 
+async function createChangeRequest(feature, body = {}) {
+  if (feature.activeRunId) {
+    throw httpError(409, "Cancel the active run before adding a change request.");
+  }
+
+  const target = resolveChangeRequestTarget(feature, body);
+  const content = normalizeChangeRequest(body.content ?? body.changeRequest);
+  const artifact = await createChangeRequestArtifact(feature, target, content);
+
+  await saveFeatureFiles(feature);
+  const commit = await commitFeatureWorkspace(
+    feature,
+    `Record change request: ${target.agent}`,
+  );
+  artifact.commitSha = commit.sha;
+  feature.headCommit = commit.sha;
+  feature.stepCommits = {
+    ...(feature.stepCommits ?? {}),
+    [String(target.step)]: commit.sha,
+  };
+  feature.updated = formatDateTime();
+  await saveState();
+
+  return { feature, changeRequestArtifact: artifact, target };
+}
+
+function resolveChangeRequestTarget(feature, body) {
+  if (body.runId) {
+    const run = (feature.runs ?? []).find((item) => item.id === String(body.runId));
+    if (!run) throw httpError(404, "Unknown run.");
+    if (run.status !== "succeeded") {
+      throw httpError(409, "Change requests can only be created for completed agent runs.");
+    }
+    const step = featureStep(feature, run.step) ?? {};
+    if (!step.agent) throw httpError(422, "The selected run is not an agent step.");
+    return { step: run.step, agent: run.agent, label: `${run.agent} run` };
+  }
+
+  if (Number.isInteger(Number(body.step))) {
+    const stepIndex = Number(body.step);
+    const step = featureStep(feature, stepIndex) ?? {};
+    if (!step.agent) throw httpError(422, "The selected workflow step is not an agent step.");
+    if (!hasSuccessfulRunForStep(feature, stepIndex)) {
+      throw httpError(409, "The selected agent step has not completed successfully.");
+    }
+    return { step: stepIndex, agent: step.agent, label: `${step.agent} run` };
+  }
+
+  if (body.agent) {
+    const agent = String(body.agent);
+    for (let index = (feature.runs ?? []).length - 1; index >= 0; index -= 1) {
+      const run = feature.runs[index];
+      if (run.agent === agent && run.status === "succeeded") {
+        return { step: run.step, agent, label: `${agent} run` };
+      }
+    }
+    throw httpError(404, "Unknown completed agent run.");
+  }
+
+  throw httpError(422, "A completed run, step, or agent is required.");
+}
+
+function normalizeChangeRequest(value) {
+  const content = String(value ?? "").trim();
+  if (!content) throw httpError(422, "Change request content is required.");
+  return content.slice(0, 4000);
+}
+
+async function createChangeRequestArtifact(feature, target, request) {
+  const name = await uniqueChangeRequestArtifactName(feature, target.agent);
+  const now = formatDateTime();
+  const artifact = {
+    name,
+    path: `${feature.artifactFolder}/${name}`,
+    availableAtStep: target.step,
+    createdAt: now,
+    updated: now,
+    content: [`# Change request for ${target.agent} agent`, "", request, ""].join("\n"),
+  };
+  feature.artifacts.push(artifact);
+  return artifact;
+}
+
+async function uniqueChangeRequestArtifactName(feature, agent) {
+  const artifactDir = getFeatureArtifactFolderPath(feature);
+  const existing = new Set((feature.artifacts ?? []).map((artifact) => artifact.name));
+  const base = `${safeFilePart(agent)}.change-request`;
+  let name = `${base}.md`;
+  let index = 2;
+  while (existing.has(name) || (await fileExists(path.join(artifactDir, name)))) {
+    name = `${base}.v${index}.md`;
+    index += 1;
+  }
+  return name;
+}
+
+async function fileExists(filePath) {
+  try {
+    await fsp.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function safeFilePart(value) {
+  return String(value ?? "agent")
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "agent";
+}
+
 module.exports = {
   cloneFeature,
   configureFeatures,
   createFeature,
+  createChangeRequest,
   currentStep,
   findFeature,
   moveFeature,
