@@ -4,6 +4,7 @@ import { syncRunStreams } from "./runs.js";
 import {
   applyArtifactDrafts,
   loadArtifactDrafts,
+  loadTimelineCardExpansion,
   localState,
   restoreViewFromUrl,
   selectedFeature,
@@ -35,6 +36,7 @@ export async function loadState({ preserveView = true } = {}) {
   state.validation = nextState.validation;
 
   const saved = localState.load();
+  loadTimelineCardExpansion();
   state.featuresPanelHidden = Boolean(saved.featuresPanelHidden);
   state.workflowVisible = Boolean(saved.workflowVisible);
   state.searchTerm = saved.searchTerm ?? "";

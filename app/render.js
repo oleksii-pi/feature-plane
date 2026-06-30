@@ -14,11 +14,11 @@ import {
   latestCost,
   latestRun,
   RUN_LOG_PREVIEW_LINE_LIMIT,
+  isTimelineCardExpanded,
   selectedFeature,
   selectedStep,
   stepForFeature,
   state,
-  TERMINAL_RUN_STATUSES,
   viewUrl,
   workflowForFeature,
 } from "./state.js";
@@ -389,9 +389,6 @@ function renderRunLog(run, index, isExpanded, feature) {
           </span>
         </button>
         ${restoreRunMenuMarkup(feature, run)}
-        <button class="artifact-chevron-button" type="button" aria-label="Toggle run log" aria-expanded="${isExpanded}">
-          <span class="artifact-chevron">⌃</span>
-        </button>
       </div>
       <div class="artifact-body">
         ${previewNote}
@@ -470,11 +467,6 @@ export function artifactIndexForStep(feature) {
     return state.selectedArtifactIndex;
   }
   return entries.length ? entries.length - 1 : null;
-}
-
-function isEntryExpandedByDefault(entry) {
-  if (entry.kind === "artifact") return true;
-  return !TERMINAL_RUN_STATUSES.has(entry.run.status);
 }
 
 function editableArtifactSnapshot() {
@@ -611,8 +603,8 @@ export function renderArtifacts(feature) {
 
   elements.artifactList.innerHTML = entries
     .map((entry, visibleIndex) => {
-      const isExpanded = isEntryExpandedByDefault(entry);
       if (entry.kind === "run") {
+        const isExpanded = isTimelineCardExpanded(feature.id, entry);
         return renderRunLog(entry.run, visibleIndex, isExpanded, feature);
       }
 
@@ -621,6 +613,9 @@ export function renderArtifacts(feature) {
         artifactDraftKey(feature.id, artifact.name),
       );
       const isEditing = Boolean(draft?.editing);
+      const isExpanded = isTimelineCardExpanded(feature.id, entry, {
+        editing: isEditing,
+      });
       const content = draft?.content ?? artifact.content ?? "";
       const updatedTime = displayArtifactUpdatedTime(artifact.updated);
       const updatedTitle = displayArtifactUpdatedTitle(artifact.updated);
@@ -643,13 +638,6 @@ export function renderArtifacts(feature) {
                 : ""
             }
             ${restoreArtifactMenuMarkup(feature, artifact, entry.sourceIndex)}
-            ${
-              isEditing
-                ? ""
-                : `<button class="artifact-chevron-button" type="button" aria-label="Toggle artifact" aria-expanded="${isExpanded}">
-              <span class="artifact-chevron">⌃</span>
-            </button>`
-            }
           </div>
           <div class="artifact-body">
             <div class="artifact-preview"${isEditing ? ` contenteditable="true" role="textbox" aria-multiline="true" aria-label="Edit ${escapeHtml(artifact.name)}" spellcheck="false"` : ""}>${isEditing ? escapeHtml(content) : markdownToHtml(content)}</div>

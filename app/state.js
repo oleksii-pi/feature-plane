@@ -21,6 +21,7 @@ export const state = {
   validation: null,
   eventSources: new Map(),
   artifactDrafts: new Map(),
+  timelineCardExpansion: {},
   runStreamRenderPending: false,
   runDurationTimer: null,
   pendingArtifactSaveCard: null,
@@ -34,6 +35,48 @@ export const state = {
 
 export function artifactDraftKey(featureId, artifactName) {
   return `${featureId}::${artifactName}`;
+}
+
+export function timelineCardKeyFromCard(card) {
+  if (!card) return null;
+  if (card.dataset.artifactKey) return card.dataset.artifactKey;
+  if (card.dataset.runId) return `run:${card.dataset.runId}`;
+  return null;
+}
+
+export function timelineCardKey(featureId, entry) {
+  if (entry.kind === "run") return `run:${entry.run.id}`;
+  return artifactDraftKey(featureId, entry.artifact.name);
+}
+
+function sanitizeTimelineCardExpansion(value) {
+  if (!value || typeof value !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(value).filter(([, expanded]) => typeof expanded === "boolean"),
+  );
+}
+
+export function isTimelineCardExpanded(
+  featureId,
+  entry,
+  { editing = false } = {},
+) {
+  if (editing) return true;
+  const key = timelineCardKey(featureId, entry);
+  const saved = state.timelineCardExpansion[key];
+  if (typeof saved === "boolean") return saved;
+  if (entry.kind === "artifact") return true;
+  return !TERMINAL_RUN_STATUSES.has(entry.run.status);
+}
+
+export function setTimelineCardExpandedByCard(card, expanded) {
+  const key = timelineCardKeyFromCard(card);
+  if (!key) return;
+  state.timelineCardExpansion = {
+    ...state.timelineCardExpansion,
+    [key]: expanded,
+  };
+  localState.save({ timelineCardExpansion: state.timelineCardExpansion });
 }
 
 function readArtifactDraftEntries() {
@@ -133,6 +176,13 @@ export const localState = {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...patch }));
   },
 };
+
+export function loadTimelineCardExpansion() {
+  const saved = localState.load();
+  state.timelineCardExpansion = sanitizeTimelineCardExpansion(
+    saved.timelineCardExpansion,
+  );
+}
 
 export function selectedFeature() {
   return (

@@ -47,6 +47,7 @@ import {
   restoreViewFromUrl,
   selectedFeature,
   setView,
+  setTimelineCardExpandedByCard,
   state,
   workflowForFeature,
 } from "./state.js";
@@ -242,11 +243,12 @@ function updateRevertConfirmState() {
     (requiresChangeRequest && !elements.revertReasonInput.value.trim());
 }
 
-function setArtifactExpanded(card, expanded) {
+function setArtifactExpanded(card, expanded, { persist = false } = {}) {
   card.classList.toggle("expanded", expanded);
   card
-    .querySelectorAll(".artifact-header, .artifact-toggle, .artifact-chevron-button")
+    .querySelectorAll(".artifact-header, .artifact-toggle")
     .forEach((element) => element.setAttribute("aria-expanded", String(expanded)));
+  if (persist) setTimelineCardExpandedByCard(card, expanded);
 }
 
 function caretRangeFromPoint(x, y) {
@@ -287,7 +289,6 @@ function setArtifactEditMode(card, point = null) {
   if (!feature || !context) return;
   closeMenus();
   state.selectedArtifactIndex = Number(card.dataset.artifactIndex);
-  setArtifactExpanded(card, true);
   renderArtifacts(feature);
   const updatedCard = [...elements.artifactList.querySelectorAll("[data-artifact-key]")]
     .find((item) => item.dataset.artifactKey === context.draft.key);
@@ -562,7 +563,9 @@ export function bindEvents() {
     if (event.target.closest(".artifact-header")) {
       state.selectedArtifactIndex = Number(card.dataset.artifactIndex);
       if (!card.classList.contains("editing")) {
-        setArtifactExpanded(card, !card.classList.contains("expanded"));
+        setArtifactExpanded(card, !card.classList.contains("expanded"), {
+          persist: true,
+        });
       }
       return;
     }

@@ -833,9 +833,8 @@ h3 {
   text-align: left;
 }
 
-button.artifact-header,
-.artifact-toggle,
-.artifact-chevron-button {
+.artifact-header,
+.artifact-toggle {
   cursor: pointer;
 }
 
@@ -871,10 +870,6 @@ button.artifact-header,
   flex: 1 1 auto;
   justify-content: flex-end;
   min-width: 0;
-}
-
-.artifact-chevron-button {
-  margin-left: 0;
 }
 
 .artifact-log-link {
@@ -917,17 +912,6 @@ button.artifact-header,
   border-radius: 5px;
   font-size: 11px;
   line-height: 20px;
-}
-
-.artifact-chevron-button {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 auto;
-  padding: 0;
-  border: 0;
-  background: transparent;
 }
 
 .artifact-card-menu .menu-button {
@@ -1060,16 +1044,6 @@ button.artifact-header,
 .run-log.queued .artifact-label {
   color: var(--blue);
   background: rgba(127, 176, 255, 0.2);
-}
-
-.artifact-chevron {
-  color: var(--muted);
-  transform: rotate(180deg);
-  transition: transform 150ms ease;
-}
-
-.artifact-card.expanded .artifact-chevron {
-  transform: rotate(0deg);
 }
 
 .artifact-body {
