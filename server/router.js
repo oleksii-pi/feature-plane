@@ -23,6 +23,7 @@ const {
   createChangeRequest,
   createFeature,
   findFeature,
+  mergeFeatureFromMain,
   moveFeature,
   resetFeatureToMain,
   saveFeatureFiles,
@@ -102,6 +103,13 @@ async function route(req, res) {
     if (req.method === "POST" && parts[2] === "reset") {
       const body = await readJson(req);
       const result = await resetFeatureToMain(feature, body);
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (req.method === "POST" && parts[2] === "merge-main") {
+      const body = await readJson(req);
+      const result = await mergeFeatureFromMain(feature, body);
       sendJson(res, 200, result);
       return;
     }

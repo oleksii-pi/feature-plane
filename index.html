@@ -158,6 +158,13 @@
         </label>
         <div class="danger-zone">
           <div>
+            <strong>Merge from main</strong>
+            <p>Merge the current main snapshot into this feature and resolve conflicts in favor of main.</p>
+          </div>
+          <button class="danger-button" id="request-merge-main-button" type="button">Merge main</button>
+        </div>
+        <div class="danger-zone">
+          <div>
             <strong>Reset to current SDLC</strong>
             <p>Rebuild this feature from the current repository and keep only prompt.md.</p>
           </div>
@@ -173,6 +180,27 @@
         <div class="dialog-actions">
           <button class="secondary-button" id="cancel-settings-button" type="button">Cancel</button>
           <button class="primary-button" type="submit">Save changes</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="merge-main-dialog" class="confirmation-dialog">
+      <form id="merge-main-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow danger-text">Merge from main</p>
+            <h2>Merge main into feature?</h2>
+          </div>
+          <button class="icon-button" id="close-merge-main-button" type="button" aria-label="Close confirmation">×</button>
+        </div>
+        <p class="dialog-copy">This will merge the current main snapshot into <strong id="merge-main-feature-name"></strong>. Merge conflicts will be resolved in favor of main. If the merge fails, the feature branch will be rolled back to its original state.</p>
+        <label class="confirm-check">
+          <input id="merge-main-confirm-checkbox" type="checkbox" />
+          <span>I understand this may overwrite conflicting feature changes with main branch changes.</span>
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-merge-main-button" type="button">Cancel</button>
+          <button class="danger-button" id="confirm-merge-main-button" type="submit" disabled>Merge main</button>
         </div>
       </form>
     </dialog>

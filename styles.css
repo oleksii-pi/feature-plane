@@ -752,7 +752,8 @@ h3 {
 }
 
 .primary-button:disabled,
-.secondary-button:disabled {
+.secondary-button:disabled,
+.danger-button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }

@@ -127,11 +127,16 @@ async function currentCommit(feature) {
 
 async function commitFeatureWorkspace(feature, message, options = {}) {
   await ensureWorkspaceGit(feature);
+  const commit = await commitCurrentBranch(feature, message, options);
+  feature.headCommit = commit.sha;
+  return commit;
+}
+
+async function commitCurrentBranch(feature, message, options = {}) {
   await runGit(feature, ["add", "-A"]);
   const { stdout: status } = await runGit(feature, ["status", "--porcelain"]);
   if (!status && !options.allowEmpty) {
     const sha = await currentCommit(feature);
-    feature.headCommit = sha;
     return { sha, changed: false };
   }
 
@@ -146,7 +151,6 @@ async function commitFeatureWorkspace(feature, message, options = {}) {
   args.push("-m", normalizeCommitMessage(message));
   await runGit(feature, args);
   const sha = await currentCommit(feature);
-  feature.headCommit = sha;
   return { sha, changed: Boolean(status) };
 }
 
@@ -181,8 +185,10 @@ async function resetFeatureWorkspace(feature, commitSha) {
 }
 
 module.exports = {
+  commitCurrentBranch,
   commitFeatureWorkspace,
   currentCommit,
   ensureWorkspaceGit,
   resetFeatureWorkspace,
+  runGit,
 };

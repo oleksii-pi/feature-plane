@@ -639,6 +639,32 @@ export function bindEvents() {
   elements.editFeatureTitleButton.addEventListener("click", () => {
     setFeatureTitleEditMode(true);
   });
+  elements.mergeMainFeatureButton.addEventListener("click", () => {
+    const feature = selectedFeature();
+    if (!feature) return;
+    elements.mergeMainFeatureName.textContent = feature.name;
+    elements.mergeMainDialog.dataset.featureId = feature.id;
+    elements.mergeMainConfirmCheckbox.checked = false;
+    elements.confirmMergeMainButton.disabled = true;
+    elements.settingsDialog.close();
+    elements.mergeMainDialog.showModal();
+    elements.mergeMainConfirmCheckbox.focus();
+  });
+  document
+    .querySelector("#close-merge-main-button")
+    .addEventListener("click", () => elements.mergeMainDialog.close());
+  document
+    .querySelector("#cancel-merge-main-button")
+    .addEventListener("click", () => elements.mergeMainDialog.close());
+  elements.mergeMainDialog.addEventListener("close", () => {
+    elements.mergeMainDialog.dataset.featureId = "";
+    elements.mergeMainConfirmCheckbox.checked = false;
+    elements.confirmMergeMainButton.disabled = true;
+  });
+  elements.mergeMainConfirmCheckbox.addEventListener("change", () => {
+    elements.confirmMergeMainButton.disabled =
+      !elements.mergeMainConfirmCheckbox.checked;
+  });
   elements.resetFeatureButton.addEventListener("click", () => {
     const feature = selectedFeature();
     if (!feature) return;
@@ -736,6 +762,32 @@ export function bindEvents() {
     elements.settingsDialog.close();
     await loadState({ preserveView: true });
     showToast("Feature settings saved");
+  });
+
+  elements.mergeMainForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const featureId = elements.mergeMainDialog.dataset.featureId;
+    if (!featureId || !elements.mergeMainConfirmCheckbox.checked) return;
+    try {
+      const result = await api(`/features/${featureId}/merge-main`, {
+        method: "POST",
+        body: JSON.stringify({ confirmMergeFromMain: true }),
+      });
+      elements.mergeMainDialog.close();
+      await loadState({ preserveView: true });
+      const updated = state.features.find((feature) => feature.id === featureId);
+      if (updated) setView(updated.id, updated.step, { replace: true });
+      const merge = result.merge ?? {};
+      showToast(
+        merge.changed
+          ? merge.conflictsResolved
+            ? "Merged main and resolved conflicts"
+            : "Merged main into feature"
+          : "Feature already includes main",
+      );
+    } catch (error) {
+      showToast(error.message);
+    }
   });
 
   elements.resetForm.addEventListener("submit", async (event) => {

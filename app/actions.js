@@ -67,6 +67,7 @@ export function openFeatureSettings() {
   elements.settingsFeatureNameInput.hidden = true;
   elements.editFeatureTitleButton.hidden = false;
   elements.branchInput.value = feature.branch;
+  elements.mergeMainFeatureButton.disabled = Boolean(feature.activeRunId);
   elements.resetFeatureButton.disabled = Boolean(feature.activeRunId);
   elements.settingsDialog.showModal();
   elements.branchInput.focus();

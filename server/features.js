@@ -6,9 +6,17 @@ const {
   branchWorkspaceFolder,
   getFeatureArtifactFolderPath,
   getLegacyFeatureArtifactFolderPaths,
+  getFeatureWorkspaceArtifactFolder,
   getFeatureWorkspaceFolderPath,
 } = require("./feature-artifacts");
-const { commitFeatureWorkspace } = require("./git");
+const {
+  commitCurrentBranch,
+  commitFeatureWorkspace,
+  currentCommit,
+  ensureWorkspaceGit,
+  resetFeatureWorkspace,
+  runGit,
+} = require("./git");
 const { httpError } = require("./http");
 const { createId } = require("./ids");
 const { archiveFeatureRuns } = require("./run-history");
@@ -198,6 +206,216 @@ async function resetFeatureToMain(feature, body = {}) {
   feature.updated = formatDateTime();
   await saveState();
   return { feature, reset: { environment } };
+}
+
+async function mergeFeatureFromMain(feature, body = {}) {
+  if (body.confirmMergeFromMain !== true) {
+    throw httpError(400, "Merge from main confirmation is required.");
+  }
+  if (feature.activeRunId) {
+    throw httpError(409, "Cancel the active run before merging from main.");
+  }
+
+  const mainBranch = "main";
+  const baselineCommit = await resolveMainMergeBaseline(feature);
+  let previousCommit = null;
+  let rollbackAttempted = false;
+
+  try {
+    await ensureWorkspaceGit(feature);
+    await runGit(feature, ["checkout", feature.branch]);
+    await ensureCleanWorkspaceForMerge(feature);
+    previousCommit = await currentCommit(feature);
+    const mainCommit = await refreshMainSnapshotBranch(
+      feature,
+      mainBranch,
+      baselineCommit,
+    );
+    await runGit(feature, ["checkout", feature.branch]);
+    await runGit(feature, ["reset", "--hard", previousCommit]);
+    await runGit(feature, ["clean", "-fdx"]);
+
+    const merge = await mergeBranchIntoFeature(feature, mainBranch);
+    const commitSha = await currentCommit(feature);
+    feature.headCommit = commitSha;
+    feature.stepCommits = {
+      ...(feature.stepCommits ?? {}),
+      [String(feature.step)]: commitSha,
+    };
+    feature.sdlc = loadSdlcSnapshot(ROOT, `${feature.workspace}/SDLC.yaml`);
+    feature.restoreHistory = [
+      ...(feature.restoreHistory ?? []),
+      {
+        id: createId(),
+        createdAt: formatDateTime(),
+        targetStep: feature.step,
+        targetLabel: "Merge from main",
+        targetSource: "main",
+        commitSha,
+        previousCommit,
+        mainCommit,
+        conflictsResolved: merge.conflictsResolved,
+      },
+    ].slice(-50);
+    feature.updated = formatDateTime();
+    await saveState();
+
+    return {
+      feature,
+      merge: {
+        branch: mainBranch,
+        changed: commitSha !== previousCommit,
+        commitSha,
+        previousCommit,
+        mainCommit,
+        conflictsResolved: merge.conflictsResolved,
+        resolvedPaths: merge.resolvedPaths,
+      },
+    };
+  } catch (error) {
+    if (previousCommit) {
+      rollbackAttempted = true;
+      try {
+        await rollbackMergeFromMain(feature, previousCommit);
+        await saveState();
+      } catch (rollbackError) {
+        throw httpError(
+          500,
+          `Merge from main failed, and rollback also failed: ${rollbackError.message}. Original error: ${error.message}`,
+        );
+      }
+    }
+    const rollbackMessage = rollbackAttempted
+      ? " The feature branch was rolled back to its original state."
+      : "";
+    throw httpError(409, `Merge from main failed.${rollbackMessage} ${error.message}`);
+  }
+}
+
+async function rollbackMergeFromMain(feature, previousCommit) {
+  try {
+    await runGit(feature, ["merge", "--abort"]);
+  } catch {
+    // The failure may have happened before a merge was active.
+  }
+  try {
+    await runGit(feature, ["checkout", "-f", feature.branch]);
+  } catch {
+    // resetFeatureWorkspace will report the rollback failure with context.
+  }
+  await resetFeatureWorkspace(feature, previousCommit);
+}
+
+async function resolveMainMergeBaseline(feature) {
+  const commit = feature.stepCommits?.["0"] ?? feature.headCommit;
+  if (!commit) {
+    throw httpError(409, "Feature does not have a merge baseline commit.");
+  }
+  return commit;
+}
+
+async function ensureCleanWorkspaceForMerge(feature) {
+  const { stdout } = await runGit(feature, ["status", "--porcelain"]);
+  if (!stdout) return;
+  throw httpError(
+    409,
+    "Feature workspace has uncommitted changes. Save, commit, or discard them before merging from main.",
+  );
+}
+
+async function refreshMainSnapshotBranch(feature, mainBranch, baselineCommit) {
+  const featureDir = getFeatureWorkspaceFolderPath(feature);
+  await runGit(feature, ["checkout", "-B", mainBranch, baselineCommit]);
+  await replaceWorkspaceWithRepositorySnapshot(featureDir);
+  await restoreFeatureArtifactBaseline(feature, baselineCommit);
+  const commit = await commitCurrentBranch(
+    feature,
+    `Refresh main snapshot for ${feature.name}`,
+  );
+  return commit.sha;
+}
+
+async function replaceWorkspaceWithRepositorySnapshot(featureDir) {
+  const entries = await fsp.readdir(featureDir, { withFileTypes: true });
+  await Promise.all(
+    entries
+      .filter((entry) => entry.name !== ".git")
+      .map((entry) =>
+        fsp.rm(path.join(featureDir, entry.name), { recursive: true, force: true }),
+      ),
+  );
+  await seedFeatureWorkspace(featureDir);
+}
+
+async function restoreFeatureArtifactBaseline(feature, baselineCommit) {
+  const artifactFolder = getFeatureWorkspaceArtifactFolder(feature);
+  try {
+    await runGit(feature, ["checkout", baselineCommit, "--", artifactFolder]);
+  } catch {
+    // Older feature baselines may not have an artifact folder yet.
+  }
+}
+
+async function mergeBranchIntoFeature(feature, mainBranch) {
+  try {
+    await runGit(feature, [
+      "-c",
+      "user.name=Control Plane",
+      "-c",
+      "user.email=control-plane@local.invalid",
+      "merge",
+      "--no-edit",
+      "-X",
+      "theirs",
+      mainBranch,
+    ]);
+    return { conflictsResolved: false, resolvedPaths: [] };
+  } catch (error) {
+    const resolvedPaths = await resolveMergeConflictsFromTheirs(feature);
+    if (!resolvedPaths.length) throw error;
+    await runGit(feature, [
+      "-c",
+      "user.name=Control Plane",
+      "-c",
+      "user.email=control-plane@local.invalid",
+      "commit",
+      "--no-edit",
+      "--allow-empty",
+    ]);
+    return { conflictsResolved: true, resolvedPaths };
+  }
+}
+
+async function resolveMergeConflictsFromTheirs(feature) {
+  const conflicts = await unmergedPaths(feature);
+  for (const filePath of conflicts) {
+    if (await unmergedPathHasTheirs(feature, filePath)) {
+      await runGit(feature, ["checkout", "--theirs", "--", filePath]);
+      await runGit(feature, ["add", "--", filePath]);
+    } else {
+      await runGit(feature, ["rm", "-f", "--", filePath]);
+    }
+  }
+  const remaining = await unmergedPaths(feature);
+  if (remaining.length) {
+    throw new Error(`Automatic conflict resolution failed for ${remaining.join(", ")}.`);
+  }
+  return conflicts;
+}
+
+async function unmergedPaths(feature) {
+  const { stdout } = await runGit(feature, [
+    "diff",
+    "--name-only",
+    "--diff-filter=U",
+    "-z",
+  ]);
+  return stdout.split("\0").filter(Boolean);
+}
+
+async function unmergedPathHasTheirs(feature, filePath) {
+  const { stdout } = await runGit(feature, ["ls-files", "-u", "--", filePath]);
+  return stdout.split(/\r?\n/).some((line) => /\s3\t/.test(line));
 }
 
 function assertResettableWorkspace(featureDir) {
@@ -494,6 +712,7 @@ module.exports = {
   createChangeRequest,
   currentStep,
   findFeature,
+  mergeFeatureFromMain,
   moveFeature,
   resetFeatureToMain,
   saveFeatureFiles,
