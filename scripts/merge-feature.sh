@@ -111,6 +111,28 @@ render_artifact() {
   } > "$artifact_path"
 }
 
+ensure_branch_has_pending_changes() {
+  local commits numstat
+
+  if git merge-base --is-ancestor "$branch" "$main_branch"; then
+    cat >&2 <<EOF
+Feature branch $branch is already contained in $main_branch.
+There are no pending branch changes to merge into $main_branch.
+EOF
+    exit 1
+  fi
+
+  commits="$(git log --no-merges --format='%H' "$main_branch..$branch" || true)"
+  numstat="$(git diff --numstat "$main_branch...$branch" || true)"
+  if [ -z "$commits" ] && [ -z "$numstat" ]; then
+    cat >&2 <<EOF
+Feature branch $branch has no detectable changes relative to $main_branch.
+Refusing to write an empty merge change log.
+EOF
+    exit 1
+  fi
+}
+
 commit_branch_changes() {
   git_quiet add -A
   if [ -z "$(git status --porcelain)" ]; then
@@ -139,8 +161,10 @@ mkdir -p "$artifact_dir"
 git_quiet checkout "$branch"
 ensure_clean_worktree
 ensure_main_branch
+ensure_branch_has_pending_changes
 git_quiet merge --no-edit "$main_branch"
 printf 'successfully merged change from main to branch %s\n' "$branch"
+ensure_branch_has_pending_changes
 
 stop_feature_environment
 render_artifact
