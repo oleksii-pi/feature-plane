@@ -121,6 +121,7 @@ function buildChildEnv(feature, run, context) {
     CONTROL_PLANE_INSTRUCTION_PATH: context.instruction_path,
     CONTROL_PLANE_PROMPT_PATH: context.prompt_path,
     CONTROL_PLANE_PROMPT_RELATIVE_PATH: context.prompt_relative_path,
+    CONTROL_PLANE_REPOSITORY_ROOT: context.repository_root,
     CONTROL_PLANE_REQUIRED_ARTIFACT: run.artifact,
     CONTROL_PLANE_RUN_ID: run.id,
     CONTROL_PLANE_RUN_EVENT_URL: `http://127.0.0.1:${PORT}/runs/${encodeURIComponent(run.id)}/events`,

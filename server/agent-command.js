@@ -1,5 +1,5 @@
 const path = require("node:path");
-const { PORT } = require("./config");
+const { PORT, ROOT } = require("./config");
 const {
   getFeatureArtifactFolder,
   getFeatureArtifactFolderPath,
@@ -56,6 +56,7 @@ function buildAgentContext(feature, run) {
     llm_model_name: String(process.env.llm_model_name ?? ""),
     prompt_path: path.join(artifactFolderPath, "prompt.md"),
     prompt_relative_path: promptRelativePath,
+    repository_root: ROOT,
     run_id: run.id,
     server_port: PORT,
     state: step.state,

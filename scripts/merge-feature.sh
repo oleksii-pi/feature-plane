@@ -3,14 +3,18 @@ set -euo pipefail
 
 : "${CONTROL_PLANE_WORKSPACE_PATH:?missing CONTROL_PLANE_WORKSPACE_PATH}"
 : "${CONTROL_PLANE_ARTIFACT_PATH:?missing CONTROL_PLANE_ARTIFACT_PATH}"
+: "${CONTROL_PLANE_REPOSITORY_ROOT:?missing CONTROL_PLANE_REPOSITORY_ROOT}"
 
 workspace="$(cd "$CONTROL_PLANE_WORKSPACE_PATH" && pwd -P)"
+repository_root="$(cd "$CONTROL_PLANE_REPOSITORY_ROOT" && pwd -P)"
 case "$CONTROL_PLANE_ARTIFACT_PATH" in
   /*) artifact_path="$CONTROL_PLANE_ARTIFACT_PATH" ;;
   *) artifact_path="$workspace/$CONTROL_PLANE_ARTIFACT_PATH" ;;
 esac
 artifact_dir="$(dirname "$artifact_path")"
 main_branch="${CONTROL_PLANE_DEFAULT_BRANCH:-${default_branch:-main}}"
+patch_path="$(mktemp "${TMPDIR:-/tmp}/control-plane-merge.XXXXXX.patch")"
+trap 'rm -f "$patch_path"' EXIT
 
 cd "$workspace"
 
@@ -37,6 +41,30 @@ ensure_clean_worktree() {
 
 branch_exists() {
   git show-ref --verify --quiet "refs/heads/$1"
+}
+
+root_branch_exists() {
+  git -C "$repository_root" show-ref --verify --quiet "refs/heads/$1"
+}
+
+ensure_root_repository() {
+  if ! git -C "$repository_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Repository root is not a git repository: $repository_root" >&2
+    exit 1
+  fi
+  if ! root_branch_exists "$main_branch"; then
+    echo "Repository root does not have branch $main_branch." >&2
+    exit 1
+  fi
+}
+
+ensure_clean_root_worktree() {
+  local status
+  status="$(git -C "$repository_root" status --porcelain)"
+  if [ -n "$status" ]; then
+    printf 'Repository root has uncommitted changes before merge:\n%s\n' "$status" >&2
+    exit 1
+  fi
 }
 
 ensure_main_branch() {
@@ -144,6 +172,44 @@ commit_branch_changes() {
     commit -m "Run merge: $(basename "$artifact_path")"
 }
 
+write_merge_patch() {
+  git diff --binary "$main_branch...$branch" > "$patch_path"
+  if [ ! -s "$patch_path" ]; then
+    echo "Feature branch produced an empty repository merge patch." >&2
+    exit 1
+  fi
+}
+
+commit_repository_merge() {
+  git_quiet checkout "$branch"
+  write_merge_patch
+  ensure_root_repository
+  ensure_clean_root_worktree
+
+  git_quiet -C "$repository_root" checkout "$main_branch"
+  ensure_clean_root_worktree
+
+  if ! git -C "$repository_root" apply --check "$patch_path"; then
+    cat >&2 <<EOF
+Feature branch changes could not be applied to $repository_root on $main_branch.
+Resolve the repository root state manually, then rerun the merge.
+EOF
+    exit 1
+  fi
+
+  git_quiet -C "$repository_root" apply --index "$patch_path"
+  if [ -z "$(git -C "$repository_root" status --porcelain)" ]; then
+    echo "Feature branch changes produced no root repository changes." >&2
+    exit 1
+  fi
+
+  git_quiet \
+    -C "$repository_root" \
+    -c user.name="Control Plane" \
+    -c user.email="control-plane@local.invalid" \
+    commit -m "Merge $branch"
+}
+
 branch="${CONTROL_PLANE_BRANCH:-}"
 if [ -z "$branch" ]; then
   branch="$(git symbolic-ref --quiet --short HEAD || true)"
@@ -160,6 +226,8 @@ fi
 mkdir -p "$artifact_dir"
 git_quiet checkout "$branch"
 ensure_clean_worktree
+ensure_root_repository
+ensure_clean_root_worktree
 ensure_main_branch
 ensure_branch_has_pending_changes
 git_quiet merge --no-edit "$main_branch"
@@ -169,8 +237,9 @@ ensure_branch_has_pending_changes
 stop_feature_environment
 render_artifact
 commit_branch_changes
+commit_repository_merge
 
 git_quiet checkout "$main_branch"
 git_quiet merge --no-edit "$branch"
-echo "successfully merged branch to main"
+echo "successfully merged branch to repository $main_branch"
 echo "done"

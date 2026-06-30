@@ -5,8 +5,10 @@ set -eu
 #   agent_run_command=./scripts/codex-feature-agent.sh
 #
 # Required user setup:
-#   ~/.codex/feature-isolated.config.toml must define a profile whose only
-#   writable workspace root is "." and whose project_root_markers is [].
+#   ~/.codex/feature-isolated.config.toml should keep normal feature work
+#   isolated to "." with project_root_markers = []. The merge helper is the
+#   exception: it receives CONTROL_PLANE_REPOSITORY_ROOT and promotes the
+#   workspace diff into the real repository root.
 #
 # Limitations:
 #   - This script does not sandbox Control Plane itself; it only launches the

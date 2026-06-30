@@ -4,9 +4,9 @@ Run the merge helper first:
 ./scripts/merge-feature.sh
 ```
 
-The helper writes the required artifact, commits the branch, merges the branch
-to main, cleans up the recorded feature environment, and prints only the merge
-result lines on success.
+The helper writes the required artifact, commits the branch, applies the
+workspace branch changes to the repository main branch, cleans up the recorded
+feature environment, and prints only the merge result lines on success.
 
 If the helper exits because merging `main` into the feature branch produced
 conflicts, inspect the conflict markers and resolve the conflicts only when the
