@@ -39,12 +39,13 @@ async function main() {
     throw error;
   }
 
-  const callback = await publish(context.runEventUrl, url);
+  await publish(context.runEventUrl, url);
+  const content = [`URL: ${url}`, `PID: ${child.pid}`, `Log: ${context.log}`, ""].join("\n");
   await fsp.writeFile(
     context.artifact,
-    [`URL: ${url}`, `PID: ${child.pid}`, `Log: ${context.log}`, `Callback: ${callback}`, ""].join("\n"),
+    content,
   );
-  console.log(url);
+  process.stdout.write(content);
 }
 
 function getContext() {
@@ -144,22 +145,16 @@ function publish(runEventUrl, url) {
             resolve("published");
             return;
           }
-          printFallback(url);
           resolve("fallback");
         });
       },
     );
     req.on("timeout", () => req.destroy(new Error("Callback timed out.")));
     req.on("error", () => {
-      printFallback(url);
       resolve("fallback");
     });
     req.end(body);
   });
-}
-
-function printFallback(url) {
-  console.log(`CONTROL_PLANE_ENVIRONMENT_URL=${url}`);
 }
 
 async function stop(pid) {
