@@ -5,7 +5,6 @@ const {
   FEATURE_ROOT,
   RUN_LOG_ROOT,
   STATE_FILE,
-  workflow,
 } = require("./config");
 const { normalizeCommandHistory } = require("./command-history");
 const {
@@ -19,6 +18,12 @@ const { commitFeatureWorkspace } = require("./git");
 const { priceRun, updateFeatureCost } = require("./pricing");
 const { addEvent, RUN_LOG_PREVIEW_LINE_LIMIT } = require("./run-events");
 const { formatDateTime } = require("./time");
+const {
+  clampFeatureStep,
+  featureWorkflow,
+  loadFeatureSdlcSnapshot,
+  normalizeSdlcSnapshot,
+} = require("./workflow");
 
 const state = {
   features: [],
@@ -38,6 +43,7 @@ async function ensureStorage() {
     const saved = JSON.parse(await fsp.readFile(STATE_FILE, "utf8"));
     const legacyArtifactFeatureIds = savedLegacyArtifactFeatureIds(saved);
     if (Array.isArray(saved.features)) state.features = saved.features.map(normalizeFeature);
+    const refreshedSdlc = refreshFeatureSdlcFromWorkspaces();
     const repricedRuns = await repriceCompletedRuns();
     const backfilledRestorePoints = await backfillMissingRestorePoints();
     const needsRewrite =
@@ -49,12 +55,41 @@ async function ensureStorage() {
       await Promise.all(state.features.map(saveFeatureFiles));
     }
     const migratedArtifactFolders = await commitMigratedArtifactFolders(legacyArtifactFeatureIds);
-    if (needsRewrite || migratedArtifactFolders) await saveState();
+    if (needsRewrite || refreshedSdlc || migratedArtifactFolders) await saveState();
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
     await saveState();
   }
   recoverInterruptedRuns();
+}
+
+function refreshFeatureSdlcFromWorkspace(feature) {
+  try {
+    const sdlc = loadFeatureSdlcSnapshot(feature);
+    let changed = false;
+    if (JSON.stringify(feature.sdlc) !== JSON.stringify(sdlc)) {
+      feature.sdlc = sdlc;
+      changed = true;
+    }
+    if (feature.sdlcError) {
+      delete feature.sdlcError;
+      changed = true;
+    }
+    return changed;
+  } catch (error) {
+    const message = error.message ?? String(error);
+    if (feature.sdlcError === message) return false;
+    feature.sdlcError = message;
+    return true;
+  }
+}
+
+function refreshFeatureSdlcFromWorkspaces() {
+  let changed = false;
+  for (const feature of state.features) {
+    if (refreshFeatureSdlcFromWorkspace(feature)) changed = true;
+  }
+  return changed;
 }
 
 async function repriceCompletedRuns() {
@@ -150,11 +185,22 @@ function savedFeatureMetadataNeedsRewrite(saved) {
       feature &&
       typeof feature === "object" &&
       ("prompt" in feature ||
+        sdlcNeedsRewrite(feature.sdlc) ||
         typeof feature.artifactFolder !== "string" ||
         feature.artifactFolder === feature.workspace ||
         isLegacyArtifactFolder(feature) ||
         artifactsNeedCreationMetadata(feature.artifacts)),
   );
+}
+
+function sdlcNeedsRewrite(sdlc) {
+  if (!sdlc || typeof sdlc !== "object") return true;
+  if (!Array.isArray(sdlc.workflow) || !sdlc.workflow.length) return true;
+  if (timestampNeedsRewrite(sdlc.createdAt)) return true;
+  return sdlc.workflow.some((step) => {
+    if (!step || typeof step !== "object") return true;
+    return !step.state;
+  });
 }
 
 function artifactsNeedCreationMetadata(artifacts) {
@@ -212,14 +258,16 @@ function normalizeFeature(feature) {
       ? branchArtifactFolder(branch, slug)
       : storedArtifactFolder;
   const runs = Array.isArray(feature.runs) ? feature.runs.map(normalizeRun) : [];
-  return {
+  const sdlc = normalizeSdlcSnapshot(feature.sdlc);
+  const normalized = {
     id: String(feature.id),
     name: String(feature.name ?? feature.title ?? "Untitled feature"),
     slug,
     branch,
     workspace,
     artifactFolder,
-    step: clampStep(feature.step),
+    sdlc,
+    step: 0,
     updated: formatDateTime(feature.updated || undefined),
     activeRunId: feature.activeRunId ?? null,
     environmentUrl:
@@ -227,13 +275,15 @@ function normalizeFeature(feature) {
     environmentCommands: normalizeCommandHistory(feature.environmentCommands),
     cost: feature.cost ?? null,
     headCommit: normalizeCommit(feature.headCommit),
-    stepCommits: normalizeStepCommits(feature.stepCommits),
+    stepCommits: normalizeStepCommits(feature.stepCommits, sdlc.workflow.length),
     restoreHistory: Array.isArray(feature.restoreHistory)
       ? feature.restoreHistory.map(normalizeRestoreEvent)
       : [],
     artifacts: normalizeArtifacts(feature.artifacts, artifactFolder, runs),
     runs,
   };
+  normalized.step = clampFeatureStep(normalized, feature.step);
+  return normalized;
 }
 
 function normalizeCommit(value) {
@@ -241,11 +291,15 @@ function normalizeCommit(value) {
   return /^[0-9a-f]{7,40}$/i.test(commit) ? commit : null;
 }
 
-function normalizeStepCommits(value) {
+function normalizeStepCommits(value, workflowLength) {
   if (!value || typeof value !== "object") return {};
+  const lastStep = Math.max(0, Number(workflowLength) - 1);
   return Object.fromEntries(
     Object.entries(value)
-      .map(([step, commit]) => [String(clampStep(step)), normalizeCommit(commit)])
+      .map(([step, commit]) => [
+        String(Math.max(0, Math.min(lastStep, Number(step) || 0))),
+        normalizeCommit(commit),
+      ])
       .filter(([, commit]) => commit),
   );
 }
@@ -345,12 +399,12 @@ function slugify(value) {
 }
 
 function clampStep(value) {
-  return Math.max(0, Math.min(workflow.length - 1, Number(value) || 0));
+  return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
 function publicState() {
   return {
-    workflow,
+    workflow: [],
     features: state.features,
     workspaces: state.features.map((feature) => ({
       id: feature.slug,
@@ -359,6 +413,7 @@ function publicState() {
       artifactFolder: getFeatureArtifactFolder(feature),
       workspaceArtifactFolder: getFeatureWorkspaceArtifactFolder(feature),
       activeRunId: feature.activeRunId,
+      workflowLength: featureWorkflow(feature).length,
     })),
     validation: validateRepository(),
   };
@@ -370,6 +425,8 @@ module.exports = {
   ensureStorage,
   normalizeFeature,
   publicState,
+  refreshFeatureSdlcFromWorkspace,
+  refreshFeatureSdlcFromWorkspaces,
   saveState,
   slugify,
   state,

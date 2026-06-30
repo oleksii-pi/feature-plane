@@ -1,11 +1,12 @@
 const path = require("node:path");
-const { PORT, workflow } = require("./config");
+const { PORT } = require("./config");
 const {
   getFeatureArtifactFolder,
   getFeatureArtifactFolderPath,
   getFeatureWorkspaceArtifactFolder,
   getFeatureWorkspaceFolderPath,
 } = require("./feature-artifacts");
+const { featureStep } = require("./workflow");
 
 function isInteractiveCodexCommand(command) {
   const normalized = String(command ?? "").trim();
@@ -21,7 +22,7 @@ function getAgentInstructionPath(feature, agent) {
 }
 
 function buildAgentContext(feature, run) {
-  const step = workflow[run.step] ?? {};
+  const step = featureStep(feature, run.step) ?? {};
   const artifactFolder = getFeatureWorkspaceArtifactFolder(feature);
   const storedArtifactFolder = getFeatureArtifactFolder(feature);
   const artifactFolderPath = getFeatureArtifactFolderPath(feature);

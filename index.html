@@ -158,6 +158,13 @@
         </label>
         <div class="danger-zone">
           <div>
+            <strong>Reset to current SDLC</strong>
+            <p>Rebuild this feature from the current repository and keep only prompt.md.</p>
+          </div>
+          <button class="danger-button" id="request-reset-feature-button" type="button">Reset feature</button>
+        </div>
+        <div class="danger-zone">
+          <div>
             <strong>Delete feature</strong>
             <p>Remove this feature and all of its artifacts and run history.</p>
           </div>
@@ -166,6 +173,27 @@
         <div class="dialog-actions">
           <button class="secondary-button" id="cancel-settings-button" type="button">Cancel</button>
           <button class="primary-button" type="submit">Save changes</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="reset-feature-dialog" class="confirmation-dialog">
+      <form id="reset-feature-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow danger-text">Reset workspace</p>
+            <h2>Reset feature?</h2>
+          </div>
+          <button class="icon-button" id="close-reset-button" type="button" aria-label="Close confirmation">×</button>
+        </div>
+        <p class="dialog-copy">This will rebuild <strong id="reset-feature-name"></strong> from the current repository, preserve only <code>prompt.md</code>, clear generated artifacts and runs, and snapshot the current SDLC.</p>
+        <label class="confirm-check">
+          <input id="reset-confirm-checkbox" type="checkbox" />
+          <span>I understand this will replace the feature workspace and branch baseline.</span>
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-reset-button" type="button">Cancel</button>
+          <button class="danger-button" id="confirm-reset-button" type="submit" disabled>Reset feature</button>
         </div>
       </form>
     </dialog>
@@ -235,11 +263,11 @@
       <div class="dialog-content">
         <div class="dialog-heading workflow-dialog-heading" id="workflow-dialog-handle">
           <div>
-            <p class="eyebrow">Repository workflow</p>
+            <p class="eyebrow">Feature workflow</p>
           </div>
-          <button class="icon-button" id="close-workflow-button" type="button" aria-label="Close repository workflow">×</button>
+          <button class="icon-button" id="close-workflow-button" type="button" aria-label="Close feature workflow">×</button>
         </div>
-        <ol class="repository-workflow-steps" id="repository-workflow-steps" aria-label="Ordered repository workflow"></ol>
+        <ol class="repository-workflow-steps" id="repository-workflow-steps" aria-label="Ordered feature workflow"></ol>
         <div class="dialog-actions">
           <button class="primary-button" id="close-workflow-action" type="button">Close</button>
         </div>

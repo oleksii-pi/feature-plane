@@ -1,18 +1,25 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
-const { ROOT, WORKSPACE_COPY_EXCLUDES, workflow } = require("./config");
+const { FEATURE_ROOT, ROOT, WORKSPACE_COPY_EXCLUDES } = require("./config");
 const {
   branchArtifactFolder,
   branchWorkspaceFolder,
   getFeatureArtifactFolderPath,
   getLegacyFeatureArtifactFolderPaths,
+  getFeatureWorkspaceFolderPath,
 } = require("./feature-artifacts");
 const { commitFeatureWorkspace } = require("./git");
 const { httpError } = require("./http");
 const { createId } = require("./ids");
-const { clampStep, saveState, slugify, state } = require("./state");
+const { saveState, slugify, state } = require("./state");
 const { updateFeatureCost } = require("./pricing");
 const { formatDateTime } = require("./time");
+const { readFeatureEnvironment, stopFeatureEnvironment } = require("./environment");
+const {
+  clampFeatureStep,
+  featureStep,
+  loadSdlcSnapshot,
+} = require("./workflow");
 
 let startRun;
 
@@ -55,6 +62,7 @@ async function createFeature({ title, prompt }) {
   const featureDir = path.join(ROOT, relativeWorkspace);
   const artifactDir = path.join(ROOT, artifactFolder);
   const timestamp = formatDateTime();
+  const sdlc = loadSdlcSnapshot(ROOT, `${relativeWorkspace}/SDLC.yaml`);
   await seedFeatureWorkspace(featureDir);
   await fsp.mkdir(artifactDir, { recursive: true });
   await fsp.writeFile(path.join(artifactDir, "prompt.md"), prompt);
@@ -66,6 +74,7 @@ async function createFeature({ title, prompt }) {
     branch,
     workspace: relativeWorkspace,
     artifactFolder,
+    sdlc,
     step: 0,
     updated: timestamp,
     activeRunId: null,
@@ -109,6 +118,105 @@ async function cloneFeature(sourceFeature) {
     title: sourceFeature.name,
     prompt,
   });
+}
+
+async function resetFeatureToMain(feature, body = {}) {
+  if (body.confirmReset !== true) {
+    throw httpError(400, "Feature reset confirmation is required.");
+  }
+  if (feature.activeRunId) {
+    throw httpError(409, "Cancel the active run before resetting the feature.");
+  }
+
+  const promptArtifact = feature.artifacts.find((artifact) => artifact.name === "prompt.md");
+  const prompt = String(promptArtifact?.content ?? "");
+  if (!prompt.trim()) {
+    throw httpError(409, "The selected feature does not have a prompt to preserve.");
+  }
+
+  const featureDir = getFeatureWorkspaceFolderPath(feature);
+  assertResettableWorkspace(featureDir);
+  const sdlc = loadSdlcSnapshot(ROOT, `${feature.workspace}/SDLC.yaml`);
+  const previousCommit = feature.headCommit ?? null;
+  const previousEnvironment = await readFeatureEnvironment(feature);
+  const environment = await stopEnvironmentForReset(previousEnvironment);
+
+  await fsp.rm(featureDir, { recursive: true, force: true });
+  await seedFeatureWorkspace(featureDir);
+
+  const timestamp = formatDateTime();
+  feature.sdlc = {
+    ...sdlc,
+    source: `${sdlc.source}:reset`,
+  };
+  feature.step = 0;
+  feature.activeRunId = null;
+  feature.environmentUrl = null;
+  feature.environmentCommands = [];
+  feature.runs = [];
+  feature.stepCommits = {};
+  feature.cost = null;
+  feature.headCommit = null;
+  feature.artifacts = [
+    {
+      name: "prompt.md",
+      path: `${feature.artifactFolder}/prompt.md`,
+      availableAtStep: 0,
+      createdAt: promptArtifact?.createdAt ?? timestamp,
+      updated: timestamp,
+      content: prompt,
+    },
+  ];
+
+  await saveFeatureFiles(feature);
+  const commit = await commitFeatureWorkspace(
+    feature,
+    `Reset feature from repository template: ${feature.name}`,
+  );
+  feature.headCommit = commit.sha;
+  feature.stepCommits["0"] = commit.sha;
+  feature.artifacts[0].commitSha = commit.sha;
+  feature.restoreHistory = [
+    ...(feature.restoreHistory ?? []),
+    {
+      id: createId(),
+      createdAt: formatDateTime(),
+      targetStep: 0,
+      targetLabel: "Repository template",
+      targetSource: "repository-template",
+      commitSha: commit.sha,
+      previousCommit,
+      reason: "",
+      reasonArtifact: null,
+      environment,
+      reset: true,
+    },
+  ].slice(-50);
+  feature.updated = formatDateTime();
+  await saveState();
+  return { feature, reset: { environment } };
+}
+
+function assertResettableWorkspace(featureDir) {
+  const relative = path.relative(FEATURE_ROOT, featureDir);
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw httpError(422, "Feature workspace is outside the configured feature home.");
+  }
+}
+
+async function stopEnvironmentForReset(previousEnvironment) {
+  try {
+    await stopFeatureEnvironment(previousEnvironment);
+    return {
+      status: "stopped",
+      message: "Feature environment stopped for reset.",
+    };
+  } catch (error) {
+    return {
+      status: "failed",
+      message: `Feature environment stop failed during reset: ${error.message}`,
+    };
+  }
 }
 
 async function saveFeatureFiles(feature) {
@@ -169,7 +277,7 @@ function findFeature(id) {
 }
 
 function currentStep(feature) {
-  return workflow[feature.step];
+  return featureStep(feature);
 }
 
 function hasSuccessfulRunForStep(feature, stepIndex) {
@@ -181,7 +289,7 @@ function hasSuccessfulRunForStep(feature, stepIndex) {
 }
 
 async function moveFeature(feature, nextStep) {
-  nextStep = clampStep(nextStep);
+  nextStep = clampFeatureStep(feature, nextStep);
   if (feature.activeRunId) {
     throw httpError(409, "Cancel the active run before changing steps.");
   }
@@ -265,6 +373,7 @@ module.exports = {
   currentStep,
   findFeature,
   moveFeature,
+  resetFeatureToMain,
   saveFeatureFiles,
   updateArtifact,
 };

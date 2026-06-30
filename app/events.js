@@ -36,6 +36,7 @@ import {
   renderArtifacts,
   renderDetails,
   renderFeatureList,
+  renderRepositoryWorkflow,
   renderValidation,
 } from "./render.js";
 import {
@@ -45,6 +46,7 @@ import {
   selectedFeature,
   setView,
   state,
+  workflowForFeature,
 } from "./state.js";
 
 function clampDialogPosition(dialog, left, top) {
@@ -344,7 +346,7 @@ export function bindEvents() {
 
   elements.advanceButton.addEventListener("click", async () => {
     const feature = selectedFeature();
-    if (!feature || feature.activeRunId || feature.step >= state.workflow.length - 1)
+    if (!feature || feature.activeRunId || feature.step >= workflowForFeature(feature).length - 1)
       return;
     if (currentAgentStepRequiresRun(feature)) {
       await runCurrentStep(feature);
@@ -488,8 +490,22 @@ export function bindEvents() {
     });
   document
     .querySelector("#repository-workflow-button")
-    .addEventListener("click", () => {
+    .addEventListener("click", async () => {
       closeMenus();
+      const feature = selectedFeature();
+      if (feature) {
+        try {
+          const workflow = await api(`/features/${feature.id}/steps`);
+          feature.sdlc = {
+            ...(feature.sdlc ?? {}),
+            workflow,
+          };
+          renderRepositoryWorkflow();
+        } catch (error) {
+          showToast(error.message);
+          return;
+        }
+      }
       elements.repositoryWorkflowDialog.showModal();
       centerDialog(elements.repositoryWorkflowDialog);
       document.querySelector("#close-workflow-action").focus();
@@ -543,6 +559,31 @@ export function bindEvents() {
   });
   elements.editFeatureTitleButton.addEventListener("click", () => {
     setFeatureTitleEditMode(true);
+  });
+  elements.resetFeatureButton.addEventListener("click", () => {
+    const feature = selectedFeature();
+    if (!feature) return;
+    elements.resetFeatureName.textContent = feature.name;
+    elements.resetDialog.dataset.featureId = feature.id;
+    elements.resetConfirmCheckbox.checked = false;
+    elements.confirmResetButton.disabled = true;
+    elements.settingsDialog.close();
+    elements.resetDialog.showModal();
+    elements.resetConfirmCheckbox.focus();
+  });
+  document
+    .querySelector("#close-reset-button")
+    .addEventListener("click", () => elements.resetDialog.close());
+  document
+    .querySelector("#cancel-reset-button")
+    .addEventListener("click", () => elements.resetDialog.close());
+  elements.resetDialog.addEventListener("close", () => {
+    elements.resetDialog.dataset.featureId = "";
+    elements.resetConfirmCheckbox.checked = false;
+    elements.confirmResetButton.disabled = true;
+  });
+  elements.resetConfirmCheckbox.addEventListener("change", () => {
+    elements.confirmResetButton.disabled = !elements.resetConfirmCheckbox.checked;
   });
   document
     .querySelector("#request-delete-feature-button")
@@ -615,6 +656,30 @@ export function bindEvents() {
     elements.settingsDialog.close();
     await loadState({ preserveView: true });
     showToast("Feature settings saved");
+  });
+
+  elements.resetForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const featureId = elements.resetDialog.dataset.featureId;
+    if (!featureId || !elements.resetConfirmCheckbox.checked) return;
+    try {
+      const result = await api(`/features/${featureId}/reset`, {
+        method: "POST",
+        body: JSON.stringify({ confirmReset: true }),
+      });
+      elements.resetDialog.close();
+      await loadState({ preserveView: true });
+      const updated = state.features.find((feature) => feature.id === featureId);
+      if (updated) setView(updated.id, updated.step, { replace: true });
+      const environmentMessage = result.reset?.environment?.message;
+      showToast(
+        environmentMessage
+          ? `Feature reset. ${environmentMessage}`
+          : "Feature reset",
+      );
+    } catch (error) {
+      showToast(error.message);
+    }
   });
 
   elements.deleteForm.addEventListener("submit", async (event) => {

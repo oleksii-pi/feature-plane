@@ -15,9 +15,11 @@ import {
   RUN_LOG_PREVIEW_LINE_LIMIT,
   selectedFeature,
   selectedStep,
+  stepForFeature,
   state,
   TERMINAL_RUN_STATUSES,
   viewUrl,
+  workflowForFeature,
 } from "./state.js";
 
 export function renderFeatureList() {
@@ -33,8 +35,10 @@ export function renderFeatureList() {
 
   elements.featureList.innerHTML = visibleFeatures
     .map((feature) => {
+      const workflow = workflowForFeature(feature);
+      const lastStep = Math.max(1, workflow.length - 1);
       const progress = Math.round(
-        (feature.step / (state.workflow.length - 1)) * 100,
+        (feature.step / lastStep) * 100,
       );
       return `
         <a
@@ -59,7 +63,8 @@ export function renderTimeline(feature) {
     return;
   }
 
-  elements.timeline.innerHTML = state.workflow
+  const workflow = workflowForFeature(feature);
+  elements.timeline.innerHTML = workflow
     .map((step, actualIndex) => {
       const stepState =
         actualIndex < feature.step
@@ -85,7 +90,7 @@ export function renderTimeline(feature) {
 }
 
 function restoreStepMenuMarkup(feature, stepIndex) {
-  const step = state.workflow[stepIndex] ?? {};
+  const step = stepForFeature(feature, stepIndex) ?? {};
   const agentStep = isAgentStep(step);
   const hasRunForStep = (feature.runs ?? []).some(
     (run) => run.step === stepIndex,
@@ -113,7 +118,7 @@ function restoreStepMenuMarkup(feature, stepIndex) {
 
 function restoreRunMenuMarkup(feature, run) {
   if (feature.activeRunId || run.status !== "succeeded") return "";
-  const step = state.workflow[run.step] ?? {};
+  const step = stepForFeature(feature, run.step) ?? {};
   if (isAgentStep(step)) {
     const commit = commitBeforeStep(feature, run.step);
     if (!commit) return "";
@@ -327,7 +332,7 @@ function displayRunDuration(run) {
 }
 
 function renderRunLog(run, index, isExpanded, feature) {
-  const step = state.workflow[run.step] ?? selectedStep();
+  const step = stepForFeature(feature, run.step) ?? selectedStep();
   const eventMarkup = displayEvents(run).join("\n");
   const eventCount = run.events?.length ?? 0;
   const hiddenCount = Math.max(0, eventCount - RUN_LOG_PREVIEW_LINE_LIMIT);
@@ -560,13 +565,15 @@ export function renderDetails() {
   elements.stateBadge.textContent = displayStep(feature);
   elements.stateBadge.classList.toggle("running", Boolean(feature.activeRunId));
   elements.environmentPanelButton.disabled = false;
+  const workflow = workflowForFeature(feature);
+  const currentStep = stepForFeature(feature);
   elements.advanceButton.disabled =
-    Boolean(feature.activeRunId) || feature.step === state.workflow.length - 1;
+    Boolean(feature.activeRunId) || feature.step === workflow.length - 1;
   elements.advanceButton.textContent =
-    feature.step === state.workflow.length - 1
+    feature.step === workflow.length - 1
       ? "Feature complete"
       : currentAgentStepRequiresRun(feature)
-        ? `Run ${state.workflow[feature.step].agent}`
+        ? `Run ${currentStep.agent}`
         : "Move to next step";
   const run = latestRun(feature);
   elements.retryRunButton.classList.toggle(
@@ -575,7 +582,7 @@ export function renderDetails() {
       run &&
       run.step === feature.step &&
       TERMINAL_RUN_STATUSES.has(run.status) &&
-      isAgentStep(state.workflow[feature.step]),
+      isAgentStep(currentStep),
     ),
   );
   elements.cancelRunButton.classList.toggle(
@@ -587,7 +594,14 @@ export function renderDetails() {
 }
 
 export function renderRepositoryWorkflow() {
-  elements.repositoryWorkflowSteps.innerHTML = state.workflow
+  const feature = selectedFeature();
+  const workflow = workflowForFeature(feature);
+  if (!feature || !workflow.length) {
+    elements.repositoryWorkflowSteps.innerHTML =
+      '<li class="empty-state">Select a feature to inspect its workflow.</li>';
+    return;
+  }
+  elements.repositoryWorkflowSteps.innerHTML = workflow
     .map((step, index) => {
       const owner = isAgentStep(step) ? "Agent" : "Human";
       const details = step.artifact

@@ -1,6 +1,5 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
-const { workflow } = require("./config");
 const {
   getFeatureArtifactFolder,
   getFeatureArtifactFolderPath,
@@ -17,6 +16,7 @@ const {
   reconcileFeatureEnvironment,
   stopFeatureEnvironment,
 } = require("./environment");
+const { featureStep, featureWorkflow } = require("./workflow");
 
 let saveFeatureFiles;
 let startRun;
@@ -161,7 +161,7 @@ function resolveRunTarget(feature, runId) {
   const run = feature.runs[runIndex];
   if (!run) throw httpError(404, "Unknown run.");
   const step = clampRestoreStep(feature, run.step);
-  const label = `${run.agent ?? workflow[step]?.state ?? "Agent"} run`;
+  const label = `${run.agent ?? featureStep(feature, step)?.state ?? "Agent"} run`;
   return {
     source: "run",
     run,
@@ -195,7 +195,7 @@ function resolveArtifactTarget(feature, artifactIndex) {
 
 function resolveStepTarget(feature, stepIndex) {
   const step = clampRestoreStep(feature, stepIndex);
-  const workflowStep = workflow[step] ?? {};
+  const workflowStep = featureStep(feature, step) ?? {};
   return {
     source: "step",
     step,
@@ -207,7 +207,7 @@ function resolveStepTarget(feature, stepIndex) {
 
 function resolveAgentStepRerunTarget(feature, stepIndex) {
   const step = clampRestoreStep(feature, stepIndex);
-  const workflowStep = workflow[step] ?? {};
+  const workflowStep = featureStep(feature, step) ?? {};
   if (!workflowStep.agent) {
     throw httpError(422, "Only agent workflow steps can be rerun.");
   }
@@ -233,7 +233,7 @@ function resolveAgentStepRerunTarget(feature, stepIndex) {
 function clampRestoreStep(feature, value) {
   const numeric = Number(value);
   if (!Number.isInteger(numeric)) throw httpError(422, "Restore target step is required.");
-  if (numeric < 0 || numeric >= workflow.length) {
+  if (numeric < 0 || numeric >= featureWorkflow(feature).length) {
     throw httpError(422, "Restore target step is outside the workflow.");
   }
   if (numeric > feature.step) {
@@ -294,7 +294,7 @@ async function reloadArtifactsFromWorkspace(feature, targetStep) {
   feature.artifacts = entries
     .map((entry) => {
       const previous = previousByName.get(entry.name) ?? {};
-      const availableAtStep = inferArtifactStep(entry.name, previous, targetStep);
+      const availableAtStep = inferArtifactStep(feature, entry.name, previous, targetStep);
       return {
         ...previous,
         name: entry.name,
@@ -351,11 +351,11 @@ async function readMarkdownArtifacts(artifactDir) {
   return Promise.all(files);
 }
 
-function inferArtifactStep(name, previous, targetStep) {
+function inferArtifactStep(feature, name, previous, targetStep) {
   if (Number.isInteger(previous.availableAtStep)) {
     return Math.min(previous.availableAtStep, targetStep);
   }
-  const workflowIndex = workflow.findIndex((step) => step.artifact === name);
+  const workflowIndex = featureWorkflow(feature).findIndex((step) => step.artifact === name);
   if (workflowIndex >= 0) return Math.min(workflowIndex, targetStep);
   return targetStep;
 }

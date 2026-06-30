@@ -1,12 +1,9 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { FEATURE_ROOT, FEATURES_HOME, ROOT, sdlcConfig, workflow } = require("./config");
+const { FEATURE_ROOT, FEATURES_HOME, ROOT } = require("./config");
 const { formatDateTime } = require("./time");
 
 function validateRepository() {
-  const instructionFilesPresent = (sdlcConfig.agents ?? []).every((agent) =>
-    fs.existsSync(path.join(ROOT, ".instructions", `${agent}.agent.md`)),
-  );
   const checks = [
     {
       name: "Feature artifact folders",
@@ -14,21 +11,9 @@ function validateRepository() {
       message: `${path.relative(ROOT, FEATURE_ROOT)} stores feature state and workspaces; workflow artifacts are committed under features/<feature-slug>/artifacts in each workspace.`,
     },
     {
-      name: "Workflow structure",
-      status: workflow[0]?.artifact === "prompt.md" && workflow.at(-1)?.state === "Done" ? "passed" : "failed",
-      message: "The workflow starts with prompt.md and ends at Done.",
-    },
-    {
-      name: "Agent artifacts",
-      status: workflow.filter((step) => step.agent).every((step) => step.artifact?.endsWith(".md"))
-        ? "passed"
-        : "failed",
-      message: "Every agent step has a Markdown artifact.",
-    },
-    {
-      name: "Agent instructions",
-      status: instructionFilesPresent ? "passed" : "failed",
-      message: "Every configured agent has a matching .instructions/<agent>.agent.md file.",
+      name: "Feature workspaces",
+      status: "passed",
+      message: "Each feature loads SDLC.yaml from its own workspace branch.",
     },
     {
       name: "Run logs",

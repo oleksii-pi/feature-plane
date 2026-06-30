@@ -1,6 +1,6 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
-const { getAgentRunCommand, workflow } = require("./config");
+const { getAgentRunCommand } = require("./config");
 const { recordEnvironmentCommand } = require("./command-history");
 const {
   getFeatureArtifactFolder,
@@ -21,6 +21,7 @@ const {
 } = require("./configured-runner");
 const { priceRun, updateFeatureCost } = require("./pricing");
 const { formatDateTime } = require("./time");
+const { featureStep, featureWorkflow } = require("./workflow");
 
 const timers = new Map();
 
@@ -110,7 +111,7 @@ function startSimulatedRun(feature, run) {
 }
 
 async function completeSimulatedRun(feature, run, status, message) {
-  const step = workflow[run.step];
+  const step = featureStep(feature, run.step);
   const content = renderArtifact(feature, run, step);
   const featureDir = getFeatureArtifactFolderPath(feature);
   const artifactPath = path.join(featureDir, step.artifact);
@@ -120,7 +121,7 @@ async function completeSimulatedRun(feature, run, status, message) {
 }
 
 async function completeConfiguredRun(feature, run) {
-  const step = workflow[run.step];
+  const step = featureStep(feature, run.step);
   const artifactPath = path.join(
     getFeatureArtifactFolderPath(feature),
     step.artifact,
@@ -186,7 +187,7 @@ async function updateCompletedRun(feature, run, step, content) {
   await priceRun(run);
   updateFeatureCost(feature);
   feature.activeRunId = null;
-  feature.step = Math.min(run.step + 1, workflow.length - 1);
+  feature.step = Math.min(run.step + 1, featureWorkflow(feature).length - 1);
   feature.updated = formatDateTime();
 }
 

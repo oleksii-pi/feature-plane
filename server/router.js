@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 const path = require("node:path");
-const { RUN_LOG_ROOT, workflow } = require("./config");
+const { RUN_LOG_ROOT } = require("./config");
 const { normalizeCommandHistory } = require("./command-history");
 const {
   branchArtifactFolder,
@@ -10,12 +10,20 @@ const {
 } = require("./feature-artifacts");
 const { httpError, readJson, sendJson, sendNoContent } = require("./http");
 const { serveStatic } = require("./static");
-const { normalizeFeature, publicState, saveState, state } = require("./state");
+const {
+  normalizeFeature,
+  publicState,
+  refreshFeatureSdlcFromWorkspace,
+  refreshFeatureSdlcFromWorkspaces,
+  saveState,
+  state,
+} = require("./state");
 const {
   cloneFeature,
   createFeature,
   findFeature,
   moveFeature,
+  resetFeatureToMain,
   saveFeatureFiles,
   updateArtifact,
 } = require("./features");
@@ -24,12 +32,14 @@ const { cancelRun, findRun, startRun } = require("./runs");
 const { queueFeatureEnvironmentUrl, streamRunEvents } = require("./run-events");
 const { formatDateTime } = require("./time");
 const { validateRepository } = require("./validation");
+const { featureWorkflow } = require("./workflow");
 
 async function route(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const parts = url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
 
   if (req.method === "GET" && url.pathname === "/state") {
+    if (refreshFeatureSdlcFromWorkspaces()) await saveState();
     sendJson(res, 200, publicState());
     return;
   }
@@ -88,6 +98,13 @@ async function route(req, res) {
       return;
     }
 
+    if (req.method === "POST" && parts[2] === "reset") {
+      const body = await readJson(req);
+      const result = await resetFeatureToMain(feature, body);
+      sendJson(res, 200, result);
+      return;
+    }
+
     if (req.method === "GET" && parts[2] === "environment") {
       sendJson(res, 200, {
         featureId: feature.id,
@@ -124,7 +141,8 @@ async function route(req, res) {
     }
 
     if (req.method === "GET" && parts[2] === "steps") {
-      sendJson(res, 200, workflow);
+      if (refreshFeatureSdlcFromWorkspace(feature)) await saveState();
+      sendJson(res, 200, featureWorkflow(feature));
       return;
     }
 

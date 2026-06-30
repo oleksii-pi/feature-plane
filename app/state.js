@@ -50,8 +50,18 @@ export function selectedFeature() {
   );
 }
 
+export function workflowForFeature(feature) {
+  return Array.isArray(feature?.sdlc?.workflow) && feature.sdlc.workflow.length
+    ? feature.sdlc.workflow
+    : state.workflow;
+}
+
+export function stepForFeature(feature, stepIndex = feature?.step) {
+  return workflowForFeature(feature)[Number(stepIndex)] ?? null;
+}
+
 export function selectedStep() {
-  return state.workflow[state.selectedStepIndex] ?? null;
+  return stepForFeature(selectedFeature(), state.selectedStepIndex);
 }
 
 export function isAgentStep(step) {
@@ -69,7 +79,7 @@ export function hasSuccessfulRunForStep(feature, stepIndex) {
 export function currentAgentStepRequiresRun(feature) {
   return Boolean(
     feature &&
-    isAgentStep(state.workflow[feature.step]) &&
+    isAgentStep(stepForFeature(feature)) &&
     !hasSuccessfulRunForStep(feature, feature.step),
   );
 }
@@ -98,7 +108,8 @@ export function setView(featureId, stepIndex, { replace = false } = {}) {
     selectedFeatureId: state.selectedFeatureId,
     selectedStepIndex: state.selectedStepIndex,
   });
-  if (!featureId || !state.workflow[stepIndex]) return;
+  const feature = state.features.find((item) => item.id === featureId);
+  if (!featureId || !workflowForFeature(feature)[stepIndex]) return;
   const method = replace ? "replaceState" : "pushState";
   window.history[method](null, "", viewUrl(featureId));
 }
@@ -131,7 +142,7 @@ export function restoreViewFromUrl() {
 
 export function displayStep(feature) {
   if (!feature) return "";
-  const step = state.workflow[feature.step];
+  const step = stepForFeature(feature);
   if (!step) return "";
   if (feature.activeRunId) {
     const run = feature.runs.find((item) => item.id === feature.activeRunId);

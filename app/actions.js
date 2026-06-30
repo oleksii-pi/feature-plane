@@ -13,6 +13,7 @@ import {
   localState,
   selectedFeature,
   setView,
+  stepForFeature,
   state,
 } from "./state.js";
 
@@ -23,10 +24,11 @@ export async function moveToStep(feature, nextStep) {
   await loadState({ preserveView: true });
   const updated = selectedFeature();
   setView(updated.id, Math.min(nextStep, updated.step));
+  const step = stepForFeature(updated, nextStep);
   showToast(
-    isAgentStep(state.workflow[nextStep])
-      ? `${state.workflow[nextStep].agent} queued`
-      : `Moved to ${state.workflow[nextStep].state}`,
+    isAgentStep(step)
+      ? `${step.agent} queued`
+      : `Moved to ${step?.state ?? "next step"}`,
   );
 }
 
@@ -36,7 +38,7 @@ export async function runCurrentStep(feature) {
   await loadState({ preserveView: true });
   const updated = selectedFeature();
   if (updated) setView(updated.id, updated.step);
-  showToast(`${state.workflow[feature.step].agent} queued`);
+  showToast(`${stepForFeature(feature)?.agent ?? "Agent"} queued`);
 }
 
 export function openFeatureDialog() {
@@ -56,6 +58,7 @@ export function openFeatureSettings() {
   elements.settingsFeatureNameInput.hidden = true;
   elements.editFeatureTitleButton.hidden = false;
   elements.branchInput.value = feature.branch;
+  elements.resetFeatureButton.disabled = Boolean(feature.activeRunId);
   elements.settingsDialog.showModal();
   elements.branchInput.focus();
 }

@@ -82,6 +82,7 @@ Keep route changes aligned with `server/router.js`. The active endpoints are:
 - `GET /features/:id/steps`, `PATCH /features/:id/steps/:step`
 - `PATCH /features/:id/artifacts/:index`
 - `POST /features/:id/revert`
+- `POST /features/:id/reset`
 - `GET /features/:id/runs`, `POST /features/:id/runs`
 - `GET /runs/:id`, `GET /runs/:id/events`, `GET /runs/:id/log`
 - `POST /runs/:id/cancel`

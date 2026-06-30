@@ -1,20 +1,17 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { loadSdlcConfig } = require("../sdlc");
 
 const ROOT = path.join(__dirname, "..");
 const ENV_FILE = path.join(ROOT, ".env");
 
 loadDotEnv(ENV_FILE);
 
-const sdlcConfig = loadSdlcConfig(ROOT);
 const PORT = resolvePort(process.argv.slice(2));
 const FEATURES_HOME = resolveFeaturesHome(process.env.features_home);
 const FEATURE_ROOT = path.join(ROOT, FEATURES_HOME);
 const RUN_LOG_ROOT = path.join(FEATURE_ROOT, "run-logs");
 const STATE_FILE = path.join(FEATURE_ROOT, "state.json");
 const AGENT_PRICING = resolveAgentPricing();
-const { workflow } = sdlcConfig;
 const WORKSPACE_COPY_EXCLUDES = new Set([FEATURES_HOME, ".features", ".git", ".env"]);
 
 function loadDotEnv(filePath) {
@@ -137,7 +134,5 @@ module.exports = {
   STATE_FILE,
   AGENT_PRICING,
   WORKSPACE_COPY_EXCLUDES,
-  sdlcConfig,
-  workflow,
   getAgentRunCommand,
 };
