@@ -7,10 +7,9 @@ import {
 import {
   closeArtifactSaveDialog,
   closeRevertDialog,
-  autosaveArtifactFromCard,
   beginArtifactEdit,
+  cancelArtifactEdit,
   confirmPendingRevert,
-  endArtifactEdit,
   closeEnvironmentPanel,
   moveToStep,
   openEnvironmentPanel,
@@ -22,6 +21,7 @@ import {
   savePendingArtifact,
   setFeaturesPanelHidden,
   setWorkflowVisible,
+  updateArtifactDraftFromCard,
 } from "./actions.js";
 import {
   closeMenus,
@@ -31,7 +31,6 @@ import {
   openMenuElement,
   showToast,
 } from "./dom.js";
-import { markdownToHtml } from "./format.js";
 import {
   artifactIndexForStep,
   entriesForFeature,
@@ -172,52 +171,83 @@ function setArtifactExpanded(card, expanded) {
     .forEach((element) => element.setAttribute("aria-expanded", String(expanded)));
 }
 
-function focusEditablePreview(preview) {
+function caretRangeFromPoint(x, y) {
+  if (document.caretPositionFromPoint) {
+    const position = document.caretPositionFromPoint(x, y);
+    if (!position) return null;
+    const range = document.createRange();
+    range.setStart(position.offsetNode, position.offset);
+    range.collapse(true);
+    return range;
+  }
+  if (document.caretRangeFromPoint) {
+    return document.caretRangeFromPoint(x, y);
+  }
+  return null;
+}
+
+function focusEditablePreview(preview, point = null) {
   preview.focus();
   const selection = window.getSelection();
   if (!selection) return;
-  const range = document.createRange();
-  range.selectNodeContents(preview);
-  range.collapse(false);
+  const range = point
+    ? caretRangeFromPoint(point.clientX, point.clientY)
+    : null;
+  const fallbackRange = document.createRange();
+  fallbackRange.selectNodeContents(preview);
+  fallbackRange.collapse(false);
   selection.removeAllRanges();
-  selection.addRange(range);
+  selection.addRange(range && preview.contains(range.startContainer) ? range : fallbackRange);
 }
 
-function setArtifactEditMode(card, editing) {
+const ARTIFACT_EDIT_DOUBLE_CLICK_MS = 330;
+let pendingArtifactEditClick = null;
+
+function setArtifactEditMode(card, point = null) {
   const feature = selectedFeature();
-  const sourceIndex = Number(card.dataset.sourceIndex);
-  const artifact = feature?.artifacts?.[sourceIndex];
-  const preview = card.querySelector(".artifact-preview");
-  const editButton = card.querySelector(".edit-artifact-button");
-  const editActions = card.querySelector(".artifact-edit-actions");
-  if (!artifact || !preview || !editButton || !editActions) return;
+  const context = beginArtifactEdit(card);
+  if (!feature || !context) return;
+  closeMenus();
+  state.selectedArtifactIndex = Number(card.dataset.artifactIndex);
+  setArtifactExpanded(card, true);
+  renderArtifacts(feature);
+  const updatedCard = [...elements.artifactList.querySelectorAll("[data-artifact-key]")]
+    .find((item) => item.dataset.artifactKey === context.draft.key);
+  const preview = updatedCard?.querySelector(".artifact-preview");
+  if (preview) focusEditablePreview(preview, point);
+}
 
-  editButton.hidden = editing;
-  editActions.hidden = !editing;
-  card.classList.toggle("editing", editing);
+function shouldEnterArtifactEditMode(card, event) {
+  const now = event.timeStamp;
+  const key =
+    card.dataset.artifactKey ??
+    `${card.dataset.artifactIndex}:${card.dataset.sourceIndex}`;
+  const isDoubleClick =
+    pendingArtifactEditClick?.key === key &&
+    now - pendingArtifactEditClick.time < ARTIFACT_EDIT_DOUBLE_CLICK_MS;
+  pendingArtifactEditClick = { key, time: now };
+  return isDoubleClick;
+}
 
-  if (editing) {
-    const context = beginArtifactEdit(card);
-    if (!context) return;
-    closeMenus();
-    setArtifactExpanded(card, true);
-    preview.textContent = context.draft.content ?? artifact.content ?? "";
-    preview.setAttribute("contenteditable", "true");
-    preview.setAttribute("role", "textbox");
-    preview.setAttribute("aria-multiline", "true");
-    preview.setAttribute("aria-label", `Edit ${artifact.name}`);
-    preview.spellcheck = false;
-    focusEditablePreview(preview);
+function enterArtifactEditModeFromEvent(event) {
+  const preview = event.target.closest(".artifact-preview");
+  const card = preview?.closest("[data-artifact-index]");
+  if (
+    !card ||
+    card.classList.contains("run-log") ||
+    card.classList.contains("editing") ||
+    !shouldEnterArtifactEditMode(card, event)
+  ) {
     return;
   }
+  event.preventDefault();
+  setArtifactEditMode(card, event);
+}
 
-  endArtifactEdit(card);
-  preview.removeAttribute("contenteditable");
-  preview.removeAttribute("role");
-  preview.removeAttribute("aria-multiline");
-  preview.removeAttribute("aria-label");
-  preview.removeAttribute("spellcheck");
-  preview.innerHTML = markdownToHtml(artifact.content);
+function cancelArtifactEditFromCard(card) {
+  cancelArtifactEdit(card);
+  const feature = selectedFeature();
+  if (feature) renderArtifacts(feature);
 }
 
 function bindMenuKeyboardShortcuts() {
@@ -350,7 +380,7 @@ export function bindEvents() {
     );
     const card = preview?.closest("[data-artifact-index]");
     if (!card) return;
-    autosaveArtifactFromCard(card);
+    updateArtifactDraftFromCard(card);
   });
 
   elements.featureSearch.addEventListener("input", (event) => {
@@ -408,13 +438,8 @@ export function bindEvents() {
 
     if (event.target.closest("a.artifact-log-link")) return;
 
-    if (event.target.closest(".edit-artifact-button")) {
-      setArtifactEditMode(card, true);
-      return;
-    }
-
     if (event.target.closest(".cancel-edit-button")) {
-      setArtifactEditMode(card, false);
+      cancelArtifactEditFromCard(card);
       return;
     }
 
@@ -423,11 +448,34 @@ export function bindEvents() {
       return;
     }
 
-    if (event.target.closest(".artifact-header")) {
-      state.selectedArtifactIndex = Number(card.dataset.artifactIndex);
-      setArtifactExpanded(card, !card.classList.contains("expanded"));
+    if (event.target.closest(".artifact-preview")) {
+      enterArtifactEditModeFromEvent(event);
       return;
     }
+
+    if (event.target.closest(".artifact-header")) {
+      state.selectedArtifactIndex = Number(card.dataset.artifactIndex);
+      if (!card.classList.contains("editing")) {
+        setArtifactExpanded(card, !card.classList.contains("expanded"));
+      }
+      return;
+    }
+  });
+
+  elements.artifactList.addEventListener("dblclick", (event) => {
+    enterArtifactEditModeFromEvent(event);
+  });
+
+  elements.artifactList.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const preview = event.target.closest(
+      ".artifact-preview[contenteditable='true']",
+    );
+    const card = preview?.closest("[data-artifact-index]");
+    if (!card) return;
+    event.preventDefault();
+    event.stopPropagation();
+    cancelArtifactEditFromCard(card);
   });
 
   document.querySelectorAll("[data-menu]").forEach((menu) => {

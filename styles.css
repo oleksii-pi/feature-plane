@@ -826,6 +826,10 @@ button.artifact-header,
   flex: 1 1 auto;
 }
 
+.artifact-card.editing .artifact-header > .artifact-updated + .artifact-toggle {
+  flex: 0 1 auto;
+}
+
 .artifact-header-actions {
   display: inline-flex;
   align-items: center;
@@ -868,6 +872,17 @@ button.artifact-header,
 
 .save-artifact-button {
   color: var(--text);
+}
+
+.primary-button.save-artifact-button {
+  min-height: 22px;
+  padding: 0 8px;
+  color: #fff;
+  border-color: var(--text);
+  background: var(--text);
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 20px;
 }
 
 .artifact-chevron-button {
@@ -1015,11 +1030,12 @@ button.artifact-header,
 
 .artifact-chevron {
   color: var(--muted);
+  transform: rotate(180deg);
   transition: transform 150ms ease;
 }
 
 .artifact-card.expanded .artifact-chevron {
-  transform: rotate(180deg);
+  transform: rotate(0deg);
 }
 
 .artifact-body {
@@ -1038,11 +1054,11 @@ button.artifact-header,
   font-size: 12px;
   padding: 2px;
   line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .artifact-preview[contenteditable="true"] {
   min-height: 1em;
-  white-space: pre-wrap;
 }
 
 .artifact-body p,
@@ -1051,6 +1067,7 @@ button.artifact-header,
   font-size: 12px;
   line-height: 1.5;
   margin-block-end: 0;
+  white-space: pre-wrap;
 }
 
 .artifact-body p:last-child,

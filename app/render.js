@@ -574,15 +574,19 @@ export function renderArtifacts(feature) {
                 <strong>${escapeHtml(artifact.name)}</strong>
               </span>
             </button>
-            <button class="artifact-log-link edit-artifact-button" type="button"${isEditing ? " hidden" : ""}>Edit</button>
-            <span class="artifact-edit-actions"${isEditing ? "" : " hidden"}>
-              <button class="artifact-log-link cancel-edit-button" type="button">Done</button>
-              <button class="artifact-log-link save-artifact-button" type="button">Save</button>
+            ${
+              isEditing
+                ? `<span class="artifact-edit-actions">
+              <button class="primary-button save-artifact-button" type="button">Save</button>
+              <button class="artifact-log-link cancel-edit-button" type="button">Cancel</button>
             </span>
+            `
+                : ""
+            }
             ${restoreArtifactMenuMarkup(feature, artifact, entry.sourceIndex)}
-            <button class="artifact-chevron-button" type="button" aria-label="Toggle artifact" aria-expanded="${isExpanded}">
+            ${isEditing ? "" : `<button class="artifact-chevron-button" type="button" aria-label="Toggle artifact" aria-expanded="${isExpanded}">
               <span class="artifact-chevron">⌃</span>
-            </button>
+            </button>`}
           </div>
           <div class="artifact-body">
             <div class="artifact-preview"${isEditing ? ` contenteditable="true" role="textbox" aria-multiline="true" aria-label="Edit ${escapeHtml(artifact.name)}" spellcheck="false"` : ""}>${isEditing ? escapeHtml(content) : markdownToHtml(content)}</div>

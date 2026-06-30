@@ -12,6 +12,8 @@ import {
   currentAgentStepRequiresRun,
   isAgentStep,
   localState,
+  persistArtifactDraft,
+  removeArtifactDraft,
   selectedFeature,
   setView,
   stepForFeature,
@@ -242,7 +244,7 @@ function artifactPreviewValue(preview) {
   return preview?.innerText ?? preview?.textContent ?? "";
 }
 
-function artifactContextFromCard(card) {
+function artifactContextFromCard(card, { createDraft = true } = {}) {
   const feature = selectedFeature();
   const sourceIndex = Number(card.dataset.sourceIndex);
   const artifact = feature?.artifacts?.[sourceIndex];
@@ -250,50 +252,22 @@ function artifactContextFromCard(card) {
 
   const key = artifactDraftKey(feature.id, artifact.name);
   let draft = state.artifactDrafts.get(key);
-  if (!draft) {
+  if (!draft && createDraft) {
     draft = {
       key,
       featureId: feature.id,
       artifactName: artifact.name,
       content: artifact.content ?? "",
       lastSavedContent: artifact.content ?? "",
+      lastSavedUpdated: artifact.updated,
       updated: artifact.updated,
-      commitSha: artifact.commitSha,
       editing: false,
-      saveRequested: false,
-      discardNextSteps: false,
-      savePromise: null,
-      error: "",
-      reportedError: "",
     };
     state.artifactDrafts.set(key, draft);
   }
+  if (!draft) return null;
   draft.sourceIndex = sourceIndex;
   return { feature, sourceIndex, artifact, draft };
-}
-
-function findDraftTarget(draft) {
-  const feature = state.features.find((item) => item.id === draft.featureId);
-  const index = feature?.artifacts?.findIndex(
-    (artifact) => artifact.name === draft.artifactName,
-  );
-  const artifact =
-    feature && Number.isInteger(index) && index >= 0
-      ? feature.artifacts[index]
-      : null;
-  return { feature, index, artifact };
-}
-
-function cleanupArtifactDraft(draft) {
-  if (
-    draft.editing ||
-    draft.savePromise ||
-    draft.discardNextSteps ||
-    draft.content !== draft.lastSavedContent
-  ) {
-    return;
-  }
-  state.artifactDrafts.delete(draft.key);
 }
 
 function updateLocalArtifactFromDraft({ feature, artifact, draft }) {
@@ -304,69 +278,15 @@ function updateLocalArtifactFromDraft({ feature, artifact, draft }) {
   draft.updated = timestamp;
 }
 
-function updateDraftFromCard(card) {
+export function updateArtifactDraftFromCard(card) {
   const context = artifactContextFromCard(card);
   const preview = card.querySelector(".artifact-preview");
   if (!context || !preview) return null;
   context.draft.content = artifactPreviewValue(preview);
-  context.draft.error = "";
+  context.draft.editing = true;
   updateLocalArtifactFromDraft(context);
+  persistArtifactDraft(context.draft);
   return context;
-}
-
-async function flushArtifactDraft(draft) {
-  while (
-    draft.saveRequested ||
-    draft.discardNextSteps ||
-    draft.content !== draft.lastSavedContent
-  ) {
-    draft.saveRequested = false;
-    const content = draft.content;
-    const discardNextSteps = Boolean(draft.discardNextSteps);
-    draft.discardNextSteps = false;
-
-    if (content === draft.lastSavedContent && !discardNextSteps) continue;
-
-    const { feature, index } = findDraftTarget(draft);
-    if (!feature || !Number.isInteger(index) || index < 0) {
-      throw new Error("Artifact is no longer available.");
-    }
-
-    const artifact = await api(`/features/${feature.id}/artifacts/${index}`, {
-      method: "PATCH",
-      body: JSON.stringify({ content, discardNextSteps }),
-    });
-    const latest = findDraftTarget(draft);
-    if (latest.feature && latest.artifact) {
-      Object.assign(latest.artifact, artifact);
-      if (draft.content !== content) latest.artifact.content = draft.content;
-      latest.feature.updated = artifact.updated ?? currentDateTime();
-      if (artifact.commitSha) {
-        latest.feature.headCommit = artifact.commitSha;
-        latest.feature.stepCommits = {
-          ...(latest.feature.stepCommits ?? {}),
-          [String(artifact.availableAtStep ?? 0)]: artifact.commitSha,
-        };
-      }
-    }
-
-    draft.lastSavedContent = content;
-    draft.updated = artifact.updated;
-    draft.commitSha = artifact.commitSha;
-    draft.error = "";
-    draft.reportedError = "";
-  }
-}
-
-function requestArtifactDraftSave(draft) {
-  draft.saveRequested = true;
-  if (!draft.savePromise) {
-    draft.savePromise = flushArtifactDraft(draft).finally(() => {
-      draft.savePromise = null;
-      cleanupArtifactDraft(draft);
-    });
-  }
-  return draft.savePromise;
 }
 
 export function beginArtifactEdit(card) {
@@ -374,34 +294,28 @@ export function beginArtifactEdit(card) {
   if (!context) return null;
   context.draft.editing = true;
   context.artifact.content = context.draft.content;
+  persistArtifactDraft(context.draft);
   return context;
 }
 
-export function endArtifactEdit(card) {
+export function cancelArtifactEdit(card) {
   const context = artifactContextFromCard(card);
   if (!context) return;
-  context.draft.editing = false;
-  cleanupArtifactDraft(context.draft);
-}
-
-export function autosaveArtifactFromCard(card) {
-  const context = updateDraftFromCard(card);
-  if (!context) return;
-  requestArtifactDraftSave(context.draft).catch((error) => {
-    context.draft.error = error.message;
-    if (context.draft.reportedError === error.message) return;
-    context.draft.reportedError = error.message;
-    showToast(`Autosave failed: ${error.message}`);
-  });
+  context.artifact.content = context.draft.lastSavedContent ?? "";
+  context.artifact.updated = context.draft.lastSavedUpdated || context.artifact.updated;
+  removeArtifactDraft(context.draft.key);
 }
 
 export async function updateArtifact(card, { discardNextSteps = false } = {}) {
-  const context = updateDraftFromCard(card);
+  const context = updateArtifactDraftFromCard(card);
   if (!context) return;
   const artifactName = context.artifact.name ?? "Artifact";
-  context.draft.discardNextSteps =
-    context.draft.discardNextSteps || discardNextSteps;
-  await requestArtifactDraftSave(context.draft);
+  const content = context.draft.content;
+  await api(`/features/${context.feature.id}/artifacts/${context.sourceIndex}`, {
+    method: "PATCH",
+    body: JSON.stringify({ content, discardNextSteps }),
+  });
+  removeArtifactDraft(context.draft.key);
   await loadState({ preserveView: true });
   const suffix = discardNextSteps ? " and next steps discarded" : "";
   showToast(`${artifactName} saved${suffix}`);

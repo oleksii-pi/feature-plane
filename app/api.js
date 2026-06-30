@@ -3,6 +3,7 @@ import { render } from "./render.js";
 import { syncRunStreams } from "./runs.js";
 import {
   applyArtifactDrafts,
+  loadArtifactDrafts,
   localState,
   restoreViewFromUrl,
   selectedFeature,
@@ -27,6 +28,7 @@ export async function api(path, options = {}) {
 
 export async function loadState({ preserveView = true } = {}) {
   const nextState = await api("/state");
+  loadArtifactDrafts();
   state.workflow = nextState.workflow;
   state.features = applyArtifactDrafts(nextState.features);
   state.workspaces = nextState.workspaces;

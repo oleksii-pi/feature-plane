@@ -1,4 +1,6 @@
 export const STORAGE_KEY = "control-plane-poc-ui-state";
+export const ARTIFACT_DRAFT_STORAGE_KEY =
+  "control-plane-poc-artifact-drafts";
 export const TERMINAL_RUN_STATUSES = new Set([
   "succeeded",
   "failed",
@@ -34,20 +36,86 @@ export function artifactDraftKey(featureId, artifactName) {
   return `${featureId}::${artifactName}`;
 }
 
+function readArtifactDraftEntries() {
+  if (typeof localStorage === "undefined") return [];
+  try {
+    const stored = JSON.parse(
+      localStorage.getItem(ARTIFACT_DRAFT_STORAGE_KEY),
+    );
+    if (!stored || typeof stored !== "object") return [];
+    return Object.entries(stored).filter(([, draft]) => draft?.editing);
+  } catch {
+    return [];
+  }
+}
+
+export function loadArtifactDrafts() {
+  state.artifactDrafts = new Map(
+    readArtifactDraftEntries().map(([key, draft]) => [
+      key,
+      {
+        key,
+        featureId: String(draft.featureId ?? ""),
+        artifactName: String(draft.artifactName ?? ""),
+        content: String(draft.content ?? ""),
+        lastSavedContent: String(draft.lastSavedContent ?? ""),
+        lastSavedUpdated: draft.lastSavedUpdated ?? "",
+        updated: draft.updated ?? "",
+        editing: true,
+      },
+    ]),
+  );
+}
+
+export function saveArtifactDrafts() {
+  if (typeof localStorage === "undefined") return;
+  const entries = [...state.artifactDrafts].filter(([, draft]) => draft.editing);
+  try {
+    if (!entries.length) {
+      localStorage.removeItem(ARTIFACT_DRAFT_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(
+      ARTIFACT_DRAFT_STORAGE_KEY,
+      JSON.stringify(Object.fromEntries(entries)),
+    );
+  } catch {
+    // Drafts still remain in memory for the current page session.
+  }
+}
+
+export function persistArtifactDraft(draft) {
+  state.artifactDrafts.set(draft.key, draft);
+  saveArtifactDrafts();
+}
+
+export function removeArtifactDraft(key) {
+  state.artifactDrafts.delete(key);
+  saveArtifactDrafts();
+}
+
 export function applyArtifactDrafts(features) {
   if (!state.artifactDrafts.size) return features;
 
+  const liveKeys = new Set();
   features.forEach((feature) => {
     (feature.artifacts ?? []).forEach((artifact) => {
-      const draft = state.artifactDrafts.get(
-        artifactDraftKey(feature.id, artifact.name),
-      );
-      if (!draft) return;
+      const key = artifactDraftKey(feature.id, artifact.name);
+      liveKeys.add(key);
+      const draft = state.artifactDrafts.get(key);
+      if (!draft?.editing) return;
       artifact.content = draft.content;
       if (draft.updated) artifact.updated = draft.updated;
-      if (draft.commitSha) artifact.commitSha = draft.commitSha;
     });
   });
+
+  let removed = false;
+  state.artifactDrafts.forEach((_, key) => {
+    if (liveKeys.has(key)) return;
+    state.artifactDrafts.delete(key);
+    removed = true;
+  });
+  if (removed) saveArtifactDrafts();
 
   return features;
 }
