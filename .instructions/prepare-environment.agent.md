@@ -1,9 +1,4 @@
-1. Read the user request from the file at `$CONTROL_PLANE_PROMPT_PATH`.
-   The committed feature artifact folder inside the workspace is
-   `$CONTROL_PLANE_WORKSPACE_ARTIFACT_FOLDER` (`features/<feature-slug>/artifacts`);
-   the absolute path is `$CONTROL_PLANE_ARTIFACT_FOLDER_PATH`.
-
-2. From `$CONTROL_PLANE_WORKSPACE_PATH`, run the repository helper:
+1. From `$CONTROL_PLANE_WORKSPACE_PATH`, run the repository helper:
 
    `node scripts/prepare-feature-environment.js`
 
@@ -13,7 +8,7 @@
    the environment URL to Control Plane or prints the fallback line, and writes
    `$CONTROL_PLANE_ARTIFACT_PATH`.
 
-3. If the helper exits non-zero, report its output and do not fabricate an
+2. If the helper exits non-zero, report its output and do not fabricate an
    environment state artifact.
 
 Available Control Plane parameters are exposed as environment variables.
