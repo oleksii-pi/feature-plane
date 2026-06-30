@@ -13,8 +13,17 @@ case "$CONTROL_PLANE_ARTIFACT_PATH" in
 esac
 artifact_dir="$(dirname "$artifact_path")"
 main_branch="${CONTROL_PLANE_DEFAULT_BRANCH:-${default_branch:-main}}"
-patch_path="$(mktemp "${TMPDIR:-/tmp}/control-plane-merge.XXXXXX.patch")"
-trap 'rm -f "$patch_path"' EXIT
+patch_path="$(mktemp "${TMPDIR:-/tmp}/control-plane-merge.XXXXXX")"
+repository_merge_pathspecs=(. ":(exclude)features/*/artifacts/*")
+
+cleanup() {
+  local exit_code="$?"
+  rm -f "$patch_path"
+  if [ "$exit_code" -ne 0 ]; then
+    rm -f "$artifact_path"
+  fi
+}
+trap cleanup EXIT
 
 cd "$workspace"
 
@@ -108,7 +117,7 @@ render_artifact() {
   local commits numstat add_count delete_count file display_path
 
   commits="$(git log --no-merges --format='- %s' "$main_branch..$branch" || true)"
-  numstat="$(git diff --numstat "$main_branch...$branch" || true)"
+  numstat="$(git diff --numstat "$main_branch...$branch" -- "${repository_merge_pathspecs[@]}" || true)"
 
   {
     echo "## Change Log"
@@ -140,7 +149,7 @@ render_artifact() {
 }
 
 ensure_branch_has_pending_changes() {
-  local commits numstat
+  local numstat
 
   if git merge-base --is-ancestor "$branch" "$main_branch"; then
     cat >&2 <<EOF
@@ -150,11 +159,10 @@ EOF
     exit 1
   fi
 
-  commits="$(git log --no-merges --format='%H' "$main_branch..$branch" || true)"
-  numstat="$(git diff --numstat "$main_branch...$branch" || true)"
-  if [ -z "$commits" ] && [ -z "$numstat" ]; then
+  numstat="$(git diff --numstat "$main_branch...$branch" -- "${repository_merge_pathspecs[@]}" || true)"
+  if [ -z "$numstat" ]; then
     cat >&2 <<EOF
-Feature branch $branch has no detectable changes relative to $main_branch.
+Feature branch $branch has no repository changes relative to $main_branch.
 Refusing to write an empty merge change log.
 EOF
     exit 1
@@ -173,7 +181,7 @@ commit_branch_changes() {
 }
 
 write_merge_patch() {
-  git diff --binary "$main_branch...$branch" > "$patch_path"
+  git diff --binary "$main_branch...$branch" -- "${repository_merge_pathspecs[@]}" > "$patch_path"
   if [ ! -s "$patch_path" ]; then
     echo "Feature branch produced an empty repository merge patch." >&2
     exit 1

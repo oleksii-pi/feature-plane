@@ -68,6 +68,7 @@ async function startRun(feature, options = {}) {
     logSizeBytes: 0,
     events: [],
   };
+  run.artifactBaseline = await createArtifactBaseline(feature, artifact);
   run.fileBaseline = await createWorkspaceSnapshot(feature);
   feature.runs.push(run);
   feature.activeRunId = run.id;
@@ -133,6 +134,25 @@ function nextRunArtifactName(feature, baseName, { forceNew = false } = {}) {
   return candidate;
 }
 
+async function createArtifactBaseline(feature, artifact) {
+  try {
+    const stat = await fsp.stat(
+      path.join(getFeatureArtifactFolderPath(feature), artifact),
+    );
+    return {
+      mtimeMs: stat.mtimeMs,
+      size: stat.size,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function artifactChangedSinceBaseline(baseline, stat) {
+  if (!baseline) return true;
+  return baseline.mtimeMs !== stat.mtimeMs || baseline.size !== stat.size;
+}
+
 async function recordFeatureEnvironmentCommand(feature, command) {
   recordEnvironmentCommand(feature, command);
   await saveState();
@@ -185,13 +205,23 @@ async function completeConfiguredRun(feature, run) {
   );
 
   let content;
+  let stat;
   try {
+    stat = await fsp.stat(artifactPath);
     content = await fsp.readFile(artifactPath, "utf8");
   } catch {
     await failRun(
       feature,
       run,
       `Required artifact ${run.artifact} was not created.`,
+    );
+    return;
+  }
+  if (!artifactChangedSinceBaseline(run.artifactBaseline, stat)) {
+    await failRun(
+      feature,
+      run,
+      `Required artifact ${run.artifact} was not updated by this run.`,
     );
     return;
   }
@@ -222,6 +252,7 @@ async function updateCompletedRun(feature, run, step, content) {
 
   run.fileChanges = await summarizeWorkspaceChanges(feature, run.fileBaseline);
   delete run.fileBaseline;
+  delete run.artifactBaseline;
   const commit = await commitFeatureWorkspace(
     feature,
     `Run ${run.agent}: ${run.artifact}`,
@@ -269,6 +300,7 @@ async function failRun(feature, run, message, level = "error") {
   run.status = "failed";
   run.finishedAt = formatDateTime();
   delete run.fileBaseline;
+  delete run.artifactBaseline;
   feature.activeRunId = null;
   feature.updated = formatDateTime();
   forgetConfiguredRun(run.id);
@@ -289,6 +321,7 @@ async function cancelRun(runId) {
   run.status = "cancelled";
   run.finishedAt = formatDateTime();
   delete run.fileBaseline;
+  delete run.artifactBaseline;
   feature.activeRunId = null;
   feature.updated = formatDateTime();
   await addEvent(
