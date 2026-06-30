@@ -327,6 +327,17 @@ function displayRunPrice(run) {
   return run.cost ?? "";
 }
 
+function displayAgentRunAction(step) {
+  return `Run ${step?.state ?? (step?.agent ? `@${step.agent}` : "agent")}`;
+}
+
+function nextAgentRunActionStep(feature) {
+  const currentStep = stepForFeature(feature);
+  if (currentAgentStepRequiresRun(feature)) return currentStep;
+  const nextStep = stepForFeature(feature, feature.step + 1);
+  return isAgentStep(nextStep) ? nextStep : null;
+}
+
 function displayRunProducedMarkup(run) {
   if (run.status !== "succeeded" || !run.artifact) return "";
   return `<span class="run-produced-text">produced <strong>${escapeHtml(run.artifact)}</strong></span>`;
@@ -705,13 +716,14 @@ export function renderDetails() {
   elements.environmentPanelButton.disabled = false;
   const workflow = workflowForFeature(feature);
   const currentStep = stepForFeature(feature);
+  const nextRunActionStep = nextAgentRunActionStep(feature);
   elements.advanceButton.disabled =
     Boolean(feature.activeRunId) || feature.step === workflow.length - 1;
   elements.advanceButton.textContent =
     feature.step === workflow.length - 1
       ? "Feature complete"
-      : currentAgentStepRequiresRun(feature)
-        ? `Run ${currentStep.agent}`
+      : nextRunActionStep
+        ? displayAgentRunAction(nextRunActionStep)
         : "Move to next step";
   const run = latestRun(feature);
   elements.retryRunButton.classList.toggle(
