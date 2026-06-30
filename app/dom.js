@@ -8,6 +8,7 @@ export const elements = {
   featureMeta: document.querySelector("#feature-meta"),
   stateBadge: document.querySelector("#state-badge"),
   timeline: document.querySelector("#timeline"),
+  detailsActions: document.querySelector(".details-actions"),
   workflowButton: document.querySelector("#toggle-workflow-button"),
   artifactList: document.querySelector("#artifact-list"),
   advanceButton: document.querySelector("#advance-button"),

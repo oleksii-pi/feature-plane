@@ -679,15 +679,16 @@ export function renderDetails() {
 
   elements.featureTitle.textContent = feature.name;
   elements.featureMeta.replaceChildren();
-
+  elements.detailsActions.querySelector(".environment-link-button")?.remove();
   if (feature.environmentUrl) {
-    const environmentLink = document.createElement("a");
-    environmentLink.className = "environment-link";
-    environmentLink.href = feature.environmentUrl;
-    environmentLink.target = "_blank";
-    environmentLink.rel = "noopener";
-    environmentLink.textContent = "Open environment";
-    elements.featureMeta.append("  ", environmentLink);
+    const environmentButton = document.createElement("button");
+    environmentButton.className = "primary-button environment-link-button";
+    environmentButton.type = "button";
+    environmentButton.textContent = "Open environment";
+    environmentButton.addEventListener("click", () => {
+      window.open(feature.environmentUrl, "_blank", "noopener,noreferrer");
+    });
+    elements.advanceButton.before(environmentButton);
   }
   const branchButton = document.createElement("button");
   branchButton.className = "link-button branch-copy-button";
