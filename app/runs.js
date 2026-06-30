@@ -1,6 +1,6 @@
 import { loadState } from "./api.js";
 import { formatDuration } from "./format.js";
-import { render } from "./render.js";
+import { renderDetails, renderFeatureList } from "./render.js";
 import {
   findRunById,
   RUN_LOG_PREVIEW_LINE_LIMIT,
@@ -8,12 +8,14 @@ import {
   TERMINAL_RUN_STATUSES,
 } from "./state.js";
 
-export function scheduleRunStreamRender() {
+export function scheduleRunStreamRender(runId) {
   if (state.runStreamRenderPending) return;
   state.runStreamRenderPending = true;
   window.requestAnimationFrame(() => {
     state.runStreamRenderPending = false;
-    render();
+    const feature = runId ? findFeatureByRunId(runId) : null;
+    renderFeatureList();
+    if (!runId || feature?.id === state.selectedFeatureId) renderDetails();
   });
 }
 
@@ -94,7 +96,7 @@ export function syncRunStreams() {
         if (payload.preview !== false) {
           appendPreviewEvent(run, payload);
         }
-        scheduleRunStreamRender();
+        scheduleRunStreamRender(payload.run_id);
       } else {
         await loadState({ preserveView: true });
       }

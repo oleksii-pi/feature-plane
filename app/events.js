@@ -7,7 +7,10 @@ import {
 import {
   closeArtifactSaveDialog,
   closeRevertDialog,
+  autosaveArtifactFromCard,
+  beginArtifactEdit,
   confirmPendingRevert,
+  endArtifactEdit,
   closeEnvironmentPanel,
   moveToStep,
   openEnvironmentPanel,
@@ -194,9 +197,11 @@ function setArtifactEditMode(card, editing) {
   card.classList.toggle("editing", editing);
 
   if (editing) {
+    const context = beginArtifactEdit(card);
+    if (!context) return;
     closeMenus();
     setArtifactExpanded(card, true);
-    preview.textContent = artifact.content ?? "";
+    preview.textContent = context.draft.content ?? artifact.content ?? "";
     preview.setAttribute("contenteditable", "true");
     preview.setAttribute("role", "textbox");
     preview.setAttribute("aria-multiline", "true");
@@ -206,6 +211,7 @@ function setArtifactEditMode(card, editing) {
     return;
   }
 
+  endArtifactEdit(card);
   preview.removeAttribute("contenteditable");
   preview.removeAttribute("role");
   preview.removeAttribute("aria-multiline");
@@ -336,6 +342,15 @@ export function bindEvents() {
         .querySelector(`[data-artifact-index="${nextIndex}"]`)
         ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
+  });
+
+  elements.artifactList.addEventListener("input", (event) => {
+    const preview = event.target.closest(
+      ".artifact-preview[contenteditable='true']",
+    );
+    const card = preview?.closest("[data-artifact-index]");
+    if (!card) return;
+    autosaveArtifactFromCard(card);
   });
 
   elements.featureSearch.addEventListener("input", (event) => {

@@ -18,6 +18,7 @@ export const state = {
   workflowVisible: false,
   validation: null,
   eventSources: new Map(),
+  artifactDrafts: new Map(),
   runStreamRenderPending: false,
   runDurationTimer: null,
   pendingArtifactSaveCard: null,
@@ -28,6 +29,28 @@ export const state = {
   environmentCommandsLoading: false,
   environmentCommandsError: "",
 };
+
+export function artifactDraftKey(featureId, artifactName) {
+  return `${featureId}::${artifactName}`;
+}
+
+export function applyArtifactDrafts(features) {
+  if (!state.artifactDrafts.size) return features;
+
+  features.forEach((feature) => {
+    (feature.artifacts ?? []).forEach((artifact) => {
+      const draft = state.artifactDrafts.get(
+        artifactDraftKey(feature.id, artifact.name),
+      );
+      if (!draft) return;
+      artifact.content = draft.content;
+      if (draft.updated) artifact.updated = draft.updated;
+      if (draft.commitSha) artifact.commitSha = draft.commitSha;
+    });
+  });
+
+  return features;
+}
 
 export const localState = {
   load() {

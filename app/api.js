@@ -2,6 +2,7 @@ import { elements, showToast } from "./dom.js";
 import { render } from "./render.js";
 import { syncRunStreams } from "./runs.js";
 import {
+  applyArtifactDrafts,
   localState,
   restoreViewFromUrl,
   selectedFeature,
@@ -27,7 +28,7 @@ export async function api(path, options = {}) {
 export async function loadState({ preserveView = true } = {}) {
   const nextState = await api("/state");
   state.workflow = nextState.workflow;
-  state.features = nextState.features;
+  state.features = applyArtifactDrafts(nextState.features);
   state.workspaces = nextState.workspaces;
   state.validation = nextState.validation;
 

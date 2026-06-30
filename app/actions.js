@@ -8,6 +8,7 @@ import { closeMenus, elements, showToast } from "./dom.js";
 import { currentDateTime } from "./format.js";
 import { render, renderEnvironmentPanel } from "./render.js";
 import {
+  artifactDraftKey,
   currentAgentStepRequiresRun,
   isAgentStep,
   localState,
@@ -237,46 +238,171 @@ export async function confirmPendingRevert() {
   showToast(environmentMessage ? `${actionMessage}. ${environmentMessage}` : actionMessage);
 }
 
-function featureHasNextStepEntries(feature, editedStep) {
-  return (
-    featureHasLaterGeneratedWork(feature, editedStep) ||
-    feature.step > editedStep
-  );
+function artifactPreviewValue(preview) {
+  return preview?.innerText ?? preview?.textContent ?? "";
 }
 
-async function ensureNextStepsDiscarded(featureId, editedStep) {
-  const feature = state.features.find((item) => item.id === featureId);
-  if (!feature || !featureHasNextStepEntries(feature, editedStep)) return;
+function artifactContextFromCard(card) {
+  const feature = selectedFeature();
+  const sourceIndex = Number(card.dataset.sourceIndex);
+  const artifact = feature?.artifacts?.[sourceIndex];
+  if (!feature || !artifact || !Number.isInteger(sourceIndex)) return null;
 
-  feature.artifacts = feature.artifacts.filter(
-    (artifact) => (artifact.availableAtStep ?? 0) <= editedStep,
+  const key = artifactDraftKey(feature.id, artifact.name);
+  let draft = state.artifactDrafts.get(key);
+  if (!draft) {
+    draft = {
+      key,
+      featureId: feature.id,
+      artifactName: artifact.name,
+      content: artifact.content ?? "",
+      lastSavedContent: artifact.content ?? "",
+      updated: artifact.updated,
+      commitSha: artifact.commitSha,
+      editing: false,
+      saveRequested: false,
+      discardNextSteps: false,
+      savePromise: null,
+      error: "",
+      reportedError: "",
+    };
+    state.artifactDrafts.set(key, draft);
+  }
+  draft.sourceIndex = sourceIndex;
+  return { feature, sourceIndex, artifact, draft };
+}
+
+function findDraftTarget(draft) {
+  const feature = state.features.find((item) => item.id === draft.featureId);
+  const index = feature?.artifacts?.findIndex(
+    (artifact) => artifact.name === draft.artifactName,
   );
-  feature.runs = feature.runs.filter((run) => run.step <= editedStep);
-  feature.step = Math.min(feature.step, editedStep);
-  feature.activeRunId = null;
-  feature.updated = currentDateTime();
+  const artifact =
+    feature && Number.isInteger(index) && index >= 0
+      ? feature.artifacts[index]
+      : null;
+  return { feature, index, artifact };
+}
 
-  await api("/state", {
-    method: "PUT",
-    body: JSON.stringify({ features: state.features }),
+function cleanupArtifactDraft(draft) {
+  if (
+    draft.editing ||
+    draft.savePromise ||
+    draft.discardNextSteps ||
+    draft.content !== draft.lastSavedContent
+  ) {
+    return;
+  }
+  state.artifactDrafts.delete(draft.key);
+}
+
+function updateLocalArtifactFromDraft({ feature, artifact, draft }) {
+  const timestamp = currentDateTime();
+  artifact.content = draft.content;
+  artifact.updated = timestamp;
+  feature.updated = timestamp;
+  draft.updated = timestamp;
+}
+
+function updateDraftFromCard(card) {
+  const context = artifactContextFromCard(card);
+  const preview = card.querySelector(".artifact-preview");
+  if (!context || !preview) return null;
+  context.draft.content = artifactPreviewValue(preview);
+  context.draft.error = "";
+  updateLocalArtifactFromDraft(context);
+  return context;
+}
+
+async function flushArtifactDraft(draft) {
+  while (
+    draft.saveRequested ||
+    draft.discardNextSteps ||
+    draft.content !== draft.lastSavedContent
+  ) {
+    draft.saveRequested = false;
+    const content = draft.content;
+    const discardNextSteps = Boolean(draft.discardNextSteps);
+    draft.discardNextSteps = false;
+
+    if (content === draft.lastSavedContent && !discardNextSteps) continue;
+
+    const { feature, index } = findDraftTarget(draft);
+    if (!feature || !Number.isInteger(index) || index < 0) {
+      throw new Error("Artifact is no longer available.");
+    }
+
+    const artifact = await api(`/features/${feature.id}/artifacts/${index}`, {
+      method: "PATCH",
+      body: JSON.stringify({ content, discardNextSteps }),
+    });
+    const latest = findDraftTarget(draft);
+    if (latest.feature && latest.artifact) {
+      Object.assign(latest.artifact, artifact);
+      if (draft.content !== content) latest.artifact.content = draft.content;
+      latest.feature.updated = artifact.updated ?? currentDateTime();
+      if (artifact.commitSha) {
+        latest.feature.headCommit = artifact.commitSha;
+        latest.feature.stepCommits = {
+          ...(latest.feature.stepCommits ?? {}),
+          [String(artifact.availableAtStep ?? 0)]: artifact.commitSha,
+        };
+      }
+    }
+
+    draft.lastSavedContent = content;
+    draft.updated = artifact.updated;
+    draft.commitSha = artifact.commitSha;
+    draft.error = "";
+    draft.reportedError = "";
+  }
+}
+
+function requestArtifactDraftSave(draft) {
+  draft.saveRequested = true;
+  if (!draft.savePromise) {
+    draft.savePromise = flushArtifactDraft(draft).finally(() => {
+      draft.savePromise = null;
+      cleanupArtifactDraft(draft);
+    });
+  }
+  return draft.savePromise;
+}
+
+export function beginArtifactEdit(card) {
+  const context = artifactContextFromCard(card);
+  if (!context) return null;
+  context.draft.editing = true;
+  context.artifact.content = context.draft.content;
+  return context;
+}
+
+export function endArtifactEdit(card) {
+  const context = artifactContextFromCard(card);
+  if (!context) return;
+  context.draft.editing = false;
+  cleanupArtifactDraft(context.draft);
+}
+
+export function autosaveArtifactFromCard(card) {
+  const context = updateDraftFromCard(card);
+  if (!context) return;
+  requestArtifactDraftSave(context.draft).catch((error) => {
+    context.draft.error = error.message;
+    if (context.draft.reportedError === error.message) return;
+    context.draft.reportedError = error.message;
+    showToast(`Autosave failed: ${error.message}`);
   });
-  await loadState({ preserveView: true });
 }
 
 export async function updateArtifact(card, { discardNextSteps = false } = {}) {
-  const feature = selectedFeature();
-  const sourceIndex = Number(card.dataset.sourceIndex);
-  const preview = card.querySelector(".artifact-preview");
-  const value = preview?.innerText ?? preview?.textContent ?? "";
-  if (!feature || !Number.isInteger(sourceIndex) || !value.trim()) return;
-  const artifactName = feature.artifacts[sourceIndex]?.name ?? "Artifact";
-  const editedStep = feature.artifacts[sourceIndex]?.availableAtStep ?? 0;
-  await api(`/features/${feature.id}/artifacts/${sourceIndex}`, {
-    method: "PATCH",
-    body: JSON.stringify({ content: value, discardNextSteps }),
-  });
+  const context = updateDraftFromCard(card);
+  if (!context) return;
+  const artifactName = context.artifact.name ?? "Artifact";
+  context.draft.discardNextSteps =
+    context.draft.discardNextSteps || discardNextSteps;
+  await requestArtifactDraftSave(context.draft);
   await loadState({ preserveView: true });
-  if (discardNextSteps) await ensureNextStepsDiscarded(feature.id, editedStep);
   const suffix = discardNextSteps ? " and next steps discarded" : "";
   showToast(`${artifactName} saved${suffix}`);
 }

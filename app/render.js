@@ -7,6 +7,7 @@ import {
   markdownToHtml,
 } from "./format.js";
 import {
+  artifactDraftKey,
   currentAgentStepRequiresRun,
   displayStep,
   isAgentStep,
@@ -420,6 +421,74 @@ function isEntryExpandedByDefault(entry) {
   return !TERMINAL_RUN_STATUSES.has(entry.run.status);
 }
 
+function editableArtifactSnapshot() {
+  const preview = document.activeElement?.closest?.(
+    ".artifact-preview[contenteditable='true']",
+  );
+  const card = preview?.closest("[data-artifact-key]");
+  if (!preview || !card) return null;
+  const selection = window.getSelection();
+  if (!selection?.rangeCount || !preview.contains(selection.anchorNode)) {
+    return { key: card.dataset.artifactKey, selection: null };
+  }
+
+  const range = selection.getRangeAt(0);
+  const startRange = range.cloneRange();
+  startRange.selectNodeContents(preview);
+  startRange.setEnd(range.startContainer, range.startOffset);
+  const endRange = range.cloneRange();
+  endRange.selectNodeContents(preview);
+  endRange.setEnd(range.endContainer, range.endOffset);
+  return {
+    key: card.dataset.artifactKey,
+    selection: {
+      start: startRange.toString().length,
+      end: endRange.toString().length,
+    },
+  };
+}
+
+function textPosition(root, offset) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let remaining = offset;
+  let node = walker.nextNode();
+  let lastNode = null;
+
+  while (node) {
+    lastNode = node;
+    if (remaining <= node.textContent.length) {
+      return { node, offset: remaining };
+    }
+    remaining -= node.textContent.length;
+    node = walker.nextNode();
+  }
+
+  return {
+    node: lastNode ?? root,
+    offset: lastNode ? lastNode.textContent.length : 0,
+  };
+}
+
+function restoreEditableArtifactSnapshot(snapshot) {
+  if (!snapshot) return;
+  const card = [...elements.artifactList.querySelectorAll("[data-artifact-key]")]
+    .find((item) => item.dataset.artifactKey === snapshot.key);
+  const preview = card?.querySelector(".artifact-preview[contenteditable='true']");
+  if (!preview) return;
+  preview.focus();
+
+  if (!snapshot.selection) return;
+  const selection = window.getSelection();
+  if (!selection) return;
+  const range = document.createRange();
+  const start = textPosition(preview, snapshot.selection.start);
+  const end = textPosition(preview, snapshot.selection.end);
+  range.setStart(start.node, start.offset);
+  range.setEnd(end.node, end.offset);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
 function displayArtifactUpdatedTime(value) {
   const updated = formatDateTime(value);
   const match = updated.match(/\b(\d{2}:\d{2})(?::\d{2})?$/);
@@ -473,6 +542,7 @@ export function renderEnvironmentPanel() {
 
 export function renderArtifacts(feature) {
   const entries = entriesForFeature(feature);
+  const editableSnapshot = editableArtifactSnapshot();
 
   if (!entries.length) {
     elements.artifactList.innerHTML =
@@ -488,10 +558,15 @@ export function renderArtifacts(feature) {
       }
 
       const artifact = entry.artifact;
+      const draft = state.artifactDrafts.get(
+        artifactDraftKey(feature.id, artifact.name),
+      );
+      const isEditing = Boolean(draft?.editing);
+      const content = draft?.content ?? artifact.content ?? "";
       const updatedTime = displayArtifactUpdatedTime(artifact.updated);
       const updatedTitle = displayArtifactUpdatedTitle(artifact.updated);
       return `
-        <article class="artifact-card ${isExpanded ? "expanded" : ""}" data-artifact-index="${visibleIndex}" data-source-index="${entry.sourceIndex}">
+        <article class="artifact-card ${isExpanded ? "expanded" : ""} ${isEditing ? "editing" : ""}" data-artifact-index="${visibleIndex}" data-source-index="${entry.sourceIndex}" data-artifact-key="${escapeHtml(artifactDraftKey(feature.id, artifact.name))}">
           <div class="artifact-header">
             <span class="artifact-updated" title="${escapeHtml(updatedTitle)}">${escapeHtml(updatedTime)}</span>
             <button class="artifact-toggle" type="button" aria-expanded="${isExpanded}">
@@ -499,9 +574,9 @@ export function renderArtifacts(feature) {
                 <strong>${escapeHtml(artifact.name)}</strong>
               </span>
             </button>
-            <button class="artifact-log-link edit-artifact-button" type="button">Edit</button>
-            <span class="artifact-edit-actions" hidden>
-              <button class="artifact-log-link cancel-edit-button" type="button">Cancel</button>
+            <button class="artifact-log-link edit-artifact-button" type="button"${isEditing ? " hidden" : ""}>Edit</button>
+            <span class="artifact-edit-actions"${isEditing ? "" : " hidden"}>
+              <button class="artifact-log-link cancel-edit-button" type="button">Done</button>
               <button class="artifact-log-link save-artifact-button" type="button">Save</button>
             </span>
             ${restoreArtifactMenuMarkup(feature, artifact, entry.sourceIndex)}
@@ -510,12 +585,13 @@ export function renderArtifacts(feature) {
             </button>
           </div>
           <div class="artifact-body">
-            <div class="artifact-preview">${markdownToHtml(artifact.content)}</div>
+            <div class="artifact-preview"${isEditing ? ` contenteditable="true" role="textbox" aria-multiline="true" aria-label="Edit ${escapeHtml(artifact.name)}" spellcheck="false"` : ""}>${isEditing ? escapeHtml(content) : markdownToHtml(content)}</div>
           </div>
         </article>
       `;
     })
     .join("");
+  restoreEditableArtifactSnapshot(editableSnapshot);
 }
 
 export function renderDetails() {
