@@ -9,6 +9,7 @@ const { commitFeatureWorkspace, resetFeatureWorkspace } = require("./git");
 const { httpError } = require("./http");
 const { createId } = require("./ids");
 const { updateFeatureCost } = require("./pricing");
+const { archiveFeatureRuns } = require("./run-history");
 const { saveState } = require("./state");
 const { formatDateTime } = require("./time");
 const {
@@ -51,7 +52,9 @@ async function revertFeatureToState(feature, body = {}) {
   const previousEnvironment = await readFeatureEnvironment(feature);
   const commitSha = await resetFeatureWorkspace(feature, target.commitSha);
 
-  feature.runs = filterRunsForTarget(feature.runs, target);
+  const { keptRuns, removedRuns } = partitionRunsForTarget(feature.runs, target);
+  archiveFeatureRuns(feature, removedRuns, `reverted to ${target.label}`);
+  feature.runs = keptRuns;
   feature.stepCommits = filterStepCommits(feature.stepCommits, target.step);
   feature.stepCommits[String(target.step)] = commitSha;
   feature.step = target.step;
@@ -115,6 +118,10 @@ async function rerunAgentStep(feature, body) {
   const previousEnvironment = await readFeatureEnvironment(feature);
   const commitSha = await resetFeatureWorkspace(feature, target.commitSha);
 
+  const removedRuns = (feature.runs ?? []).filter(
+    (run) => (run.step ?? 0) >= target.step,
+  );
+  archiveFeatureRuns(feature, removedRuns, `reran ${target.label}`);
   feature.runs = (feature.runs ?? []).filter((run) => (run.step ?? 0) < target.step);
   feature.stepCommits = filterStepCommits(feature.stepCommits, target.step - 1);
   feature.step = target.step;
@@ -372,14 +379,23 @@ function environmentUrlFromArtifacts(artifacts) {
   return null;
 }
 
-function filterRunsForTarget(runs, target) {
-  return (runs ?? []).filter((run, index) => {
-    const step = run.step ?? 0;
-    if (step < target.step) return true;
-    if (step > target.step) return false;
-    if (Number.isInteger(target.runIndex)) return index <= target.runIndex;
-    return true;
+function shouldKeepRunForTarget(run, index, target) {
+  const step = run.step ?? 0;
+  if (step < target.step) return true;
+  if (step > target.step) return false;
+  if (Number.isInteger(target.runIndex)) return index <= target.runIndex;
+  return true;
+}
+
+function partitionRunsForTarget(runs, target) {
+  const keptRuns = [];
+  const removedRuns = [];
+  (runs ?? []).forEach((run, index) => {
+    (shouldKeepRunForTarget(run, index, target) ? keptRuns : removedRuns).push(
+      run,
+    );
   });
+  return { keptRuns, removedRuns };
 }
 
 function filterStepCommits(stepCommits, targetStep) {

@@ -96,8 +96,9 @@ async function repriceCompletedRuns() {
   let changed = false;
   for (const feature of state.features) {
     let featureChanged = false;
-    for (const run of feature.runs) {
-      if (run.status !== "succeeded") continue;
+    const beforeFeatureCost = feature.cost ?? null;
+    for (const run of [...(feature.runs ?? []), ...(feature.archivedRuns ?? [])]) {
+      if (!["succeeded", "failed", "cancelled"].includes(run.status)) continue;
       const before = JSON.stringify({
         usage: run.usage ?? null,
         pricing: run.pricing ?? null,
@@ -111,8 +112,8 @@ async function repriceCompletedRuns() {
       });
       if (before !== after) featureChanged = true;
     }
-    if (featureChanged) {
-      updateFeatureCost(feature);
+    updateFeatureCost(feature);
+    if (featureChanged || beforeFeatureCost !== (feature.cost ?? null)) {
       changed = true;
     }
   }
@@ -258,6 +259,9 @@ function normalizeFeature(feature) {
       ? branchArtifactFolder(branch, slug)
       : storedArtifactFolder;
   const runs = Array.isArray(feature.runs) ? feature.runs.map(normalizeRun) : [];
+  const archivedRuns = Array.isArray(feature.archivedRuns)
+    ? feature.archivedRuns.map(normalizeRun)
+    : [];
   const sdlc = normalizeSdlcSnapshot(feature.sdlc);
   const normalized = {
     id: String(feature.id),
@@ -280,6 +284,7 @@ function normalizeFeature(feature) {
       ? feature.restoreHistory.map(normalizeRestoreEvent)
       : [],
     artifacts: normalizeArtifacts(feature.artifacts, artifactFolder, runs),
+    archivedRuns,
     runs,
   };
   normalized.step = clampFeatureStep(normalized, feature.step);
@@ -315,7 +320,7 @@ function normalizeRestoreEvent(event) {
 }
 
 function normalizeRun(run) {
-  const { fileBaseline, ...publicRun } = run;
+  const { featureCost, fileBaseline, ...publicRun } = run;
   return {
     ...publicRun,
     startedAt: run.startedAt ? formatDateTime(run.startedAt) : null,

@@ -11,6 +11,7 @@ const {
 const { commitFeatureWorkspace } = require("./git");
 const { httpError } = require("./http");
 const { createId } = require("./ids");
+const { archiveFeatureRuns } = require("./run-history");
 const { saveState, slugify, state } = require("./state");
 const { updateFeatureCost } = require("./pricing");
 const { formatDateTime } = require("./time");
@@ -94,6 +95,7 @@ async function createFeature({ title, prompt }) {
         content: prompt,
       },
     ],
+    archivedRuns: [],
     runs: [],
   };
   await saveFeatureFiles(feature);
@@ -153,6 +155,7 @@ async function resetFeatureToMain(feature, body = {}) {
   feature.activeRunId = null;
   feature.environmentUrl = null;
   feature.environmentCommands = [];
+  feature.archivedRuns = [];
   feature.runs = [];
   feature.stepCommits = {};
   feature.cost = null;
@@ -326,6 +329,12 @@ async function discardNextSteps(feature, editedStep) {
   feature.artifacts = feature.artifacts.filter(
     (artifact) => (artifact.availableAtStep ?? 0) <= editedStep,
   );
+  const removedRuns = feature.runs.filter((run) => run.step > editedStep);
+  archiveFeatureRuns(
+    feature,
+    removedRuns,
+    `discarded after editing step ${editedStep + 1}`,
+  );
   feature.runs = feature.runs.filter((run) => run.step <= editedStep);
   feature.stepCommits = Object.fromEntries(
     Object.entries(feature.stepCommits ?? {}).filter(([step]) => Number(step) <= editedStep),
@@ -443,7 +452,7 @@ async function createChangeRequestArtifact(feature, target, request) {
     availableAtStep: target.step,
     createdAt: now,
     updated: now,
-    content: [`# Change request for ${target.agent} agent`, "", request, ""].join("\n"),
+    content: request,
   };
   feature.artifacts.push(artifact);
   return artifact;

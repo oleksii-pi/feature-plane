@@ -258,7 +258,7 @@ function displayRunDetails(run) {
     ? `IN=${usage.inputTokens ?? 0}${cachedDetails} OUT=${usage.outputTokens ?? 0}`
     : "token usage unavailable";
   const changeDetails = displayFileChanges(run.fileChanges);
-  return [`price ${cost}`, `tokens: ${tokenDetails}`, changeDetails]
+  return [cost ? `price ${cost}` : "", `tokens: ${tokenDetails}`, changeDetails]
     .filter(Boolean)
     .join(", ");
 }

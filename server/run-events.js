@@ -1,6 +1,7 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
 const { RUN_LOG_ROOT } = require("./config");
+const { priceRun, updateFeatureCost } = require("./pricing");
 const { formatDateTime } = require("./time");
 
 const runQueues = new Map();
@@ -32,6 +33,27 @@ function formatRunLogLine(event) {
   const stream = event.status ?? "event";
   const message = String(event.message ?? "");
   return `[${timestamp}] [${stream}] ${message}`;
+}
+
+async function refreshRunPricing(feature, run) {
+  try {
+    await priceRun(run);
+    run.featureCost = updateFeatureCost(feature);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function pricedRunEventPayload(run, event) {
+  return {
+    ...event,
+    log_size_bytes: run.logSizeBytes ?? 0,
+    run_status: run.status,
+    run_cost: run.cost ?? "",
+    feature_cost: run.featureCost ?? null,
+    run_usage: run.usage ?? null,
+    run_pricing: run.pricing ?? null,
+  };
 }
 
 async function appendRunLog(feature, run, event) {
@@ -76,6 +98,7 @@ async function persistRunEvent(feature, run, event, options = {}) {
   }
   if (options.appendLog !== false) {
     await appendRunLog(feature, run, event);
+    await refreshRunPricing(feature, run);
   }
   if (options.saveState !== false && persistence) {
     await persistence.saveFeatureFiles(feature);
@@ -109,6 +132,7 @@ async function queueRunOutput(feature, run, stream, chunk) {
   return enqueueRunTask(run.id, async () => {
     if (run.status !== "queued" && run.status !== "running") return null;
     await appendRunOutput(feature, run, stream, chunk);
+    await refreshRunPricing(feature, run);
     broadcastRunEvent(run, {
       timestamp: formatDateTime(),
       run_id: run.id,
@@ -144,11 +168,7 @@ async function queueFeatureEnvironmentUrl(feature, run, url) {
 function broadcastRunEvent(run, event) {
   const clients = eventClients.get(run.id);
   if (!clients) return;
-  const payload = JSON.stringify({
-    ...event,
-    log_size_bytes: run.logSizeBytes ?? 0,
-    run_status: run.status,
-  });
+  const payload = JSON.stringify(pricedRunEventPayload(run, event));
   clients.forEach((res) => res.write(`data: ${payload}\n\n`));
 }
 
@@ -161,9 +181,7 @@ function streamRunEvents(req, res, run) {
   run.events.forEach((event) => {
     res.write(
       `data: ${JSON.stringify({
-        ...event,
-        log_size_bytes: run.logSizeBytes ?? 0,
-        run_status: run.status,
+        ...pricedRunEventPayload(run, event),
         replay: true,
       })}\n\n`,
     );

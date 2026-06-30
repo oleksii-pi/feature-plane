@@ -93,6 +93,12 @@ export function syncRunStreams() {
         }
         run.status = payload.run_status ?? run.status;
         run.logSizeBytes = payload.log_size_bytes ?? run.logSizeBytes ?? 0;
+        run.cost = payload.run_cost ?? run.cost ?? "";
+        run.usage = payload.run_usage ?? run.usage ?? null;
+        run.pricing = payload.run_pricing ?? run.pricing ?? null;
+        if (feature && payload.feature_cost !== undefined) {
+          feature.cost = payload.feature_cost;
+        }
         if (payload.preview !== false) {
           appendPreviewEvent(run, payload);
         }

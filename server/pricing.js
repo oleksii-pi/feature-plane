@@ -223,8 +223,12 @@ async function priceRun(run) {
   return run;
 }
 
+function runsForFeatureCost(feature) {
+  return [...(feature.runs ?? []), ...(feature.archivedRuns ?? [])];
+}
+
 function updateFeatureCost(feature) {
-  const total = (feature.runs ?? []).reduce((sum, run) => {
+  const total = runsForFeatureCost(feature).reduce((sum, run) => {
     const cost = Number(run?.pricing?.costUsd);
     return Number.isFinite(cost) ? sum + cost : sum;
   }, 0);
@@ -236,5 +240,6 @@ module.exports = {
   formatUsd,
   parseUsageFromLog,
   priceRun,
+  runsForFeatureCost,
   updateFeatureCost,
 };
