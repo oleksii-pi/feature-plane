@@ -8,15 +8,19 @@ import {
 } from "./format.js";
 import {
   artifactDraftKey,
+  DETAILS_PANEL_MIN_WIDTH,
   currentAgentStepRequiresRun,
   displayStep,
   isAgentStep,
+  featurePanelWidthForWorkspace,
   latestCost,
   latestRun,
+  FEATURES_PANEL_MIN_WIDTH,
   RUN_LOG_PREVIEW_LINE_LIMIT,
   isTimelineCardExpanded,
   selectedFeature,
   selectedStep,
+  WORKSPACE_SPLITTER_WIDTH,
   stepForFeature,
   state,
   TERMINAL_RUN_STATUSES,
@@ -592,6 +596,41 @@ export function renderEnvironmentPanel() {
     : "No commands recorded.";
 }
 
+export function renderWorkspaceLayout() {
+  if (!elements.workspace || !elements.workspaceSplitter) return;
+  const workspaceWidth =
+    elements.workspace.clientWidth ||
+    elements.workspace.getBoundingClientRect().width ||
+    0;
+  const featureListWidth = featurePanelWidthForWorkspace(workspaceWidth);
+  elements.workspace.style.setProperty(
+    "--features-panel-width",
+    `${featureListWidth}px`,
+  );
+  elements.workspace.style.setProperty(
+    "--workspace-splitter-width",
+    `${WORKSPACE_SPLITTER_WIDTH}px`,
+  );
+  const availableWidth = Math.max(1, workspaceWidth - WORKSPACE_SPLITTER_WIDTH);
+  const maxWidth = Math.max(
+    FEATURES_PANEL_MIN_WIDTH,
+    availableWidth - DETAILS_PANEL_MIN_WIDTH,
+  );
+  elements.workspaceSplitter.setAttribute(
+    "aria-valuemin",
+    String(FEATURES_PANEL_MIN_WIDTH),
+  );
+  elements.workspaceSplitter.setAttribute("aria-valuemax", String(maxWidth));
+  elements.workspaceSplitter.setAttribute(
+    "aria-valuenow",
+    String(featureListWidth),
+  );
+  elements.workspaceSplitter.setAttribute(
+    "aria-valuetext",
+    `${Math.round((featureListWidth / availableWidth) * 100)}% feature list`,
+  );
+}
+
 export function renderArtifacts(feature) {
   const entries = entriesForFeature(feature);
   const editableSnapshot = editableArtifactSnapshot();
@@ -802,4 +841,5 @@ export function render() {
   renderRepositoryWorkflow();
   renderValidation();
   renderEnvironmentPanel();
+  renderWorkspaceLayout();
 }

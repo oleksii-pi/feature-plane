@@ -41,14 +41,18 @@ import {
   renderFeatureList,
   renderRepositoryWorkflow,
   renderValidation,
+  renderWorkspaceLayout,
 } from "./render.js";
 import {
   currentAgentStepRequiresRun,
+  persistPanelSplitterState,
+  setFeaturePanelWidthForWorkspace,
   localState,
   restoreViewFromUrl,
   selectedFeature,
   setView,
   setTimelineCardExpandedByCard,
+  WORKSPACE_SPLITTER_WIDTH,
   state,
   workflowForFeature,
 } from "./state.js";
@@ -148,6 +152,99 @@ function focusFeatureCard(featureId) {
     elements.featureList.querySelectorAll("[data-feature-id]"),
   ).find((item) => item.dataset.featureId === featureId);
   card?.focus({ preventScroll: true });
+}
+
+function workspaceClientWidth() {
+  return (
+    elements.workspace.clientWidth ||
+    elements.workspace.getBoundingClientRect().width ||
+    0
+  );
+}
+
+function applyWorkspaceSplitterWidth(featurePanelWidth, { persist = false } = {}) {
+  const workspaceWidth = workspaceClientWidth();
+  if (!workspaceWidth) return;
+  setFeaturePanelWidthForWorkspace(workspaceWidth, featurePanelWidth);
+  renderWorkspaceLayout();
+  if (persist) persistPanelSplitterState();
+}
+
+function startWorkspaceSplitterDrag(event) {
+  if (event.button !== 0 || !elements.workspaceSplitter) return;
+  event.preventDefault();
+
+  const splitter = event.currentTarget;
+  const workspaceRect = elements.workspace.getBoundingClientRect();
+  const workspacePaddingLeft = Number.parseFloat(
+    getComputedStyle(elements.workspace).paddingLeft,
+  ) || 0;
+  const pointerId = event.pointerId;
+  if (typeof splitter.setPointerCapture === "function") {
+    splitter.setPointerCapture(pointerId);
+  }
+  document.body.classList.add("splitter-dragging");
+  let dragActive = true;
+
+  const finishDrag = () => {
+    if (!dragActive) return;
+    dragActive = false;
+    if (
+      typeof splitter.releasePointerCapture === "function" &&
+      typeof splitter.hasPointerCapture === "function" &&
+      splitter.hasPointerCapture(pointerId)
+    ) {
+      splitter.releasePointerCapture(pointerId);
+    }
+    splitter.removeEventListener("pointermove", handlePointerMove);
+    splitter.removeEventListener("pointerup", finishDrag);
+    splitter.removeEventListener("pointercancel", finishDrag);
+    splitter.removeEventListener("lostpointercapture", finishDrag);
+    document.body.classList.remove("splitter-dragging");
+    persistPanelSplitterState();
+    renderWorkspaceLayout();
+  };
+
+  const handlePointerMove = (moveEvent) => {
+    const nextWidth =
+      moveEvent.clientX -
+      workspaceRect.left -
+      workspacePaddingLeft -
+      WORKSPACE_SPLITTER_WIDTH / 2;
+    applyWorkspaceSplitterWidth(nextWidth);
+  };
+
+  splitter.addEventListener("pointermove", handlePointerMove);
+  splitter.addEventListener("pointerup", finishDrag);
+  splitter.addEventListener("pointercancel", finishDrag);
+  splitter.addEventListener("lostpointercapture", finishDrag);
+  handlePointerMove(event);
+}
+
+function handleWorkspaceSplitterKeydown(event) {
+  if (!elements.workspaceSplitter) return;
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+
+  const workspaceWidth = workspaceClientWidth();
+  if (!workspaceWidth) return;
+
+  const currentWidth =
+    elements.workspace.style.getPropertyValue("--features-panel-width") ||
+    "";
+  const currentPixels = Number.parseFloat(currentWidth);
+  const baseWidth = Number.isFinite(currentPixels)
+    ? currentPixels
+    : Math.round(workspaceWidth / 3);
+
+  const step = event.shiftKey ? 32 : 16;
+  let nextWidth = baseWidth;
+  if (event.key === "ArrowLeft") nextWidth -= step;
+  else if (event.key === "ArrowRight") nextWidth += step;
+  else if (event.key === "Home") nextWidth = 0;
+  else if (event.key === "End") nextWidth = Number.POSITIVE_INFINITY;
+
+  applyWorkspaceSplitterWidth(nextWidth, { persist: true });
+  event.preventDefault();
 }
 
 function selectFeatureFromList(direction, { focusSelected = false } = {}) {
@@ -600,6 +697,16 @@ export function bindEvents() {
   });
 
   bindMenuKeyboardShortcuts();
+
+  elements.workspaceSplitter?.addEventListener(
+    "pointerdown",
+    startWorkspaceSplitterDrag,
+  );
+  elements.workspaceSplitter?.addEventListener(
+    "keydown",
+    handleWorkspaceSplitterKeydown,
+  );
+  window.addEventListener("resize", renderWorkspaceLayout);
 
   document.addEventListener("click", () => closeMenus());
   document.addEventListener("keydown", (event) => {

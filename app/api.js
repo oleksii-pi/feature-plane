@@ -4,6 +4,7 @@ import { syncRunStreams } from "./runs.js";
 import {
   applyArtifactDrafts,
   loadArtifactDrafts,
+  loadPanelSplitterState,
   loadTimelineCardExpansion,
   localState,
   restoreViewFromUrl,
@@ -30,6 +31,7 @@ export async function api(path, options = {}) {
 export async function loadState({ preserveView = true } = {}) {
   const nextState = await api("/state");
   loadArtifactDrafts();
+  loadPanelSplitterState();
   state.workflow = nextState.workflow;
   state.features = applyArtifactDrafts(nextState.features);
   state.workspaces = nextState.workspaces;

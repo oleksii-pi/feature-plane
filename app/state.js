@@ -1,6 +1,10 @@
 export const STORAGE_KEY = "control-plane-poc-ui-state";
 export const ARTIFACT_DRAFT_STORAGE_KEY =
   "control-plane-poc-artifact-drafts";
+export const WORKSPACE_SPLITTER_WIDTH = 8;
+export const FEATURES_PANEL_MIN_WIDTH = 220;
+export const DETAILS_PANEL_MIN_WIDTH = 490;
+export const DEFAULT_FEATURES_PANEL_RATIO = 1 / 3;
 export const TERMINAL_RUN_STATUSES = new Set([
   "succeeded",
   "failed",
@@ -12,6 +16,9 @@ export const state = {
   workflow: [],
   features: [],
   workspaces: [],
+  panelSplitter: {
+    featureListRatio: DEFAULT_FEATURES_PANEL_RATIO,
+  },
   selectedFeatureId: null,
   selectedStepIndex: 0,
   selectedArtifactIndex: null,
@@ -32,6 +39,65 @@ export const state = {
   environmentCommandsLoading: false,
   environmentCommandsError: "",
 };
+
+function clampPanelSplitterRatio(value) {
+  if (!Number.isFinite(value)) return DEFAULT_FEATURES_PANEL_RATIO;
+  return Math.min(0.95, Math.max(0.05, value));
+}
+
+function sanitizePanelSplitter(value) {
+  if (!value || typeof value !== "object") {
+    return { featureListRatio: DEFAULT_FEATURES_PANEL_RATIO };
+  }
+  return {
+    featureListRatio: clampPanelSplitterRatio(
+      Number(value.featureListRatio ?? DEFAULT_FEATURES_PANEL_RATIO),
+    ),
+  };
+}
+
+export function loadPanelSplitterState() {
+  const saved = localState.load();
+  state.panelSplitter = sanitizePanelSplitter(saved.panelSplitter);
+}
+
+export function persistPanelSplitterState() {
+  localState.save({ panelSplitter: state.panelSplitter });
+}
+
+export function featurePanelWidthForWorkspace(workspaceWidth) {
+  const availableWidth = Math.max(1, workspaceWidth - WORKSPACE_SPLITTER_WIDTH);
+  const desiredWidth = availableWidth * state.panelSplitter.featureListRatio;
+  const maxWidth = Math.max(
+    FEATURES_PANEL_MIN_WIDTH,
+    availableWidth - DETAILS_PANEL_MIN_WIDTH,
+  );
+  return Math.round(
+    Math.min(
+      Math.max(desiredWidth, FEATURES_PANEL_MIN_WIDTH),
+      maxWidth,
+    ),
+  );
+}
+
+export function setFeaturePanelWidthForWorkspace(
+  workspaceWidth,
+  featurePanelWidth,
+) {
+  const availableWidth = Math.max(1, workspaceWidth - WORKSPACE_SPLITTER_WIDTH);
+  const maxWidth = Math.max(
+    FEATURES_PANEL_MIN_WIDTH,
+    availableWidth - DETAILS_PANEL_MIN_WIDTH,
+  );
+  const nextWidth = Math.min(
+    Math.max(featurePanelWidth, FEATURES_PANEL_MIN_WIDTH),
+    maxWidth,
+  );
+  state.panelSplitter = {
+    featureListRatio: clampPanelSplitterRatio(nextWidth / availableWidth),
+  };
+  return Math.round(nextWidth);
+}
 
 export function artifactDraftKey(featureId, artifactName) {
   return `${featureId}::${artifactName}`;

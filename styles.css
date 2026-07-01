@@ -48,6 +48,12 @@ body {
   overflow: hidden;
 }
 
+body.splitter-dragging,
+body.splitter-dragging * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
 button,
 input,
 textarea {
@@ -91,8 +97,11 @@ textarea:focus-visible {
 .workspace {
   height: 100%;
   display: grid;
-  grid-template-columns: minmax(220px, 0.52fr) minmax(490px, 1.8fr);
-  gap: 6px;
+  grid-template-columns:
+    var(--features-panel-width, 33.333%)
+    var(--workspace-splitter-width, 8px)
+    minmax(490px, 1fr);
+  gap: 0;
   padding: 6px;
   overflow: hidden;
 }
@@ -102,6 +111,48 @@ textarea:focus-visible {
   border: 1px solid var(--border);
   border-radius: 9px;
   box-shadow: var(--shadow);
+}
+
+.workspace-splitter {
+  position: relative;
+  z-index: 1;
+  align-self: stretch;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.workspace-splitter::before {
+  content: "";
+  position: absolute;
+  inset: 1px 2px;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(111, 171, 255, 0.08),
+    rgba(111, 171, 255, 0.18)
+  );
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.workspace-splitter:hover,
+.workspace-splitter:focus-visible {
+  border-color: var(--blue-soft);
+  background: rgba(127, 176, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(127, 176, 255, 0.2);
+}
+
+.workspace-splitter:hover::before,
+.workspace-splitter:focus-visible::before {
+  opacity: 1;
 }
 
 .panel-heading,
@@ -271,6 +322,10 @@ h3 {
   grid-template-columns: minmax(490px, 1fr);
 }
 
+.workspace.features-collapsed .workspace-splitter {
+  display: none;
+}
+
 .workspace.features-collapsed .features-panel {
   position: absolute;
   top: 0;
@@ -407,6 +462,10 @@ h3 {
 .workflow-panel {
   min-height: 0;
   overflow: auto;
+}
+
+.features-panel {
+  min-width: 220px;
 }
 
 .search-box {
@@ -1790,7 +1849,10 @@ dialog form {
 
 @media (max-width: 1080px) {
   .workspace {
-    grid-template-columns: 225px minmax(440px, 1fr);
+    grid-template-columns:
+      var(--features-panel-width, 225px)
+      var(--workspace-splitter-width, 8px)
+      minmax(440px, 1fr);
   }
 }
 
@@ -1802,6 +1864,10 @@ dialog form {
   .workspace {
     display: flex;
     flex-direction: column;
+  }
+
+  .workspace-splitter {
+    display: none;
   }
 
   .features-panel {

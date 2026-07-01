@@ -3,6 +3,7 @@ let toastTimer;
 export const elements = {
   featureList: document.querySelector("#feature-list"),
   workspace: document.querySelector("#workspace"),
+  workspaceSplitter: document.querySelector("#workspace-splitter"),
   featureSearch: document.querySelector("#feature-search"),
   featureTitle: document.querySelector("#feature-title"),
   featureMeta: document.querySelector("#feature-meta"),
