@@ -34,6 +34,7 @@ const { cancelRun, findRun, startRun } = require("./runs");
 const { queueFeatureEnvironmentUrl, streamRunEvents } = require("./run-events");
 const { formatDateTime } = require("./time");
 const { validateRepository } = require("./validation");
+const { openFeatureWorkspaceFolder } = require("./workspace-folder");
 const { featureWorkflow } = require("./workflow");
 
 async function route(req, res) {
@@ -110,6 +111,12 @@ async function route(req, res) {
     if (req.method === "POST" && parts[2] === "merge-main") {
       const body = await readJson(req);
       const result = await mergeFeatureFromMain(feature, body);
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (req.method === "POST" && parts[2] === "workspace-folder") {
+      const result = await openFeatureWorkspaceFolder(feature);
       sendJson(res, 200, result);
       return;
     }

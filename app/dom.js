@@ -15,6 +15,9 @@ export const elements = {
   retryRunButton: document.querySelector("#retry-run-button"),
   cancelRunButton: document.querySelector("#cancel-run-button"),
   environmentPanelButton: document.querySelector("#environment-panel-button"),
+  featureWorkspaceFolderButton: document.querySelector(
+    "#feature-workspace-folder-button",
+  ),
   environmentTerminal: document.querySelector("#environment-terminal"),
   environmentCommandList: document.querySelector("#environment-command-list"),
   dialog: document.querySelector("#feature-dialog"),

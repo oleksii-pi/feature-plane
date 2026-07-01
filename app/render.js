@@ -660,6 +660,7 @@ export function renderDetails() {
     elements.retryRunButton.classList.remove("visible");
     elements.cancelRunButton.classList.remove("visible");
     elements.environmentPanelButton.disabled = true;
+    elements.featureWorkspaceFolderButton.disabled = true;
     elements.artifactList.innerHTML =
       '<div class="empty-state">Create a feature to start the workflow.</div>';
     renderTimeline(null);
@@ -703,6 +704,7 @@ export function renderDetails() {
   elements.stateBadge.textContent = displayStep(feature);
   elements.stateBadge.classList.toggle("running", Boolean(feature.activeRunId));
   elements.environmentPanelButton.disabled = false;
+  elements.featureWorkspaceFolderButton.disabled = false;
   const workflow = workflowForFeature(feature);
   const currentStep = stepForFeature(feature);
   const nextRunActionStep = nextAgentRunActionStep(feature);

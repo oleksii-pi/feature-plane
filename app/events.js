@@ -15,6 +15,7 @@ import {
   openEnvironmentPanel,
   openFeatureDialog,
   openFeatureSettings,
+  openFeatureWorkspaceFolder,
   openRevertDialog,
   runCurrentStep,
   saveArtifactFromCard,
@@ -645,6 +646,9 @@ export function bindEvents() {
   });
   elements.environmentPanelButton.addEventListener("click", () => {
     openEnvironmentPanel().catch((error) => showToast(error.message));
+  });
+  elements.featureWorkspaceFolderButton.addEventListener("click", () => {
+    openFeatureWorkspaceFolder().catch((error) => showToast(error.message));
   });
   document
     .querySelector("#close-environment-terminal-button")

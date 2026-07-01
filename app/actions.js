@@ -117,6 +117,16 @@ export async function openEnvironmentPanel() {
   }
 }
 
+export async function openFeatureWorkspaceFolder() {
+  closeMenus();
+  const feature = selectedFeature();
+  if (!feature) return;
+  const result = await api(`/features/${feature.id}/workspace-folder`, {
+    method: "POST",
+  });
+  showToast(result.message ?? "Feature workspace folder opened");
+}
+
 export function closeEnvironmentPanel() {
   state.environmentPanelOpen = false;
   state.environmentCommandsLoading = false;

@@ -82,6 +82,7 @@ Keep route changes aligned with `server/router.js`. The active endpoints are:
 - `POST /features/:id/clone`
 - `GET /features/:id/environment`
 - `POST /features/:id/merge-main`
+- `POST /features/:id/workspace-folder`
 - `GET /features/:id/steps`, `PATCH /features/:id/steps/:step`
 - `PATCH /features/:id/artifacts/:index`
 - `POST /features/:id/change-requests`
