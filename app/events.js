@@ -11,6 +11,7 @@ import {
   cancelArtifactEdit,
   confirmPendingRevert,
   closeEnvironmentPanel,
+  openFeatureDiffView,
   moveToStep,
   openEnvironmentPanel,
   openFeatureDialog,
@@ -750,6 +751,9 @@ export function bindEvents() {
   });
   elements.workflowButton.addEventListener("click", () => {
     setWorkflowVisible(!state.workflowVisible);
+  });
+  elements.featureDiffButton.addEventListener("click", () => {
+    openFeatureDiffView();
   });
   elements.environmentPanelButton.addEventListener("click", () => {
     openEnvironmentPanel().catch((error) => showToast(error.message));

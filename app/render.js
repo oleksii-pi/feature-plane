@@ -698,6 +698,7 @@ export function renderDetails() {
     elements.advanceButton.disabled = true;
     elements.retryRunButton.classList.remove("visible");
     elements.cancelRunButton.classList.remove("visible");
+    elements.featureDiffButton.disabled = true;
     elements.environmentPanelButton.disabled = true;
     elements.featureWorkspaceFolderButton.disabled = true;
     elements.artifactList.innerHTML =
@@ -742,6 +743,7 @@ export function renderDetails() {
 
   elements.stateBadge.textContent = displayStep(feature);
   elements.stateBadge.classList.toggle("running", Boolean(feature.activeRunId));
+  elements.featureDiffButton.disabled = false;
   elements.environmentPanelButton.disabled = false;
   elements.featureWorkspaceFolderButton.disabled = false;
   const workflow = workflowForFeature(feature);

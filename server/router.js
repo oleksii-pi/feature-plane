@@ -36,6 +36,7 @@ const { formatDateTime } = require("./time");
 const { validateRepository } = require("./validation");
 const { openFeatureWorkspaceFolder } = require("./workspace-folder");
 const { featureWorkflow } = require("./workflow");
+const { readFeatureDiff } = require("./feature-diff");
 
 async function route(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -126,6 +127,17 @@ async function route(req, res) {
         featureId: feature.id,
         commands: normalizeCommandHistory(feature.environmentCommands),
       });
+      return;
+    }
+
+    if (req.method === "GET" && parts[2] === "diff" && parts[3] === "view") {
+      sendFeatureDiffView(res, feature);
+      return;
+    }
+
+    if (req.method === "GET" && parts[2] === "diff") {
+      const result = await readFeatureDiff(feature);
+      sendJson(res, 200, result);
       return;
     }
 
@@ -406,6 +418,423 @@ function sendRunLogView(res, run) {
     });
     refreshLog();
     window.setInterval(refreshLog, 1000);
+  </script>
+</body>
+</html>`);
+}
+
+function sendFeatureDiffView(res, feature) {
+  const diffUrl = `/features/${encodeURIComponent(feature.id)}/diff`;
+  const featureUrl = `/?featureId=${encodeURIComponent(feature.id)}`;
+  res.writeHead(200, {
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-cache",
+  });
+  res.end(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(feature.name)} diff</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #697386;
+      --border: #dfe4eb;
+      --border-strong: #cbd3dd;
+      --accent: #16a36a;
+      --accent-soft: #e4f7ee;
+      --blue: #3074d9;
+      --blue-soft: #e8f1ff;
+      --danger: #bb3c47;
+      --danger-soft: #fbe8e9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.45 Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(244, 246, 248, 0.96);
+      backdrop-filter: blur(8px);
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+    p {
+      margin: 4px 0 0;
+      color: var(--muted);
+    }
+    nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    a,
+    button {
+      font: inherit;
+    }
+    a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    button {
+      min-height: 32px;
+      padding: 0 12px;
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+    button:hover { background: #f6f7f9; }
+    button.primary {
+      color: #fff;
+      border-color: var(--text);
+      background: var(--text);
+    }
+    button.primary:hover { background: #2d384e; }
+    main {
+      padding: 14px 18px 24px;
+    }
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      color: #526074;
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .pill strong {
+      color: var(--text);
+      font-size: 11px;
+    }
+    .pill.branch {
+      color: #245fae;
+      border-color: #c9daf3;
+      background: #eef5ff;
+    }
+    .status {
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .empty,
+    .error {
+      padding: 28px 16px;
+      border: 1px dashed var(--border-strong);
+      border-radius: 10px;
+      background: #fbfcfd;
+      text-align: center;
+    }
+    .error {
+      color: var(--danger);
+      border-style: solid;
+      border-color: #efc7ca;
+      background: #fff8f8;
+    }
+    .section + .section {
+      margin-top: 16px;
+    }
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .section-header h2 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+    .section-header p {
+      margin: 0;
+      font-size: 11px;
+    }
+    .section-summary {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .files {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .file {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+    .file-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: #f8fafc;
+    }
+    .file-paths {
+      min-width: 0;
+    }
+    .file-paths strong,
+    .file-paths span {
+      display: block;
+      overflow-wrap: anywhere;
+    }
+    .file-paths strong {
+      font-size: 12px;
+    }
+    .file-paths span {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .file-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    .file-status {
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .file-status.added {
+      color: #0c7650;
+      background: var(--accent-soft);
+    }
+    .file-status.modified {
+      color: #245fae;
+      background: var(--blue-soft);
+    }
+    .file-status.deleted {
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+    .file-stats {
+      color: var(--muted);
+      font: 10px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      white-space: nowrap;
+    }
+    pre {
+      margin: 0;
+      overflow: auto;
+      background: #10161f;
+      color: #dce7f7;
+    }
+    code {
+      display: block;
+      min-width: 100%;
+      padding: 10px 0;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      white-space: pre;
+    }
+    .line {
+      display: block;
+      padding: 0 12px;
+    }
+    .line.meta {
+      color: #8aa0bd;
+    }
+    .line.hunk {
+      color: #8cc8ff;
+      background: rgba(66, 123, 197, 0.16);
+    }
+    .line.added {
+      color: #d6ffe8;
+      background: rgba(22, 163, 106, 0.22);
+    }
+    .line.deleted {
+      color: #ffd7da;
+      background: rgba(187, 60, 71, 0.24);
+    }
+    @media (max-width: 760px) {
+      header,
+      .section-header,
+      .file-header {
+        flex-direction: column;
+      }
+      .file-meta {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>${escapeHtml(feature.name)}</h1>
+      <p>${escapeHtml(feature.branch)} · review current diff against the latest repository snapshot and workspace changes.</p>
+    </div>
+    <nav>
+      <a href="${featureUrl}" target="_blank" rel="noopener noreferrer">Open feature</a>
+      <button id="refresh" class="primary" type="button">Refresh</button>
+    </nav>
+  </header>
+  <main>
+    <div id="summary" class="summary"></div>
+    <div id="status" class="status">Loading diff...</div>
+    <div id="content"></div>
+  </main>
+  <script>
+    const diffUrl = ${JSON.stringify(diffUrl)};
+    const summary = document.getElementById("summary");
+    const status = document.getElementById("status");
+    const content = document.getElementById("content");
+    const refreshButton = document.getElementById("refresh");
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function pill(label, value, className = "") {
+      return '<span class="pill ' + className + '"><strong>' + escapeHtml(String(value)) + '</strong>' + escapeHtml(label) + '</span>';
+    }
+
+    function lineMarkup(line) {
+      const className =
+        line.startsWith("+") && !line.startsWith("+++")
+          ? "added"
+          : line.startsWith("-") && !line.startsWith("---")
+            ? "deleted"
+            : line.startsWith("@@")
+              ? "hunk"
+              : line.startsWith("diff --git") ||
+                  line.startsWith("index ") ||
+                  line.startsWith("--- ") ||
+                  line.startsWith("+++ ")
+                ? "meta"
+                : "context";
+      return '<span class="line ' + className + '">' + (escapeHtml(line) || " ") + '</span>';
+    }
+
+    function renderFile(file) {
+      const stats = [
+        file.additions ? '+' + file.additions : '',
+        file.deletions ? '-' + file.deletions : '',
+        file.binary ? 'Binary' : '',
+      ].filter(Boolean).join(' ');
+      const previous =
+        file.previousPath &&
+        file.previousPath !== file.path &&
+        file.status !== 'deleted'
+          ? '<span>' + escapeHtml(file.previousPath) + '</span>'
+          : '';
+      return [
+        '<article class="file">',
+        '  <div class="file-header">',
+        '    <div class="file-paths">',
+        '      <strong>' + escapeHtml(file.path) + '</strong>',
+               previous,
+        '    </div>',
+        '    <div class="file-meta">',
+        '      <span class="file-status ' + escapeHtml(file.status) + '">' + escapeHtml(file.status) + '</span>',
+               stats ? '<span class="file-stats">' + escapeHtml(stats) + '</span>' : '',
+        '    </div>',
+        '  </div>',
+        '  <pre><code>' + String(file.patch ?? '').split('\\n').map(lineMarkup).join('') + '</code></pre>',
+        '</article>',
+      ].join('');
+    }
+
+    function renderSection(section) {
+      const files = Array.isArray(section?.files) ? section.files : [];
+      return [
+        '<section class="section">',
+        '  <div class="section-header">',
+        '    <div>',
+        '      <h2>' + escapeHtml(section?.title ?? 'Diff section') + '</h2>',
+        '      <p>' + escapeHtml(section?.description ?? '') + '</p>',
+        '    </div>',
+        '    <div class="section-summary">',
+               pill('files', section?.summary?.files ?? 0),
+               pill('added', section?.summary?.additions ?? 0),
+               pill('deleted', section?.summary?.deletions ?? 0),
+        '    </div>',
+        '  </div>',
+             files.length
+               ? '<div class="files">' + files.map(renderFile).join('') + '</div>'
+               : '<div class="empty">No changes.</div>',
+        '</section>',
+      ].join('');
+    }
+
+    async function loadDiff() {
+      refreshButton.disabled = true;
+      status.textContent = 'Loading diff...';
+      content.innerHTML = '';
+      try {
+        const response = await fetch(diffUrl + '?_=' + Date.now(), { cache: 'no-store' });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(body.message || 'Failed to load diff.');
+        }
+        const diff = body || {};
+        summary.innerHTML = [
+          pill('files', diff.summary?.files ?? 0),
+          pill('added', diff.summary?.additions ?? 0),
+          pill('deleted', diff.summary?.deletions ?? 0),
+          diff.branch ? pill('branch', diff.branch, 'branch') : '',
+        ].join('');
+        status.textContent = diff.generatedAt
+          ? 'Generated ' + diff.generatedAt + '. Refresh to update the view.'
+          : 'Refresh to update the view.';
+        const sections = [diff.committed, diff.uncommitted].filter(Boolean);
+        content.innerHTML = sections.length
+          ? sections.map(renderSection).join('')
+          : '<div class="empty">No changes.</div>';
+      } catch (error) {
+        summary.innerHTML = '';
+        status.textContent = '';
+        content.innerHTML = '<div class="error">' + escapeHtml(error.message || 'Failed to load diff.') + '</div>';
+      } finally {
+        refreshButton.disabled = false;
+      }
+    }
+
+    refreshButton.addEventListener('click', loadDiff);
+    loadDiff();
   </script>
 </body>
 </html>`);

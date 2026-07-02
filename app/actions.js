@@ -117,6 +117,17 @@ export async function openEnvironmentPanel() {
   }
 }
 
+export function openFeatureDiffView() {
+  closeMenus();
+  const feature = selectedFeature();
+  if (!feature) return;
+  window.open(
+    `/features/${encodeURIComponent(feature.id)}/diff/view`,
+    "_blank",
+    "noopener,noreferrer",
+  );
+}
+
 export async function openFeatureWorkspaceFolder() {
   closeMenus();
   const feature = selectedFeature();

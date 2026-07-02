@@ -15,6 +15,7 @@ export const elements = {
   advanceButton: document.querySelector("#advance-button"),
   retryRunButton: document.querySelector("#retry-run-button"),
   cancelRunButton: document.querySelector("#cancel-run-button"),
+  featureDiffButton: document.querySelector("#feature-diff-button"),
   environmentPanelButton: document.querySelector("#environment-panel-button"),
   featureWorkspaceFolderButton: document.querySelector(
     "#feature-workspace-folder-button",

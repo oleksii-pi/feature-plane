@@ -78,6 +78,54 @@ Why it should exist:
 - The right panel needs a detailed read model for one feature.
 - It should show workflow position, artifacts, logs, and active run state.
 
+## `GET /features/{id}/diff`
+
+Returns a review model for the selected feature diff.
+
+Expected payload:
+
+- No request body.
+
+Expected response:
+
+```json
+{
+  "featureId": "123",
+  "branch": "feature/improve-login-flow",
+  "summary": {
+    "files": 4,
+    "additions": 120,
+    "deletions": 18
+  },
+  "committed": {
+    "title": "Committed changes",
+    "files": []
+  },
+  "uncommitted": {
+    "title": "Uncommitted changes",
+    "files": []
+  }
+}
+```
+
+Why it should exist:
+
+- The UI needs a single branch review payload that covers both committed branch work and local workspace edits.
+- Keeping this as structured JSON lets both the main UI and any standalone review surface reuse the same data.
+
+## `GET /features/{id}/diff/view`
+
+Returns a standalone HTML diff view for the selected feature.
+
+Expected payload:
+
+- No request body.
+
+Why it should exist:
+
+- Users need a dedicated review page they can open in a separate tab, similar to run log views.
+- This keeps large diffs out of the main workspace while still using the same backend diff data.
+
 ## `PATCH /features/{id}`
 
 Updates editable feature metadata.

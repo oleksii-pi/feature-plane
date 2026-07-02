@@ -97,6 +97,7 @@ Keep route changes aligned with `server/router.js`. The active endpoints are:
 - `GET /features`, `POST /features`
 - `GET /features/:id`, `PATCH /features/:id`, `DELETE /features/:id`
 - `POST /features/:id/clone`
+- `GET /features/:id/diff`, `GET /features/:id/diff/view`
 - `GET /features/:id/environment`
 - `POST /features/:id/merge-main`
 - `POST /features/:id/skip`
