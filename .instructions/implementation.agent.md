@@ -17,6 +17,9 @@
    implementation notes to that file. This path may be versioned for reruns;
    use it exactly.
 
+IMPORTANT:  
+Do not run expensive validations and checks; avoid running Playwright, browser or other tools that can work slowly. Keep it simple and fast, but do not compromise quality and follow the user request.
+
 Available Control Plane parameters are exposed as environment variables. Use
 `node scripts/control-plane-env.js NAME` to read them by name.
 
