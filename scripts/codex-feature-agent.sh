@@ -19,9 +19,11 @@ set -eu
 
 : "${CONTROL_PLANE_WORKSPACE_PATH:?missing CONTROL_PLANE_WORKSPACE_PATH}"
 : "${CONTROL_PLANE_INSTRUCTION_PATH:?missing CONTROL_PLANE_INSTRUCTION_PATH}"
+: "${CONTROL_PLANE_REPOSITORY_ROOT:?missing CONTROL_PLANE_REPOSITORY_ROOT}"
 
 profile="${CODEX_FEATURE_PROFILE:-feature-isolated}"
 
+repository_root="$(cd "$CONTROL_PLANE_REPOSITORY_ROOT" && pwd -P)"
 workspace="$(cd "$CONTROL_PLANE_WORKSPACE_PATH" && pwd -P)"
 cwd="$(pwd -P)"
 if [ "$cwd" != "$workspace" ]; then
@@ -33,8 +35,9 @@ instruction_dir="$(cd "$(dirname "$CONTROL_PLANE_INSTRUCTION_PATH")" && pwd -P)"
 instruction_path="$instruction_dir/$(basename "$CONTROL_PLANE_INSTRUCTION_PATH")"
 case "$instruction_path" in
   "$workspace"/*) ;;
+  "$repository_root"/*) ;;
   *)
-    echo "Refusing to read instructions outside feature workspace: $instruction_path" >&2
+    echo "Refusing to read instructions outside feature workspace or repository root: $instruction_path" >&2
     exit 2
     ;;
 esac

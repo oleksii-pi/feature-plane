@@ -5,6 +5,7 @@ const path = require("node:path");
 const { PORT } = require("./config");
 const { formatShellCommand } = require("./command-history");
 const {
+  addEvent,
   queueFeatureEnvironmentUrl,
   queueRunEvent,
   queueRunOutput,
@@ -62,6 +63,7 @@ async function startConfiguredAgentRun(feature, run, commandTemplate, handlers) 
 
   await recordConfiguredCommand(handlers, `${formatShellCommand("cd", [context.workspace_path])} && ${command}`);
   runProcesses.set(run.id, { child, stopTimer: null });
+  await addEvent(feature, run, "Context", formatRunContext(context, command));
   await queueRunEvent(feature, run, "Executing", "Agent executing.");
 
   child.stdout?.on("data", (chunk) => {
@@ -97,6 +99,27 @@ async function recordConfiguredCommand(handlers, command) {
   } catch (error) {
     console.error(error);
   }
+}
+
+function formatRunContext(context, command) {
+  const lines = [
+    `agent=${context.agent}`,
+    `state=${context.state}`,
+    `feature=${context.feature_name} (${context.feature_id})`,
+    `branch=${context.branch}`,
+    `workspace=${context.workspace_path}`,
+    `instruction=${context.instruction_path}`,
+    `prompt=${context.prompt_path}`,
+    `artifact=${context.artifact_path}`,
+    `repository_root=${context.repository_root}`,
+    `command=${command}`,
+  ];
+  if (context.change_request_path) {
+    lines.push(`change_request=${context.change_request_path}`);
+  }
+  return lines
+    .map((line, index) => (index === 0 ? line : `  ${line}`))
+    .join("\n");
 }
 
 function buildChildEnv(feature, run, context) {

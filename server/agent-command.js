@@ -18,6 +18,9 @@ function getFeatureWorkspacePath(feature) {
 }
 
 function getAgentInstructionPath(feature, agent) {
+  if (agent === "prepare-environment") {
+    return path.join(ROOT, ".instructions", `${agent}.agent.md`);
+  }
   return path.join(getFeatureWorkspacePath(feature), ".instructions", `${agent}.agent.md`);
 }
 
