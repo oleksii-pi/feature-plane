@@ -70,6 +70,23 @@ rejected because workflow runs do not have a TTY.
   current workflow step.
 - Run logs are plain text under the feature home's `run-logs/` directory.
 
+## Workflow Step Actions
+
+- Step action UI is split across `index.html` for button/dialog markup,
+  `app/dom.js` for element lookup, `app/render.js` for visibility and labels,
+  `app/events.js` for handlers, and `app/actions.js` for API calls and reloads.
+- Workflow progression rules live primarily in `server/features.js`; agent run
+  startup lives in `server/runs.js`; restore/rerun cleanup lives in
+  `server/revert.js`; persisted feature-shape normalization lives in
+  `server/state.js`.
+- If a change adds per-step metadata such as skipped-state tracking, update
+  create, reset, revert, rerun, and discard flows together so persisted state,
+  movement rules, and UI display stay aligned.
+- Feature-level workflow actions should be routed from `server/router.js`
+  under `/features/:id/...` and mirrored in the API list below.
+- For workflow behavior changes, prefer a temp `features_home` smoke test
+  against a local server in addition to syntax checks.
+
 ## API Surface
 
 Keep route changes aligned with `server/router.js`. The active endpoints are:
@@ -82,6 +99,7 @@ Keep route changes aligned with `server/router.js`. The active endpoints are:
 - `POST /features/:id/clone`
 - `GET /features/:id/environment`
 - `POST /features/:id/merge-main`
+- `POST /features/:id/skip`
 - `POST /features/:id/workspace-folder`
 - `GET /features/:id/steps`, `PATCH /features/:id/steps/:step`
 - `PATCH /features/:id/artifacts/:index`
