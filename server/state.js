@@ -29,6 +29,8 @@ const state = {
   features: [],
 };
 
+const SYNTHETIC_EPOCH_TIMESTAMP = "1970-01-01 00:00:00";
+
 let saveFeatureFiles;
 let validateRepository;
 
@@ -378,7 +380,7 @@ function storedRunLogSize(run) {
 
 function inferArtifactCreatedAt(artifact, runs) {
   if (artifact.createdAt) return formatDateTime(artifact.createdAt);
-  if ((artifact.availableAtStep ?? 0) === 0) return "1970-01-01 00:00:00";
+  if ((artifact.availableAtStep ?? 0) === 0) return SYNTHETIC_EPOCH_TIMESTAMP;
   const producingRun = runs.find(
     (run) => run.artifact === artifact.name || run.step === artifact.availableAtStep,
   );
@@ -458,6 +460,7 @@ function runTimestamps(runs = []) {
 
 function normalizedTimestamp(value) {
   const timestamp = formatDateTime(value);
+  if (timestamp === SYNTHETIC_EPOCH_TIMESTAMP) return null;
   return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(timestamp)
     ? timestamp
     : null;

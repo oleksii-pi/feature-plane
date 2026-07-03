@@ -1,0 +1,189 @@
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: Search features
+          - searchbox "Search features" [ref=e8]
+        - button "Feature actions" [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - link "Auto agent smoke 2 40% complete $0.05" [ref=e17] [cursor=pointer]:
+            - /url: /?featureId=25b0bdc4
+            - generic [ref=e18]: Auto agent smoke 2
+            - generic [ref=e19]:
+              - generic "40% complete" [ref=e20]
+              - generic [ref=e22]: $0.05
+          - button "Edit feature" [ref=e23] [cursor=pointer]: E
+        - link "Auto agent smoke 0% complete" [ref=e25] [cursor=pointer]:
+          - /url: /?featureId=2c68c764
+          - generic [ref=e26]: Auto agent smoke
+          - generic "0% complete" [ref=e28]
+        - link "Bug in displaying age 2 0% complete" [ref=e30] [cursor=pointer]:
+          - /url: /?featureId=94a74071
+          - generic [ref=e31]: Bug in displaying age 2
+          - generic "0% complete" [ref=e33]
+        - link "When reseting feature, preserve its age and token consumption 0% complete" [ref=e35] [cursor=pointer]:
+          - /url: /?featureId=ae87f1c1
+          - generic [ref=e36]: When reseting feature, preserve its age and token consumption
+          - generic "0% complete" [ref=e38]
+        - 'link "Bug: When agent executes and I move feature in list I am loosing focus 0% complete" [ref=e40] [cursor=pointer]':
+          - /url: /?featureId=d95b0e07
+          - generic [ref=e41]: "Bug: When agent executes and I move feature in list I am loosing focus"
+          - generic "0% complete" [ref=e43]
+        - link "Run implementation agent immediately after prepare environment 0% complete" [ref=e45] [cursor=pointer]:
+          - /url: /?featureId=2b50d65b
+          - generic [ref=e46]: Run implementation agent immediately after prepare environment
+          - generic "0% complete" [ref=e48]
+        - link "Simplify Rerun agent dialog 0% complete" [ref=e50] [cursor=pointer]:
+          - /url: /?featureId=e40db3f1
+          - generic [ref=e51]: Simplify Rerun agent dialog
+          - generic "0% complete" [ref=e53]
+        - link "Improve Add change request dialog 0% complete" [ref=e55] [cursor=pointer]:
+          - /url: /?featureId=d57880f7
+          - generic [ref=e56]: Improve Add change request dialog
+          - generic "0% complete" [ref=e58]
+        - link "Improve add feature dialog 0% complete" [ref=e60] [cursor=pointer]:
+          - /url: /?featureId=372005b7
+          - generic [ref=e61]: Improve add feature dialog
+          - generic "0% complete" [ref=e63]
+        - link "Add filter \"In progress\" 0% complete" [ref=e65] [cursor=pointer]:
+          - /url: /?featureId=c777607d
+          - generic [ref=e66]: Add filter "In progress"
+          - generic "0% complete" [ref=e68]
+        - link "Dark mode 0% complete" [ref=e70] [cursor=pointer]:
+          - /url: /?featureId=ed7efdd5
+          - generic [ref=e71]: Dark mode
+          - generic "0% complete" [ref=e73]
+        - link "Full text search when user search features 0% complete" [ref=e75] [cursor=pointer]:
+          - /url: /?featureId=dc8c5a7b
+          - generic [ref=e76]: Full text search when user search features
+          - generic "0% complete" [ref=e78]
+        - link "Improve implementation details 0% complete" [ref=e80] [cursor=pointer]:
+          - /url: /?featureId=523a57b9
+          - generic [ref=e81]: Improve implementation details
+          - generic "0% complete" [ref=e83]
+        - link "Improve feature settings dialog 0% complete" [ref=e85] [cursor=pointer]:
+          - /url: /?featureId=c64c91e1
+          - generic [ref=e86]: Improve feature settings dialog
+          - generic "0% complete" [ref=e88]
+        - link "Bug in displaying age 100% complete $1.09" [ref=e90] [cursor=pointer]:
+          - /url: /?featureId=bf4fb3b8
+          - generic [ref=e91]: Bug in displaying age
+          - generic [ref=e92]:
+            - generic "100% complete" [ref=e93]
+            - generic [ref=e95]: $1.09
+        - link "Make Cancel agent run button red 100% complete $0.33" [ref=e97] [cursor=pointer]:
+          - /url: /?featureId=c731999e
+          - generic [ref=e98]: Make Cancel agent run button red
+          - generic [ref=e99]:
+            - generic "100% complete" [ref=e100]
+            - generic [ref=e102]: $0.33
+        - link "Add feature agent time and age 100% complete $1.75" [ref=e104] [cursor=pointer]:
+          - /url: /?featureId=1697a591
+          - generic [ref=e105]: Add feature agent time and age
+          - generic [ref=e106]:
+            - generic "100% complete" [ref=e107]
+            - generic [ref=e109]: $1.75
+        - link "(merge failed) Improve menu and navigation experience for features 80% complete $0.83" [ref=e111] [cursor=pointer]:
+          - /url: /?featureId=66edfef2
+          - generic [ref=e112]: (merge failed) Improve menu and navigation experience for features
+          - generic [ref=e113]:
+            - generic "80% complete" [ref=e114]
+            - generic [ref=e116]: $0.83
+        - link "Improve menu and navigation experience for features - faster implementation 100% complete $1.60" [ref=e118] [cursor=pointer]:
+          - /url: /?featureId=bbeacfe8
+          - generic [ref=e119]: Improve menu and navigation experience for features - faster implementation
+          - generic [ref=e120]:
+            - generic "100% complete" [ref=e121]
+            - generic [ref=e123]: $1.60
+        - link "Add splitter between list of features and feature detail 100% complete $1.38" [ref=e125] [cursor=pointer]:
+          - /url: /?featureId=1c0c805b
+          - generic [ref=e126]: Add splitter between list of features and feature detail
+          - generic [ref=e127]:
+            - generic "100% complete" [ref=e128]
+            - generic [ref=e130]: $1.38
+        - link "Remove expand/collaps buttons from UI 100% complete $1.05" [ref=e132] [cursor=pointer]:
+          - /url: /?featureId=76ce0e1d
+          - generic [ref=e133]: Remove expand/collaps buttons from UI
+          - generic [ref=e134]:
+            - generic "100% complete" [ref=e135]
+            - generic [ref=e137]: $1.05
+        - link "Avoid scrolling the feature list panel and feature header 100% complete $0.50" [ref=e139] [cursor=pointer]:
+          - /url: /?featureId=8833b66f
+          - generic [ref=e140]: Avoid scrolling the feature list panel and feature header
+          - generic [ref=e141]:
+            - generic "100% complete" [ref=e142]
+            - generic [ref=e144]: $0.50
+        - link "Improve environment opening experience 100% complete $0.50" [ref=e146] [cursor=pointer]:
+          - /url: /?featureId=96b75802
+          - generic [ref=e147]: Improve environment opening experience
+          - generic [ref=e148]:
+            - generic "100% complete" [ref=e149]
+            - generic [ref=e151]: $0.50
+        - link "Reordering features in backlog 100% complete $2.07" [ref=e153] [cursor=pointer]:
+          - /url: /?featureId=3a5a5a23
+          - generic [ref=e154]: Reordering features in backlog
+          - generic [ref=e155]:
+            - generic "100% complete" [ref=e156]
+            - generic [ref=e158]: $2.07
+    - separator "Resize feature list and feature detail panels" [ref=e159]
+    - region "Auto agent smoke 2" [ref=e161]:
+      - generic [ref=e162]:
+        - generic [ref=e163]:
+          - heading "Auto agent smoke 2" [level=2] [ref=e165]
+          - paragraph [ref=e166]:
+            - generic [ref=e167]: 2026-07-03 21:32:14
+            - generic [ref=e168]: "@implementation"
+            - generic [ref=e169]: "in status: 8s, agents time: 22s, age: 22s"
+        - generic [ref=e170]:
+          - button "Cancel run" [ref=e171] [cursor=pointer]
+          - button "Open environment" [ref=e172] [cursor=pointer]
+          - button "Run @implementation" [disabled] [ref=e173]
+          - button "Feature detail actions" [ref=e175] [cursor=pointer]:
+            - img [ref=e176]
+      - generic [ref=e180]:
+        - article [ref=e181]:
+          - generic [ref=e182] [cursor=pointer]:
+            - 'generic "Updated: 2026-07-03 21:32:14" [ref=e183]': 21:32
+            - button "prompt.md" [expanded] [ref=e184]:
+              - strong [ref=e186]: prompt.md
+          - paragraph [ref=e189]: Smoke prompt
+        - article [ref=e190]:
+          - generic [ref=e191] [cursor=pointer]:
+            - 'generic "Updated: 2026-07-03 21:32:28" [ref=e192]': 21:32
+            - button "prepare-environment Succeeded 0:14 $0.05 produced environment-state.md" [ref=e193]:
+              - generic [ref=e195]:
+                - strong [ref=e196]: prepare-environment
+                - generic [ref=e197]: Succeeded
+                - generic [ref=e198]: 0:14
+                - generic [ref=e199]: $0.05
+                - generic [ref=e200]:
+                  - text: produced
+                  - strong [ref=e201]: environment-state.md
+        - article [ref=e202]:
+          - generic [ref=e203] [cursor=pointer]:
+            - 'generic "Updated: 2026-07-03 21:32:28" [ref=e204]': 21:32
+            - button "environment-state.md" [expanded] [ref=e205]:
+              - strong [ref=e207]: environment-state.md
+          - generic [ref=e209]:
+            - paragraph [ref=e210]: "URL: http://127.0.0.1:3115"
+            - paragraph [ref=e211]: "PID: 47996"
+            - paragraph [ref=e212]: "Log: /Users/alekseypi/projects/feature-plane/.features/auto-agent-smoke-2/features/auto-agent-smoke-2/artifacts/environment.log"
+            - paragraph [ref=e213]
+        - article [ref=e214]:
+          - button "implementation Running 0:08" [expanded] [ref=e216] [cursor=pointer]:
+            - generic [ref=e218]:
+              - strong [ref=e219]: implementation
+              - generic [ref=e220]: Running
+              - generic [ref=e221]: 0:08
+          - generic [ref=e222]:
+            - generic [ref=e223]: "2026-07-03 21:32:28 Started: implementation started. 2026-07-03 21:32:28 Context: agent=implementation state=@implementation feature=Auto agent smoke 2 (25b0bdc4) branch=feature/auto-agent-smoke-2 workspace=/Users/alekseypi/projects/feature-plane/.features/auto-agent-smoke-2 instruction=/Users/alekseypi/projects/feature-plane/.features/auto-agent-smoke-2/.instructions/implementation.agent.md prompt=/Users/alekseypi/projects/feature-plane/.features/auto-agent-smoke-2/features/auto-agent-smoke-2/artifacts/prompt.md artifact=/Users/alekseypi/projects/feature-plane/.features/auto-agent-smoke-2/features/auto-agent-smoke-2/artifacts/implementation-details.md repository_root=/Users/alekseypi/projects/feature-plane command=./scripts/codex-feature-agent.sh 2026-07-03 21:32:28 Executing: Agent executing."
+            - generic [ref=e224]:
+              - generic [ref=e225]: 8kb of logs
+              - link "View logs" [ref=e226] [cursor=pointer]:
+                - /url: /runs/30702a4f/log/view
+  - button "Application actions" [ref=e228] [cursor=pointer]:
+    - img [ref=e229]
+  - status
