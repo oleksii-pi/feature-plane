@@ -578,6 +578,10 @@ function featureCreatedAtText(feature) {
   return formatDateTime(feature?.createdAt ?? feature?.updated ?? "");
 }
 
+function featureCreatedAtValue(feature) {
+  return String(feature?.createdAt ?? "").trim();
+}
+
 function featureStatusBadgeClass(feature) {
   return feature?.activeRunId ? "state-badge running" : "state-badge";
 }
@@ -597,7 +601,7 @@ function featureTotalAgentTime(feature) {
 }
 
 function featureMetaText(feature) {
-  const createdAt = featureCreatedAtText(feature);
+  const createdAt = featureCreatedAtValue(feature);
   const statusDuration = formatElapsedCompact(
     feature?.statusChangedAt ?? createdAt,
   );
