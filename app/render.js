@@ -601,6 +601,7 @@ function featureTotalAgentTime(feature) {
 }
 
 function featureMetaText(feature) {
+  const currentStepIndex = Number(feature?.step);
   const createdAt = featureCreatedAtValue(feature);
   const statusDuration = formatElapsedCompact(
     feature?.statusChangedAt ?? createdAt,
@@ -609,7 +610,9 @@ function featureMetaText(feature) {
   const age = formatElapsedCompact(createdAt);
   const details = [];
 
-  if (statusDuration) details.push(`in status: ${statusDuration}`);
+  if (statusDuration && currentStepIndex > 0) {
+    details.push(`in status: ${statusDuration}`);
+  }
   if (totalAgentTime && (feature?.runs?.length || feature?.archivedRuns?.length)) {
     details.push(`agents time: ${totalAgentTime}`);
   }
