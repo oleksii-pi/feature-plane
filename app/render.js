@@ -872,6 +872,7 @@ export function renderValidation() {
 }
 
 export function render() {
+  document.documentElement.dataset.theme = state.theme;
   elements.workspace.classList.toggle(
     "features-collapsed",
     state.featuresPanelHidden,
@@ -885,6 +886,17 @@ export function render() {
     "aria-checked",
     String(state.workflowVisible),
   );
+  if (elements.themeToggleButton) {
+    const darkModeEnabled = state.theme === "dark";
+    elements.themeToggleButton.innerHTML = darkModeEnabled
+      ? "<u>L</u>ight mode"
+      : "<u>D</u>ark mode";
+    elements.themeToggleButton.dataset.menuKey = darkModeEnabled ? "l" : "d";
+    elements.themeToggleButton.setAttribute(
+      "aria-label",
+      darkModeEnabled ? "Switch to light mode" : "Switch to dark mode",
+    );
+  }
   renderFeatureList();
   renderDetails();
   renderRepositoryWorkflow();

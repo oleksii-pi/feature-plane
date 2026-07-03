@@ -71,6 +71,7 @@ export const elements = {
   validationContext: document.querySelector("#validation-context"),
   validationSummary: document.querySelector("#validation-summary"),
   validationList: document.querySelector("#validation-list"),
+  themeToggleButton: document.querySelector("#theme-toggle-button"),
   toast: document.querySelector("#toast"),
 };
 

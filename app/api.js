@@ -5,6 +5,7 @@ import {
   applyArtifactDrafts,
   loadArtifactDrafts,
   loadPanelSplitterState,
+  loadThemePreference,
   loadTimelineCardExpansion,
   localState,
   restoreViewFromUrl,
@@ -42,6 +43,7 @@ export async function loadState({ preserveView = true } = {}) {
 
   const saved = localState.load();
   loadTimelineCardExpansion();
+  loadThemePreference();
   state.featuresPanelHidden = Boolean(saved.featuresPanelHidden);
   state.workflowVisible = Boolean(saved.workflowVisible);
   state.searchTerm = saved.searchTerm ?? "";

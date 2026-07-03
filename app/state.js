@@ -11,6 +11,8 @@ export const TERMINAL_RUN_STATUSES = new Set([
   "cancelled",
 ]);
 export const RUN_LOG_PREVIEW_LINE_LIMIT = 20;
+export const DEFAULT_THEME = "light";
+const THEMES = new Set([DEFAULT_THEME, "dark"]);
 
 export const state = {
   workflow: [],
@@ -38,7 +40,12 @@ export const state = {
   environmentCommands: [],
   environmentCommandsLoading: false,
   environmentCommandsError: "",
+  theme: DEFAULT_THEME,
 };
+
+function sanitizeTheme(value) {
+  return THEMES.has(value) ? value : DEFAULT_THEME;
+}
 
 function clampPanelSplitterRatio(value) {
   if (!Number.isFinite(value)) return DEFAULT_FEATURES_PANEL_RATIO;
@@ -59,6 +66,25 @@ function sanitizePanelSplitter(value) {
 export function loadPanelSplitterState() {
   const saved = localState.load();
   state.panelSplitter = sanitizePanelSplitter(saved.panelSplitter);
+}
+
+export function applyThemePreference(theme = state.theme) {
+  if (typeof document === "undefined") return;
+  const nextTheme = sanitizeTheme(theme);
+  state.theme = nextTheme;
+  document.documentElement.dataset.theme = nextTheme;
+  document.documentElement.style.colorScheme =
+    nextTheme === "dark" ? "dark" : "light";
+}
+
+export function loadThemePreference() {
+  const saved = localState.load();
+  applyThemePreference(saved.theme);
+}
+
+export function setTheme(theme) {
+  applyThemePreference(theme);
+  localState.save({ theme: state.theme });
 }
 
 export function persistPanelSplitterState() {

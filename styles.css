@@ -14,6 +14,26 @@
   --warning-soft: #fff3dc;
   --danger: #bb3c47;
   --shadow: 0 1px 2px rgba(23, 32, 51, 0.05);
+  --shadow-floating: 0 18px 48px rgba(23, 32, 51, 0.26);
+  --surface-raised: #ffffff;
+  --surface-soft: #f7f8fa;
+  --surface-hover: #f0f2f5;
+  --surface-subtle: #fafbfc;
+  --surface-artifact: #e1f1fd92;
+  --link: #3f72b8;
+  --link-hover: #285f9f;
+  --button-primary: #172033;
+  --button-primary-hover: #2d384e;
+  --button-secondary-bg: #ffffff;
+  --button-secondary-hover: #f6f7f9;
+  --button-secondary-text: #172033;
+  --button-danger-hover: #9f2935;
+  --terminal-surface: #0f141c;
+  --terminal-surface-header: #111824;
+  --terminal-border: #263244;
+  --terminal-text: #dce7f7;
+  --terminal-text-strong: #ffffff;
+  --terminal-muted: #8aa0bd;
   --radius: 12px;
   --environment-terminal-height: clamp(190px, 34vh, 340px);
   font-family:
@@ -26,6 +46,44 @@
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1319;
+  --panel: #1a212c;
+  --text: #ecf1fb;
+  --muted: #9daaba;
+  --border: #2a3442;
+  --border-strong: #3a4657;
+  --accent: #4fc78d;
+  --accent-dark: #b8f1d5;
+  --accent-soft: rgba(79, 199, 141, 0.16);
+  --blue: #7fb0ff;
+  --blue-soft: rgba(127, 176, 255, 0.18);
+  --warning: #f1b356;
+  --warning-soft: rgba(241, 179, 86, 0.14);
+  --danger: #ef6b76;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-floating: 0 24px 64px rgba(0, 0, 0, 0.48);
+  --surface-raised: #202833;
+  --surface-soft: #1e2631;
+  --surface-hover: #25303c;
+  --surface-subtle: #222b36;
+  --surface-artifact: rgba(127, 176, 255, 0.08);
+  --link: #99c0ff;
+  --link-hover: #bed6ff;
+  --button-primary: #6f8196;
+  --button-primary-hover: #8092a7;
+  --button-secondary-bg: #202833;
+  --button-secondary-hover: #2a3440;
+  --button-secondary-text: #ecf1fb;
+  --button-danger-hover: #ff818b;
+  --terminal-surface: #10151d;
+  --terminal-surface-header: #141b24;
+  --terminal-border: #2e3b4d;
+  --terminal-text: #dce7f7;
+  --terminal-text-strong: #f7f9ff;
+  --terminal-muted: #8ea5c1;
 }
 
 html,
@@ -222,7 +280,7 @@ h3 {
 }
 
 .icon-button:hover {
-  background: #f0f2f5;
+  background: var(--surface-hover);
   color: var(--text);
 }
 
@@ -254,7 +312,7 @@ h3 {
 .menu-button:hover,
 .menu-button[aria-expanded="true"] {
   color: var(--text);
-  background: #f0f2f5;
+  background: var(--surface-hover);
 }
 
 .menu {
@@ -270,7 +328,7 @@ h3 {
   padding: 4px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface-raised);
   box-shadow: 0 10px 30px rgba(23, 32, 51, 0.16);
 }
 
@@ -288,7 +346,7 @@ h3 {
 
 .menu-popover button:hover,
 .menu-popover button:focus-visible {
-  background: #f0f2f5;
+  background: var(--surface-hover);
 }
 
 .menu-popover button:disabled {
@@ -354,7 +412,7 @@ h3 {
 
 .workspace.features-collapsed .features-panel .menu-button {
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--surface-raised);
   box-shadow: 0 2px 8px rgba(23, 32, 51, 0.1);
 }
 
@@ -363,7 +421,7 @@ h3 {
   .features-panel
   .menu-button[aria-expanded="true"] {
   border-color: var(--border-strong);
-  background: #f7f8fa;
+  background: var(--surface-soft);
 }
 
 .workspace.features-collapsed .timeline {
@@ -384,14 +442,14 @@ h3 {
 
 .global-menu > .menu-button {
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--surface-raised);
   box-shadow: 0 2px 8px rgba(23, 32, 51, 0.1);
 }
 
 .global-menu > .menu-button:hover,
 .global-menu > .menu-button[aria-expanded="true"] {
   border-color: var(--border-strong);
-  background: #f7f8fa;
+  background: var(--surface-soft);
 }
 
 .environment-panel-open .global-menu {
@@ -408,11 +466,11 @@ h3 {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  color: #dce7f7;
-  border: 1px solid #263244;
+  color: var(--terminal-text);
+  border: 1px solid var(--terminal-border);
   border-radius: 8px;
-  background: #0f141c;
-  box-shadow: 0 18px 48px rgba(23, 32, 51, 0.26);
+  background: var(--terminal-surface);
+  box-shadow: var(--shadow-floating);
 }
 
 .environment-terminal-header {
@@ -422,17 +480,17 @@ h3 {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border-bottom: 1px solid #263244;
-  background: #111824;
+  border-bottom: 1px solid var(--terminal-border);
+  background: var(--terminal-surface-header);
 }
 
 .environment-terminal-header h2 {
-  color: #ffffff;
+  color: var(--terminal-text-strong);
   font-size: 15px;
 }
 
 .environment-terminal-header .eyebrow {
-  color: #8aa0bd;
+  color: var(--terminal-muted);
 }
 
 .environment-terminal-header .icon-button {
@@ -440,7 +498,7 @@ h3 {
 }
 
 .environment-terminal-header .icon-button:hover {
-  color: #ffffff;
+  color: var(--terminal-text-strong);
   background: #1d2838;
 }
 
@@ -448,7 +506,7 @@ h3 {
   margin: 0;
   padding: 12px 14px 16px;
   overflow: auto;
-  color: #dce7f7;
+  color: var(--terminal-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 13px;
   line-height: 1.55;
@@ -474,7 +532,7 @@ h3 {
   align-items: center;
   gap: 8px;
   color: var(--muted);
-  background: #f7f8fa;
+  background: var(--surface-soft);
   border: 1px solid var(--border);
   border-radius: 7px;
   width: stretch;
@@ -482,7 +540,7 @@ h3 {
 
 .search-box:focus-within {
   border-color: var(--blue);
-  background: #fff;
+  background: var(--surface-raised);
 }
 
 .search-box svg {
@@ -518,7 +576,7 @@ h3 {
 }
 
 .feature-card-shell:hover {
-  background: #f6f8fa;
+  background: var(--surface-soft);
 }
 
 .feature-card-shell.selected {
@@ -766,7 +824,7 @@ h3 {
 
 .details-header p a,
 .details-header p .link-button {
-  color: #3f72b8;
+  color: var(--link);
   font-weight: 600;
   text-decoration: none;
 }
@@ -775,7 +833,7 @@ h3 {
 .details-header p a:focus-visible,
 .details-header p .link-button:hover,
 .details-header p .link-button:focus-visible {
-  color: #285f9f;
+  color: var(--link-hover);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -849,23 +907,23 @@ h3 {
 }
 
 .primary-button {
-  color: #fff;
-  border: 1px solid var(--text);
-  background: var(--text);
+  color: var(--terminal-text-strong);
+  border: 1px solid var(--button-primary);
+  background: var(--button-primary);
 }
 
 .primary-button:hover {
-  background: #2d384e;
+  background: var(--button-primary-hover);
 }
 
 .secondary-button {
-  color: var(--text);
+  color: var(--button-secondary-text);
   border: 1px solid var(--border-strong);
-  background: #fff;
+  background: var(--button-secondary-bg);
 }
 
 .secondary-button:hover {
-  background: #f6f7f9;
+  background: var(--button-secondary-hover);
 }
 
 .danger-button {
@@ -875,8 +933,8 @@ h3 {
 }
 
 .danger-button:hover {
-  border-color: #9f2935;
-  background: #9f2935;
+  border-color: var(--button-danger-hover);
+  background: var(--button-danger-hover);
 }
 
 .primary-button:disabled,
@@ -936,7 +994,7 @@ h3 {
   gap: 8px;
   padding: 0 4px;
   border: 0;
-  background: #fff;
+  background: var(--surface-raised);
   text-align: left;
 }
 
@@ -947,7 +1005,7 @@ h3 {
 
 .artifact-header:hover,
 .artifact-header:focus-within {
-  background: #fafbfc;
+  background: var(--surface-subtle);
 }
 
 .artifact-toggle {
@@ -1144,7 +1202,7 @@ h3 {
 
 .run-log.cancelled .artifact-label {
   color: var(--muted);
-  background: #f0f2f5;
+  background: var(--surface-hover);
 }
 
 .run-log.running .artifact-label,
@@ -1156,7 +1214,7 @@ h3 {
 .artifact-body {
   display: none;
   padding: 4px;
-  background: #e1f1fd92;
+  background: var(--surface-artifact);
 }
 
 .artifact-card.expanded .artifact-body {
@@ -1216,10 +1274,10 @@ h3 {
   margin: 0;
   padding: 12px;
   overflow: auto;
-  border: 1px solid #263244;
+  border: 1px solid var(--terminal-border);
   border-radius: 7px;
-  background: #0f141c;
-  color: #dce7f7;
+  background: var(--terminal-surface);
+  color: var(--terminal-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 13px;
   line-height: 1.45;
@@ -1877,6 +1935,96 @@ dialog form {
 
 .environment-panel-open .toast {
   bottom: calc(var(--environment-terminal-height) + 18px);
+}
+
+:root[data-theme="dark"] .workspace-splitter:hover,
+:root[data-theme="dark"] .workspace-splitter:focus-visible,
+:root[data-theme="dark"] .timeline-item.running,
+:root[data-theme="dark"] .run-log.running .artifact-label,
+:root[data-theme="dark"] .run-log.queued .artifact-label {
+  background: rgba(127, 176, 255, 0.16);
+}
+
+:root[data-theme="dark"] .workspace.features-collapsed .features-panel {
+  background: transparent;
+}
+
+:root[data-theme="dark"] .feature-edit-button,
+:root[data-theme="dark"] .step-marker,
+:root[data-theme="dark"] .workflow-step-number,
+:root[data-theme="dark"] .repository-workflow-step,
+:root[data-theme="dark"] .form-field input,
+:root[data-theme="dark"] .form-field textarea {
+  background: var(--surface-raised);
+}
+
+:root[data-theme="dark"] .feature-edit-button:hover,
+:root[data-theme="dark"] .feature-edit-button:focus-visible,
+:root[data-theme="dark"] .step-button:hover:not(:disabled),
+:root[data-theme="dark"] .artifact-header:hover,
+:root[data-theme="dark"] .artifact-header:focus-within {
+  background: var(--surface-hover);
+}
+
+:root[data-theme="dark"] .timeline-item.current,
+:root[data-theme="dark"] .workflow-step.current .step-button,
+:root[data-theme="dark"] .state-badge,
+:root[data-theme="dark"] .artifact-label {
+  background: rgba(79, 199, 141, 0.16);
+}
+
+:root[data-theme="dark"] .artifact-preview,
+:root[data-theme="dark"] .artifact-body p,
+:root[data-theme="dark"] .artifact-body li,
+:root[data-theme="dark"] .confirm-check,
+:root[data-theme="dark"] .repository-workflow-help code,
+:root[data-theme="dark"] .workflow-step-detail code,
+:root[data-theme="dark"] .validation-context strong,
+:root[data-theme="dark"] .validation-context code,
+:root[data-theme="dark"] .validation-check code {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .repository-workflow-help code,
+:root[data-theme="dark"] .workflow-step-detail code,
+:root[data-theme="dark"] .human-owner,
+:root[data-theme="dark"] .validation-context code,
+:root[data-theme="dark"] .read-only-badge {
+  background: #273240;
+}
+
+:root[data-theme="dark"] .danger-zone,
+:root[data-theme="dark"] .validation-summary,
+:root[data-theme="dark"] .validation-check.failed {
+  background: rgba(239, 107, 118, 0.08);
+  border-color: rgba(239, 107, 118, 0.22);
+}
+
+:root[data-theme="dark"] .validation-check.warning {
+  background: rgba(241, 179, 86, 0.09);
+}
+
+:root[data-theme="dark"] .repository-workflow-step.agent-step {
+  border-color: #334965;
+  background: rgba(127, 176, 255, 0.08);
+}
+
+:root[data-theme="dark"] .agent-owner {
+  color: #bdd7ff;
+  background: rgba(127, 176, 255, 0.16);
+}
+
+:root[data-theme="dark"] .dialog-copy,
+:root[data-theme="dark"] .danger-zone p,
+:root[data-theme="dark"] .run-log-note,
+:root[data-theme="dark"] .run-log-size,
+:root[data-theme="dark"] .workflow-step-detail,
+:root[data-theme="dark"] .validation-check p {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .toast {
+  background: var(--button-primary);
 }
 
 @keyframes pulse {

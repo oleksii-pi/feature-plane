@@ -23,6 +23,7 @@ import {
   savePendingArtifact,
   setFeaturesPanelHidden,
   setWorkflowVisible,
+  toggleTheme,
   updateArtifactDraftFromCard,
 } from "./actions.js";
 import {
@@ -804,6 +805,9 @@ export function bindEvents() {
       centerDialog(elements.validationDialog);
       document.querySelector("#close-validation-action").focus();
     });
+  elements.themeToggleButton.addEventListener("click", () => {
+    toggleTheme();
+  });
 
   document
     .querySelector("#close-workflow-button")

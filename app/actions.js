@@ -15,6 +15,7 @@ import {
   persistArtifactDraft,
   removeArtifactDraft,
   selectedFeature,
+  setTheme,
   setView,
   stepForFeature,
   state,
@@ -117,6 +118,12 @@ export function setFeaturesPanelHidden(hidden) {
 export function setWorkflowVisible(visible) {
   state.workflowVisible = visible;
   localState.save({ workflowVisible: state.workflowVisible });
+  closeMenus();
+  render();
+}
+
+export function toggleTheme() {
+  setTheme(state.theme === "dark" ? "light" : "dark");
   closeMenus();
   render();
 }
