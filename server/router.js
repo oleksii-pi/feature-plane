@@ -313,7 +313,7 @@ function sendRunLogView(res, run) {
       margin: 0;
       background: #0f141c;
       color: #e7edf7;
-      font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
     header {
       position: sticky;
@@ -457,7 +457,7 @@ function sendFeatureDiffView(res, feature) {
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font: 13px/1.45 Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 14px/1.45 Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     header {
       position: sticky;
@@ -474,7 +474,7 @@ function sendFeatureDiffView(res, feature) {
     }
     h1 {
       margin: 0;
-      font-size: 20px;
+      font-size: 22px;
       line-height: 1.2;
     }
     p {
@@ -530,13 +530,13 @@ function sendFeatureDiffView(res, feature) {
       border: 1px solid var(--border-strong);
       border-radius: 999px;
       background: #fff;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
     }
     .pill strong {
       color: var(--text);
-      font-size: 11px;
+      font-size: 12px;
     }
     .pill.branch {
       color: #245fae;
@@ -546,7 +546,7 @@ function sendFeatureDiffView(res, feature) {
     .status {
       margin-bottom: 14px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 13px;
     }
     .empty,
     .error {
@@ -574,12 +574,12 @@ function sendFeatureDiffView(res, feature) {
     }
     .section-header h2 {
       margin: 0 0 4px;
-      font-size: 15px;
+      font-size: 17px;
       line-height: 1.2;
     }
     .section-header p {
       margin: 0;
-      font-size: 11px;
+      font-size: 12px;
     }
     .section-summary {
       display: inline-flex;
@@ -615,12 +615,12 @@ function sendFeatureDiffView(res, feature) {
       overflow-wrap: anywhere;
     }
     .file-paths strong {
-      font-size: 12px;
+      font-size: 13px;
     }
     .file-paths span {
       margin-top: 2px;
       color: var(--muted);
-      font-size: 10px;
+      font-size: 11px;
     }
     .file-meta {
       display: inline-flex;
@@ -631,7 +631,7 @@ function sendFeatureDiffView(res, feature) {
     .file-status {
       padding: 2px 6px;
       border-radius: 999px;
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 800;
       text-transform: uppercase;
     }
@@ -649,7 +649,7 @@ function sendFeatureDiffView(res, feature) {
     }
     .file-stats {
       color: var(--muted);
-      font: 10px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       white-space: nowrap;
     }
     pre {
@@ -662,7 +662,7 @@ function sendFeatureDiffView(res, feature) {
       display: block;
       min-width: 100%;
       padding: 10px 0;
-      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       white-space: pre;
     }
     .line {
