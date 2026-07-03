@@ -187,8 +187,9 @@ async function completeSimulatedRun(feature, run, status, message) {
   const featureDir = getFeatureArtifactFolderPath(feature);
   const artifactPath = path.join(featureDir, run.artifact);
   await fsp.writeFile(artifactPath, content);
-  await updateCompletedRun(feature, run, step, content);
+  const completion = await updateCompletedRun(feature, run, step, content);
   await addEvent(feature, run, status, message);
+  await continueWorkflowAfterRun(feature, run, completion);
 }
 
 async function completeConfiguredRun(feature, run) {
@@ -226,13 +227,14 @@ async function completeConfiguredRun(feature, run) {
     return;
   }
 
-  await updateCompletedRun(feature, run, step, content);
+  const completion = await updateCompletedRun(feature, run, step, content);
   await addEvent(
     feature,
     run,
     "Done",
     "Done.",
   );
+  await continueWorkflowAfterRun(feature, run, completion);
 }
 
 async function updateCompletedRun(feature, run, step, content) {
@@ -271,12 +273,31 @@ async function updateCompletedRun(feature, run, step, content) {
   updateFeatureCost(feature);
   feature.activeRunId = null;
   const previousStep = feature.step;
-  feature.step = Math.max(
+  const nextStep = Math.max(
     feature.step,
     Math.min(run.step + 1, featureWorkflow(feature).length - 1),
   );
+  feature.step = nextStep;
   if (feature.step !== previousStep) feature.statusChangedAt = finishedAt;
   feature.updated = finishedAt;
+  return {
+    previousStep,
+    nextStep,
+  };
+}
+
+async function continueWorkflowAfterRun(feature, run, completion = {}) {
+  if (
+    completion.previousStep !== run.step ||
+    completion.nextStep !== run.step + 1
+  ) {
+    return feature;
+  }
+
+  const nextStep = featureStep(feature, completion.nextStep);
+  if (!nextStep?.agent || feature.activeRunId) return feature;
+
+  return startRun(feature, { step: completion.nextStep });
 }
 
 function renderArtifact(feature, run) {

@@ -29,6 +29,9 @@ export async function api(path, options = {}) {
 }
 
 export async function loadState({ preserveView = true } = {}) {
+  const previousSelectedFeatureId = state.selectedFeatureId;
+  const previousSelectedStepIndex = state.selectedStepIndex;
+  const previousSelectedFeature = selectedFeature();
   const nextState = await api("/state");
   loadArtifactDrafts();
   loadPanelSplitterState();
@@ -45,10 +48,25 @@ export async function loadState({ preserveView = true } = {}) {
   elements.featureSearch.value = state.searchTerm;
 
   if (preserveView && selectedFeature()) {
+    const updatedSelectedFeature = selectedFeature();
     state.selectedStepIndex = Math.min(
       state.selectedStepIndex,
-      selectedFeature().step,
+      updatedSelectedFeature.step,
     );
+    if (
+      previousSelectedFeatureId === updatedSelectedFeature.id &&
+      previousSelectedFeature?.activeRunId &&
+      updatedSelectedFeature.activeRunId &&
+      previousSelectedStepIndex === previousSelectedFeature.step &&
+      updatedSelectedFeature.step > previousSelectedStepIndex
+    ) {
+      state.selectedStepIndex = updatedSelectedFeature.step;
+      state.selectedArtifactIndex = null;
+      localState.save({
+        selectedFeatureId: updatedSelectedFeature.id,
+        selectedStepIndex: state.selectedStepIndex,
+      });
+    }
   } else {
     restoreViewFromUrl();
   }
