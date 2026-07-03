@@ -407,8 +407,9 @@ function inferFeatureCreatedAt(feature, runs = [], archivedRuns = []) {
   const promptArtifact = Array.isArray(feature.artifacts)
     ? feature.artifacts.find((artifact) => artifact?.name === "prompt.md")
     : null;
+  const storedCreatedAt = normalizedTimestamp(feature.createdAt);
   const timestamps = [
-    feature.createdAt,
+    storedCreatedAt,
     promptArtifact?.createdAt,
     promptArtifact?.updated,
     feature.updated,
@@ -460,10 +461,9 @@ function runTimestamps(runs = []) {
 
 function normalizedTimestamp(value) {
   const timestamp = formatDateTime(value);
-  if (timestamp === SYNTHETIC_EPOCH_TIMESTAMP) return null;
-  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(timestamp)
-    ? timestamp
-    : null;
+  if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(timestamp)) return null;
+  if (new Date(timestamp).valueOf() === 0) return null;
+  return timestamp;
 }
 
 function earliestTimestamp(values) {
