@@ -44,18 +44,25 @@ export function renderFeatureList() {
       const workflow = workflowForFeature(feature);
       const lastStep = Math.max(1, workflow.length - 1);
       const progress = Math.round((feature.step / lastStep) * 100);
+      const selected = feature.id === state.selectedFeatureId;
       return `
-        <a
-          class="feature-card ${feature.id === state.selectedFeatureId ? "selected" : ""} ${feature.activeRunId ? "running" : ""}"
-          href="${viewUrl(feature.id, feature.step)}"
+        <div
+          class="feature-card-shell ${selected ? "selected" : ""} ${feature.activeRunId ? "running" : ""}"
           data-feature-id="${feature.id}"
+          tabindex="-1"
         >
-          <span class="feature-name">${escapeHtml(feature.name)}</span>
-          <span class="feature-info">
-            <span class="feature-progress" aria-label="${progress}% complete"><span style="width:${progress}%"></span></span>
-            <span class="feature-price">${escapeHtml(latestCost(feature))}</span>
-          </span>
-        </a>
+          <a
+            class="feature-card"
+            href="${viewUrl(feature.id, feature.step)}"
+          >
+            <span class="feature-name">${escapeHtml(feature.name)}</span>
+            <span class="feature-info">
+              <span class="feature-progress" aria-label="${progress}% complete"><span style="width:${progress}%"></span></span>
+              <span class="feature-price">${escapeHtml(latestCost(feature))}</span>
+            </span>
+          </a>
+          ${selected ? '<button class="feature-edit-button" type="button" aria-label="Edit feature" title="Edit">E</button>' : ""}
+        </div>
       `;
     })
     .join("");
@@ -833,6 +840,10 @@ export function render() {
     "features-collapsed",
     state.featuresPanelHidden,
   );
+  const cloneFeatureButton = document.querySelector("#clone-feature-button");
+  if (cloneFeatureButton) {
+    cloneFeatureButton.disabled = !selectedFeature();
+  }
   elements.timeline.hidden = !state.workflowVisible;
   elements.workflowButton.setAttribute(
     "aria-checked",

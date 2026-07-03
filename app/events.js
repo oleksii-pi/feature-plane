@@ -293,16 +293,6 @@ async function reorderSelectedFeature(direction, { focusSelected = false } = {})
   });
 }
 
-function setFeatureTitleEditMode(editing) {
-  elements.settingsFeatureName.hidden = editing;
-  elements.settingsFeatureNameInput.hidden = !editing;
-  elements.editFeatureTitleButton.hidden = editing;
-  if (!editing) return;
-  const length = elements.settingsFeatureNameInput.value.length;
-  elements.settingsFeatureNameInput.focus();
-  elements.settingsFeatureNameInput.setSelectionRange(length, length);
-}
-
 function toggleMenuFromButton(event, button) {
   const menu = button.closest("[data-menu]");
   if (!menu) return;
@@ -461,6 +451,14 @@ function bindMenuKeyboardShortcuts() {
 
 export function bindEvents() {
   elements.featureList.addEventListener("click", (event) => {
+    const editButton = event.target.closest(".feature-edit-button");
+    if (editButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      openFeatureSettings();
+      return;
+    }
+
     const card = event.target.closest("[data-feature-id]");
     if (!card) return;
     if (
@@ -744,11 +742,10 @@ export function bindEvents() {
       }
     });
   document
-    .querySelector("#feature-settings-button")
-    .addEventListener("click", openFeatureSettings);
-  document.querySelector("#hide-features-button").addEventListener("click", () => {
-    setFeaturesPanelHidden(!state.featuresPanelHidden);
-  });
+    .querySelector("#hide-features-button")
+    .addEventListener("click", () => {
+      setFeaturesPanelHidden(!state.featuresPanelHidden);
+    });
   elements.workflowButton.addEventListener("click", () => {
     setWorkflowVisible(!state.workflowVisible);
   });
@@ -842,10 +839,15 @@ export function bindEvents() {
     .querySelector("#cancel-settings-button")
     .addEventListener("click", () => elements.settingsDialog.close());
   elements.settingsDialog.addEventListener("close", () => {
-    setFeatureTitleEditMode(false);
+    clearBranchCopyStatus();
   });
-  elements.editFeatureTitleButton.addEventListener("click", () => {
-    setFeatureTitleEditMode(true);
+  elements.branchInput.addEventListener("click", () => {
+    copyFeatureBranch().catch((error) => showToast(error.message));
+  });
+  elements.branchInput.addEventListener("keydown", (event) => {
+    if (!["Enter", " "].includes(event.key)) return;
+    event.preventDefault();
+    copyFeatureBranch().catch((error) => showToast(error.message));
   });
   elements.mergeMainFeatureButton.addEventListener("click", () => {
     const feature = selectedFeature();
@@ -961,11 +963,10 @@ export function bindEvents() {
     event.preventDefault();
     const feature = selectedFeature();
     const name = elements.settingsFeatureNameInput.value.trim();
-    const branch = elements.branchInput.value.trim();
-    if (!feature || !name || !branch) return;
+    if (!feature || !name) return;
     await api(`/features/${feature.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ name, branch }),
+      body: JSON.stringify({ name }),
     });
     elements.settingsDialog.close();
     await loadState({ preserveView: true });

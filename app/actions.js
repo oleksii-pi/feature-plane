@@ -22,6 +22,8 @@ import {
 
 export { restoreStateFromClipboard, saveStateToClipboard };
 
+let branchCopyStatusTimer;
+
 function waitForPaint() {
   return new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
@@ -61,16 +63,45 @@ export function openFeatureSettings() {
   closeMenus();
   const feature = selectedFeature();
   if (!feature) return;
-  elements.settingsFeatureName.textContent = feature.name;
-  elements.settingsFeatureName.hidden = false;
+  const featureBusy = Boolean(feature.activeRunId);
   elements.settingsFeatureNameInput.value = feature.name;
-  elements.settingsFeatureNameInput.hidden = true;
-  elements.editFeatureTitleButton.hidden = false;
   elements.branchInput.value = feature.branch;
-  elements.mergeMainFeatureButton.disabled = Boolean(feature.activeRunId);
-  elements.resetFeatureButton.disabled = Boolean(feature.activeRunId);
+  clearBranchCopyStatus();
+  elements.mergeMainFeatureButton.disabled = featureBusy;
+  elements.resetFeatureButton.disabled = featureBusy;
+  document.querySelector("#request-delete-feature-button").disabled = featureBusy;
   elements.settingsDialog.showModal();
+  elements.settingsFeatureNameInput.focus();
+  elements.settingsFeatureNameInput.setSelectionRange(
+    feature.name.length,
+    feature.name.length,
+  );
+}
+
+export function clearBranchCopyStatus() {
+  window.clearTimeout(branchCopyStatusTimer);
+  elements.branchCopyStatus.textContent = "";
+  elements.branchCopyStatus.classList.remove("visible");
+}
+
+export async function copyFeatureBranch() {
+  const branch = elements.branchInput.value.trim();
+  if (!branch) return;
+
+  try {
+    await navigator.clipboard.writeText(branch);
+    elements.branchCopyStatus.textContent = "Copied to clipboard";
+  } catch {
+    elements.branchCopyStatus.textContent = "Clipboard access was not available";
+  }
+
+  elements.branchCopyStatus.classList.add("visible");
+  window.clearTimeout(branchCopyStatusTimer);
+  branchCopyStatusTimer = window.setTimeout(() => {
+    clearBranchCopyStatus();
+  }, 3000);
   elements.branchInput.focus();
+  elements.branchInput.select();
 }
 
 export function setFeaturesPanelHidden(hidden) {

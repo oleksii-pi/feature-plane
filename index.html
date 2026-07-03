@@ -31,7 +31,6 @@
               <div class="menu-popover" role="menu" hidden>
                 <button id="add-feature-button" type="button" role="menuitem" data-menu-key="a"><u>A</u>dd</button>
                 <button id="clone-feature-button" type="button" role="menuitem" data-menu-key="c"><u>C</u>lone</button>
-                <button id="feature-settings-button" type="button" role="menuitem" data-menu-key="s"><u>S</u>ettings</button>
                 <div class="menu-separator" role="separator"></div>
                 <button id="hide-features-button" type="button" role="menuitem" data-menu-key="h"><u>H</u>ide</button>
               </div>
@@ -148,38 +147,33 @@
       <form id="feature-settings-form" method="dialog">
         <div class="dialog-heading">
           <div>
-            <p class="eyebrow">Feature settings</p>
-            <div class="settings-title-row">
-              <h2 id="settings-feature-name"></h2>
-              <input id="settings-feature-name-input" name="name" required maxlength="80" hidden />
-              <button class="icon-button" id="edit-feature-title-button" type="button" aria-label="Edit feature title">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 20h9" />
-                  <path d="m16.5 3.5 4 4L7 21l-4 1 1-4Z" />
-                </svg>
-              </button>
-            </div>
+            <h2>Edit feature</h2>
           </div>
           <button class="icon-button" id="close-settings-button" type="button" aria-label="Close feature settings">×</button>
         </div>
         <label class="form-field">
+          Feature name
+          <input id="settings-feature-name-input" name="name" required maxlength="80" />
+        </label>
+        <label class="form-field">
           Branch name
-          <input id="feature-branch-name" name="branch" required maxlength="120" spellcheck="false" />
-          <span class="field-help">The branch used for agent changes and pull requests.</span>
+          <input id="feature-branch-name" name="branch" required maxlength="120" spellcheck="false" readonly />
+          <span class="field-help">Click the branch name to copy it.</span>
+          <span class="branch-copy-status" id="feature-branch-copy-status" aria-live="polite"></span>
         </label>
         <div class="danger-zone">
           <div>
             <strong>Merge from main</strong>
             <p>Merge the current main snapshot into this feature and resolve conflicts in favor of main.</p>
           </div>
-          <button class="danger-button" id="request-merge-main-button" type="button">Merge main</button>
+          <button class="danger-button" id="request-merge-main-button" type="button">Merge from main</button>
         </div>
         <div class="danger-zone">
           <div>
             <strong>Reset to current SDLC</strong>
             <p>Rebuild this feature from the current repository and keep only prompt.md.</p>
           </div>
-          <button class="danger-button" id="request-reset-feature-button" type="button">Reset feature</button>
+          <button class="danger-button" id="request-reset-feature-button" type="button">Reset to current SDLC</button>
         </div>
         <div class="danger-zone">
           <div>

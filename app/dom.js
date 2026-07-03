@@ -28,12 +28,11 @@ export const elements = {
   promptInput: document.querySelector("#new-feature-prompt"),
   settingsDialog: document.querySelector("#feature-settings-dialog"),
   settingsForm: document.querySelector("#feature-settings-form"),
-  settingsFeatureName: document.querySelector("#settings-feature-name"),
   settingsFeatureNameInput: document.querySelector(
     "#settings-feature-name-input",
   ),
-  editFeatureTitleButton: document.querySelector("#edit-feature-title-button"),
   branchInput: document.querySelector("#feature-branch-name"),
+  branchCopyStatus: document.querySelector("#feature-branch-copy-status"),
   mergeMainFeatureButton: document.querySelector("#request-merge-main-button"),
   mergeMainDialog: document.querySelector("#merge-main-dialog"),
   mergeMainForm: document.querySelector("#merge-main-form"),
