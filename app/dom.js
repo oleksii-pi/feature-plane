@@ -6,6 +6,7 @@ export const elements = {
   workspaceSplitter: document.querySelector("#workspace-splitter"),
   featureSearch: document.querySelector("#feature-search"),
   featureTitle: document.querySelector("#feature-title"),
+  featureCreatedAt: document.querySelector("#feature-created-at"),
   featureMeta: document.querySelector("#feature-meta"),
   stateBadge: document.querySelector("#state-badge"),
   timeline: document.querySelector("#timeline"),

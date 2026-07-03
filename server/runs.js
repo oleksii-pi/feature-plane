@@ -264,16 +264,19 @@ async function updateCompletedRun(feature, run, step, content) {
     ...(feature.stepCommits ?? {}),
     [String(run.step)]: commit.sha,
   };
+  const finishedAt = formatDateTime();
   run.status = "succeeded";
-  run.finishedAt = formatDateTime();
+  run.finishedAt = finishedAt;
   await priceRun(run);
   updateFeatureCost(feature);
   feature.activeRunId = null;
+  const previousStep = feature.step;
   feature.step = Math.max(
     feature.step,
     Math.min(run.step + 1, featureWorkflow(feature).length - 1),
   );
-  feature.updated = formatDateTime();
+  if (feature.step !== previousStep) feature.statusChangedAt = finishedAt;
+  feature.updated = finishedAt;
 }
 
 function renderArtifact(feature, run) {

@@ -1,8 +1,10 @@
-import { elements, showToast } from "./dom.js";
+import { elements } from "./dom.js";
 import {
   escapeHtml,
   formatDateTime,
+  formatDurationCompact,
   formatDuration,
+  formatElapsedCompact,
   formatLogSize,
   markdownToHtml,
 } from "./format.js";
@@ -568,6 +570,49 @@ function commandTime(value) {
   return match ? match[1] : "--:--";
 }
 
+function featureStatusLabel(feature) {
+  return String(stepForFeature(feature)?.state ?? "").trim();
+}
+
+function featureCreatedAtText(feature) {
+  return formatDateTime(feature?.createdAt ?? feature?.updated ?? "");
+}
+
+function featureStatusBadgeClass(feature) {
+  return feature?.activeRunId ? "state-badge running" : "state-badge";
+}
+
+function featureTotalAgentTime(feature) {
+  const runs = [...(feature?.runs ?? []), ...(feature?.archivedRuns ?? [])];
+  if (!runs.length) return "";
+  const totalDurationMs = runs.reduce((sum, run) => {
+    const startedAt = new Date(run?.startedAt);
+    const finishedAt = run?.finishedAt ? new Date(run.finishedAt) : new Date();
+    if (Number.isNaN(startedAt.valueOf()) || Number.isNaN(finishedAt.valueOf())) {
+      return sum;
+    }
+    return sum + Math.max(0, finishedAt - startedAt);
+  }, 0);
+  return formatDurationCompact(totalDurationMs);
+}
+
+function featureMetaText(feature) {
+  const createdAt = featureCreatedAtText(feature);
+  const statusDuration = formatElapsedCompact(
+    feature?.statusChangedAt ?? createdAt,
+  );
+  const totalAgentTime = featureTotalAgentTime(feature);
+  const age = formatElapsedCompact(createdAt);
+  const details = [];
+
+  if (statusDuration) details.push(`in status: ${statusDuration}`);
+  if (totalAgentTime && (feature?.runs?.length || feature?.archivedRuns?.length)) {
+    details.push(`agents time: ${totalAgentTime}`);
+  }
+  if (age) details.push(`age: ${age}`);
+  return details.join(", ");
+}
+
 export function renderEnvironmentPanel() {
   document.body.classList.toggle(
     "environment-panel-open",
@@ -700,8 +745,11 @@ export function renderDetails() {
   const feature = selectedFeature();
   if (!feature) {
     elements.featureTitle.textContent = "No feature selected";
+    elements.featureCreatedAt.textContent = "";
     elements.featureMeta.textContent = "";
     elements.stateBadge.textContent = "";
+    elements.stateBadge.className = "state-badge";
+    elements.stateBadge.hidden = true;
     elements.advanceButton.disabled = true;
     elements.retryRunButton.classList.remove("visible");
     elements.cancelRunButton.classList.remove("visible");
@@ -715,7 +763,11 @@ export function renderDetails() {
   }
 
   elements.featureTitle.textContent = feature.name;
-  elements.featureMeta.replaceChildren();
+  elements.featureCreatedAt.textContent = featureCreatedAtText(feature);
+  elements.featureMeta.textContent = featureMetaText(feature);
+  elements.stateBadge.textContent = featureStatusLabel(feature);
+  elements.stateBadge.className = featureStatusBadgeClass(feature);
+  elements.stateBadge.hidden = !elements.stateBadge.textContent;
   elements.detailsActions.querySelector(".environment-link-button")?.remove();
   if (feature.environmentUrl) {
     const environmentButton = document.createElement("button");
@@ -727,29 +779,6 @@ export function renderDetails() {
     });
     elements.advanceButton.before(environmentButton);
   }
-  const branchButton = document.createElement("button");
-  branchButton.className = "link-button branch-copy-button";
-  branchButton.type = "button";
-  branchButton.textContent = feature.branch;
-  branchButton.title = "Copy branch name";
-  branchButton.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(feature.branch);
-      showToast("Branch copied to clipboard");
-    } catch {
-      showToast("Clipboard access was not available");
-    }
-  });
-  elements.featureMeta.append(branchButton);
-
-  const updateTime = document.createElement("div");
-  updateTime.className = "feature-update-time";
-  updateTime.textContent = formatDateTime(feature.updated);
-
-  elements.featureMeta.append(updateTime);
-
-  elements.stateBadge.textContent = displayStep(feature);
-  elements.stateBadge.classList.toggle("running", Boolean(feature.activeRunId));
   elements.featureDiffButton.disabled = false;
   elements.environmentPanelButton.disabled = false;
   elements.featureWorkspaceFolderButton.disabled = false;

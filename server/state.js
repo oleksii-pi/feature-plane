@@ -187,6 +187,8 @@ function savedFeatureMetadataNeedsRewrite(saved) {
       typeof feature === "object" &&
       ("prompt" in feature ||
         sdlcNeedsRewrite(feature.sdlc) ||
+        !feature.createdAt ||
+        !feature.statusChangedAt ||
         typeof feature.artifactFolder !== "string" ||
         feature.artifactFolder === feature.workspace ||
         isLegacyArtifactFolder(feature) ||
@@ -224,9 +226,25 @@ function savedTimestampsNeedRewrite(saved) {
   if (!Array.isArray(saved.features)) return false;
   return saved.features.some((feature) => {
     if (!feature || typeof feature !== "object") return false;
+    if (timestampNeedsRewrite(feature.createdAt) || timestampNeedsRewrite(feature.statusChangedAt)) {
+      return true;
+    }
     if (timestampNeedsRewrite(feature.updated)) return true;
     if (Array.isArray(feature.artifacts)) {
-      if (feature.artifacts.some((artifact) => timestampNeedsRewrite(artifact?.updated))) return true;
+      if (
+        feature.artifacts.some(
+          (artifact) =>
+            timestampNeedsRewrite(artifact?.createdAt) ||
+            timestampNeedsRewrite(artifact?.updated),
+        )
+      ) {
+        return true;
+      }
+    }
+    if (Array.isArray(feature.restoreHistory)) {
+      if (feature.restoreHistory.some((event) => timestampNeedsRewrite(event?.createdAt))) {
+        return true;
+      }
     }
     if (Array.isArray(feature.runs)) {
       return feature.runs.some((run) => {
@@ -263,6 +281,7 @@ function normalizeFeature(feature) {
     ? feature.archivedRuns.map(normalizeRun)
     : [];
   const sdlc = normalizeSdlcSnapshot(feature.sdlc);
+  const createdAt = inferFeatureCreatedAt(feature, runs, archivedRuns);
   const normalized = {
     id: String(feature.id),
     name: String(feature.name ?? feature.title ?? "Untitled feature"),
@@ -272,6 +291,13 @@ function normalizeFeature(feature) {
     artifactFolder,
     sdlc,
     step: 0,
+    createdAt,
+    statusChangedAt: inferFeatureStatusChangedAt(
+      feature,
+      createdAt,
+      runs,
+      archivedRuns,
+    ),
     updated: formatDateTime(feature.updated || undefined),
     activeRunId: feature.activeRunId ?? null,
     environmentUrl:
@@ -373,6 +399,82 @@ function normalizeArtifacts(artifacts, artifactFolder, runs = []) {
       updated: artifact.updated ? formatDateTime(artifact.updated) : formatDateTime(),
     };
   });
+}
+
+function inferFeatureCreatedAt(feature, runs = [], archivedRuns = []) {
+  const promptArtifact = Array.isArray(feature.artifacts)
+    ? feature.artifacts.find((artifact) => artifact?.name === "prompt.md")
+    : null;
+  const timestamps = [
+    feature.createdAt,
+    promptArtifact?.createdAt,
+    promptArtifact?.updated,
+    feature.updated,
+    ...artifactTimestamps(feature.artifacts),
+    ...restoreEventTimestamps(feature.restoreHistory),
+    ...runTimestamps(runs),
+    ...runTimestamps(archivedRuns),
+  ];
+  return earliestTimestamp(timestamps) ?? formatDateTime();
+}
+
+function inferFeatureStatusChangedAt(
+  feature,
+  createdAt,
+  runs = [],
+  archivedRuns = [],
+) {
+  if (feature.statusChangedAt) return formatDateTime(feature.statusChangedAt);
+  const currentStep = Math.max(0, Number(feature.step) || 0);
+  const timestamps = [];
+
+  if (currentStep === 0) timestamps.push(createdAt);
+
+  for (const event of feature.restoreHistory ?? []) {
+    if (Number(event?.targetStep) === currentStep) timestamps.push(event?.createdAt);
+  }
+
+  for (const run of [...runs, ...archivedRuns]) {
+    if (run?.status !== "succeeded") continue;
+    if ((Number(run.step) || 0) + 1 !== currentStep) continue;
+    timestamps.push(run.finishedAt ?? run.startedAt);
+  }
+
+  if (currentStep > 0 && !timestamps.length) timestamps.push(feature.updated);
+  return latestTimestamp(timestamps) ?? createdAt;
+}
+
+function artifactTimestamps(artifacts = []) {
+  return artifacts.flatMap((artifact) => [artifact?.createdAt, artifact?.updated]);
+}
+
+function restoreEventTimestamps(events = []) {
+  return events.map((event) => event?.createdAt);
+}
+
+function runTimestamps(runs = []) {
+  return runs.flatMap((run) => [run?.startedAt, run?.finishedAt]);
+}
+
+function normalizedTimestamp(value) {
+  const timestamp = formatDateTime(value);
+  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(timestamp)
+    ? timestamp
+    : null;
+}
+
+function earliestTimestamp(values) {
+  return values
+    .map(normalizedTimestamp)
+    .filter(Boolean)
+    .sort((left, right) => left.localeCompare(right))[0] ?? null;
+}
+
+function latestTimestamp(values) {
+  return values
+    .map(normalizedTimestamp)
+    .filter(Boolean)
+    .sort((left, right) => right.localeCompare(left))[0] ?? null;
 }
 
 function recoverInterruptedRuns() {

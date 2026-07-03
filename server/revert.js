@@ -51,6 +51,7 @@ async function revertFeatureToState(feature, body = {}) {
   const previousCommit = feature.headCommit ?? null;
   const previousEnvironment = await readFeatureEnvironment(feature);
   const commitSha = await resetFeatureWorkspace(feature, target.commitSha);
+  const timestamp = formatDateTime();
 
   const { keptRuns, removedRuns } = partitionRunsForTarget(feature.runs, target);
   archiveFeatureRuns(feature, removedRuns, `reverted to ${target.label}`);
@@ -58,10 +59,11 @@ async function revertFeatureToState(feature, body = {}) {
   feature.stepCommits = filterStepCommits(feature.stepCommits, target.step);
   feature.stepCommits[String(target.step)] = commitSha;
   feature.step = target.step;
+  feature.statusChangedAt = timestamp;
   feature.headCommit = commitSha;
   feature.activeRunId = null;
   await reloadArtifactsFromWorkspace(feature, target.step);
-  feature.updated = formatDateTime();
+  feature.updated = timestamp;
   updateFeatureCost(feature);
 
   let reasonArtifact = null;
@@ -89,7 +91,7 @@ async function revertFeatureToState(feature, body = {}) {
 
   const restoreEvent = {
     id: createId(),
-    createdAt: formatDateTime(),
+    createdAt: timestamp,
     targetStep: target.step,
     targetLabel: target.label,
     targetSource: target.source,
@@ -100,7 +102,7 @@ async function revertFeatureToState(feature, body = {}) {
     environment,
   };
   feature.restoreHistory = [...(feature.restoreHistory ?? []), restoreEvent].slice(-50);
-  feature.updated = formatDateTime();
+  feature.updated = timestamp;
 
   await saveFeatureFiles(feature);
   await saveState();
@@ -117,6 +119,7 @@ async function rerunAgentStep(feature, body) {
   const previousCommit = feature.headCommit ?? null;
   const previousEnvironment = await readFeatureEnvironment(feature);
   const commitSha = await resetFeatureWorkspace(feature, target.commitSha);
+  const timestamp = formatDateTime();
 
   const removedRuns = (feature.runs ?? []).filter(
     (run) => (run.step ?? 0) >= target.step,
@@ -125,10 +128,11 @@ async function rerunAgentStep(feature, body) {
   feature.runs = (feature.runs ?? []).filter((run) => (run.step ?? 0) < target.step);
   feature.stepCommits = filterStepCommits(feature.stepCommits, target.step - 1);
   feature.step = target.step;
+  feature.statusChangedAt = timestamp;
   feature.headCommit = commitSha;
   feature.activeRunId = null;
   await reloadArtifactsFromWorkspace(feature, target.step - 1);
-  feature.updated = formatDateTime();
+  feature.updated = timestamp;
   updateFeatureCost(feature);
 
   const environment = await settleEnvironmentAfterRestore(
@@ -138,7 +142,7 @@ async function rerunAgentStep(feature, body) {
 
   const restoreEvent = {
     id: createId(),
-    createdAt: formatDateTime(),
+    createdAt: timestamp,
     targetStep: target.step,
     targetLabel: target.label,
     targetSource: target.source,
@@ -150,7 +154,7 @@ async function rerunAgentStep(feature, body) {
     rerun: true,
   };
   feature.restoreHistory = [...(feature.restoreHistory ?? []), restoreEvent].slice(-50);
-  feature.updated = formatDateTime();
+  feature.updated = timestamp;
 
   await saveFeatureFiles(feature);
   await saveState();

@@ -24,6 +24,36 @@ export function formatDuration(startedAt, finishedAt = new Date()) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
+function formatCompactDurationSeconds(totalSeconds) {
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const parts = [];
+
+  if (days) parts.push(`${days}d`);
+  if (hours && parts.length < 2) parts.push(`${hours}h`);
+  if (minutes && parts.length < 2) parts.push(`${minutes}m`);
+  if (!parts.length && seconds) parts.push(`${seconds}s`);
+  if (!parts.length) return "0m";
+  return parts.join(" ");
+}
+
+export function formatDurationCompact(durationMs) {
+  if (!Number.isFinite(Number(durationMs))) return "";
+  const totalSeconds = Math.max(0, Math.floor(Number(durationMs) / 1000));
+  return formatCompactDurationSeconds(totalSeconds);
+}
+
+export function formatElapsedCompact(startedAt, finishedAt = new Date()) {
+  const start = new Date(startedAt);
+  const end = finishedAt ? new Date(finishedAt) : new Date();
+  if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf())) return "";
+  return formatCompactDurationSeconds(
+    Math.max(0, Math.floor((end - start) / 1000)),
+  );
+}
+
 function padDatePart(value) {
   return String(value).padStart(2, "0");
 }

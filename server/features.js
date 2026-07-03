@@ -85,6 +85,8 @@ async function createFeature({ title, prompt }) {
     artifactFolder,
     sdlc,
     step: 0,
+    createdAt: timestamp,
+    statusChangedAt: timestamp,
     updated: timestamp,
     activeRunId: null,
     environmentUrl: null,
@@ -160,6 +162,7 @@ async function resetFeatureToMain(feature, body = {}) {
     source: `${sdlc.source}:reset`,
   };
   feature.step = 0;
+  feature.statusChangedAt = timestamp;
   feature.activeRunId = null;
   feature.environmentUrl = null;
   feature.environmentCommands = [];
@@ -525,8 +528,11 @@ async function moveFeature(feature, nextStep) {
     throw httpError(409, "Run the current agent step before moving to the next step.");
   }
 
+  const timestamp = formatDateTime();
+  const stepChanged = nextStep !== currentStepIndex;
   feature.step = nextStep;
-  feature.updated = formatDateTime();
+  if (stepChanged) feature.statusChangedAt = timestamp;
+  feature.updated = timestamp;
   const step = currentStep(feature);
   await saveFeatureFiles(feature);
   await saveState();
@@ -536,7 +542,7 @@ async function moveFeature(feature, nextStep) {
   return feature;
 }
 
-async function discardNextSteps(feature, editedStep) {
+async function discardNextSteps(feature, editedStep, timestamp = formatDateTime()) {
   if (feature.activeRunId) {
     throw httpError(409, "Cancel the active run before discarding next steps.");
   }
@@ -558,7 +564,9 @@ async function discardNextSteps(feature, editedStep) {
     Object.entries(feature.stepCommits ?? {}).filter(([step]) => Number(step) <= editedStep),
   );
   updateFeatureCost(feature);
+  const previousStep = feature.step;
   feature.step = Math.min(feature.step, editedStep);
+  if (feature.step !== previousStep) feature.statusChangedAt = timestamp;
 
   await Promise.all(
     removedArtifacts.map((artifact) =>
@@ -571,12 +579,13 @@ async function updateArtifact(feature, index, content, options = {}) {
   const artifact = feature.artifacts[index];
   if (!artifact) throw httpError(404, "Unknown artifact.");
   const editedStep = artifact.availableAtStep ?? 0;
+  const timestamp = formatDateTime();
   artifact.content = content;
-  artifact.updated = formatDateTime();
+  artifact.updated = timestamp;
   if (options.discardNextSteps) {
-    await discardNextSteps(feature, editedStep);
+    await discardNextSteps(feature, editedStep, timestamp);
   }
-  feature.updated = formatDateTime();
+  feature.updated = timestamp;
   await fsp.writeFile(path.join(getFeatureArtifactFolderPath(feature), artifact.name), content);
   await saveFeatureFiles(feature);
   const commit = await commitFeatureWorkspace(
