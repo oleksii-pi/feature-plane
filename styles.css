@@ -859,6 +859,16 @@ h3 {
   background: #285f9f;
 }
 
+:root[data-theme="dark"] .details-actions .environment-link-button {
+  border-color: #223554;
+  background: #2d4c7e;
+}
+
+:root[data-theme="dark"] .details-actions .environment-link-button:hover {
+  border-color: #16263f;
+  background: #335c9d;
+}
+
 .feature-price-detail {
   font-weight: 700;
 }
