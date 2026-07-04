@@ -10,6 +10,7 @@ import { render, renderEnvironmentPanel } from "./render.js";
 import {
   artifactDraftKey,
   currentAgentStepRequiresRun,
+  applyThemePreference,
   isAgentStep,
   localState,
   persistArtifactDraft,
@@ -24,6 +25,7 @@ import {
 export { restoreStateFromClipboard, saveStateToClipboard };
 
 let branchCopyStatusTimer;
+let themeDialogOriginal = null;
 
 function waitForPaint() {
   return new Promise((resolve) => {
@@ -122,10 +124,45 @@ export function setWorkflowVisible(visible) {
   render();
 }
 
-export function toggleTheme() {
-  setTheme(state.theme === "dark" ? "light" : "dark");
+export function openThemeDialog() {
   closeMenus();
-  render();
+  themeDialogOriginal = {
+    theme: state.theme,
+    transparency: state.themeTransparency,
+  };
+  elements.themeDarkModeCheckbox.checked = state.theme === "dark";
+  elements.themeTransparencySlider.value = String(state.themeTransparency);
+  elements.themeTransparencyValue.textContent = `${state.themeTransparency}%`;
+  elements.themeDialog.show();
+  elements.themeDarkModeCheckbox.focus();
+}
+
+export function updateThemePreview() {
+  const nextTheme = elements.themeDarkModeCheckbox.checked ? "dark" : "light";
+  const nextTransparency = Number(elements.themeTransparencySlider.value);
+  applyThemePreference(nextTheme, nextTransparency);
+  elements.themeTransparencyValue.textContent = `${state.themeTransparency}%`;
+}
+
+export function commitThemeSettings() {
+  setTheme(state.theme, state.themeTransparency);
+  themeDialogOriginal = null;
+  elements.themeDialog.close();
+}
+
+export function cancelThemeSettings() {
+  if (themeDialogOriginal) {
+    applyThemePreference(
+      themeDialogOriginal.theme,
+      themeDialogOriginal.transparency,
+    );
+  }
+  themeDialogOriginal = null;
+  elements.themeDialog.close();
+}
+
+export function closeThemeDialog() {
+  cancelThemeSettings();
 }
 
 export async function openEnvironmentPanel() {

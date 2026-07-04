@@ -887,14 +887,10 @@ export function render() {
     String(state.workflowVisible),
   );
   if (elements.themeToggleButton) {
-    const darkModeEnabled = state.theme === "dark";
-    elements.themeToggleButton.innerHTML = darkModeEnabled
-      ? "<u>L</u>ight mode"
-      : "<u>D</u>ark mode";
-    elements.themeToggleButton.dataset.menuKey = darkModeEnabled ? "l" : "d";
+    elements.themeToggleButton.dataset.menuKey = "t";
     elements.themeToggleButton.setAttribute(
       "aria-label",
-      darkModeEnabled ? "Switch to light mode" : "Switch to dark mode",
+      "Open theme dialog",
     );
   }
   renderFeatureList();

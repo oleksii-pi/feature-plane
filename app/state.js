@@ -12,6 +12,7 @@ export const TERMINAL_RUN_STATUSES = new Set([
 ]);
 export const RUN_LOG_PREVIEW_LINE_LIMIT = 20;
 export const DEFAULT_THEME = "light";
+export const DEFAULT_THEME_TRANSPARENCY = 100;
 const THEMES = new Set([DEFAULT_THEME, "dark"]);
 
 export const state = {
@@ -41,10 +42,17 @@ export const state = {
   environmentCommandsLoading: false,
   environmentCommandsError: "",
   theme: DEFAULT_THEME,
+  themeTransparency: DEFAULT_THEME_TRANSPARENCY,
 };
 
 function sanitizeTheme(value) {
   return THEMES.has(value) ? value : DEFAULT_THEME;
+}
+
+function sanitizeThemeTransparency(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return DEFAULT_THEME_TRANSPARENCY;
+  return Math.min(100, Math.max(0, Math.round(numericValue)));
 }
 
 function clampPanelSplitterRatio(value) {
@@ -68,23 +76,35 @@ export function loadPanelSplitterState() {
   state.panelSplitter = sanitizePanelSplitter(saved.panelSplitter);
 }
 
-export function applyThemePreference(theme = state.theme) {
-  if (typeof document === "undefined") return;
+export function applyThemePreference(
+  theme = state.theme,
+  transparency = state.themeTransparency,
+) {
   const nextTheme = sanitizeTheme(theme);
+  const nextTransparency = sanitizeThemeTransparency(transparency);
   state.theme = nextTheme;
+  state.themeTransparency = nextTransparency;
+  if (typeof document === "undefined") return;
   document.documentElement.dataset.theme = nextTheme;
   document.documentElement.style.colorScheme =
     nextTheme === "dark" ? "dark" : "light";
+  document.documentElement.style.setProperty(
+    "--theme-font-transparency",
+    String(nextTransparency / 100),
+  );
 }
 
 export function loadThemePreference() {
   const saved = localState.load();
-  applyThemePreference(saved.theme);
+  applyThemePreference(saved.theme, saved.themeTransparency);
 }
 
-export function setTheme(theme) {
-  applyThemePreference(theme);
-  localState.save({ theme: state.theme });
+export function setTheme(theme, transparency = state.themeTransparency) {
+  applyThemePreference(theme, transparency);
+  localState.save({
+    theme: state.theme,
+    themeTransparency: state.themeTransparency,
+  });
 }
 
 export function persistPanelSplitterState() {

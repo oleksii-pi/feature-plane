@@ -116,7 +116,7 @@
       <div class="menu-popover" role="menu" hidden>
         <button id="repository-workflow-button" type="button" role="menuitem" data-menu-key="w"><u>W</u>orkflow</button>
         <button id="validate-repository-button" type="button" role="menuitem" data-menu-key="v"><u>V</u>alidate repository</button>
-        <button id="theme-toggle-button" type="button" role="menuitem" data-menu-key="d"><u>D</u>ark mode</button>
+        <button id="theme-toggle-button" type="button" role="menuitem" data-menu-key="t"><u>T</u>heme</button>
         <div class="menu-separator" role="separator"></div>
         <button id="save-state-button" type="button" role="menuitem">Save application state to clipboard</button>
         <button id="restore-state-button" type="button" role="menuitem">Restore application state to clipboard</button>
@@ -189,6 +189,33 @@
         <div class="dialog-actions">
           <button class="secondary-button" id="cancel-settings-button" type="button">Cancel</button>
           <button class="primary-button" type="submit">Save changes</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="theme-dialog" class="theme-dialog" aria-labelledby="theme-dialog-title">
+      <form id="theme-form">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Preferences</p>
+            <h2 id="theme-dialog-title">Theme</h2>
+          </div>
+          <button class="icon-button" id="close-theme-button" type="button" aria-label="Close theme dialog">×</button>
+        </div>
+        <h3 class="theme-dialog-header">Adjust font transparency</h3>
+        <label class="theme-mode-field">
+          <input id="theme-dark-mode-checkbox" type="checkbox" />
+          <span>Dark mode</span>
+        </label>
+        <p class="dialog-copy">Use the slider to adjust text brightness.</p>
+        <label class="form-field theme-transparency-field">
+          Transparency
+          <input id="theme-transparency-slider" type="range" min="0" max="100" value="100" />
+          <span class="theme-transparency-value" id="theme-transparency-value" aria-live="polite">100%</span>
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-theme-button" type="button">Cancel</button>
+          <button class="primary-button" id="confirm-theme-button" type="submit">OK</button>
         </div>
       </form>
     </dialog>

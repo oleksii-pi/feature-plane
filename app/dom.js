@@ -71,6 +71,11 @@ export const elements = {
   validationContext: document.querySelector("#validation-context"),
   validationSummary: document.querySelector("#validation-summary"),
   validationList: document.querySelector("#validation-list"),
+  themeDialog: document.querySelector("#theme-dialog"),
+  themeForm: document.querySelector("#theme-form"),
+  themeDarkModeCheckbox: document.querySelector("#theme-dark-mode-checkbox"),
+  themeTransparencySlider: document.querySelector("#theme-transparency-slider"),
+  themeTransparencyValue: document.querySelector("#theme-transparency-value"),
   themeToggleButton: document.querySelector("#theme-toggle-button"),
   toast: document.querySelector("#toast"),
 };

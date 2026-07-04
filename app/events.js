@@ -16,14 +16,17 @@ import {
   openEnvironmentPanel,
   openFeatureDialog,
   openFeatureSettings,
+  openThemeDialog,
   openFeatureWorkspaceFolder,
   openRevertDialog,
   runCurrentStep,
   saveArtifactFromCard,
   savePendingArtifact,
+  cancelThemeSettings,
+  commitThemeSettings,
   setFeaturesPanelHidden,
   setWorkflowVisible,
-  toggleTheme,
+  updateThemePreview,
   updateArtifactDraftFromCard,
 } from "./actions.js";
 import {
@@ -128,7 +131,7 @@ function isTextEntryTarget(target) {
 }
 
 function hasOpenModalDialog() {
-  return Boolean(document.querySelector("dialog[open]"));
+  return Boolean(document.querySelector("dialog[open]:not(.theme-dialog)"));
 }
 
 function visibleFeatures() {
@@ -710,6 +713,11 @@ export function bindEvents() {
 
   document.addEventListener("click", () => closeMenus());
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && elements.themeDialog.open) {
+      event.preventDefault();
+      cancelThemeSettings();
+      return;
+    }
     if (event.key === "Escape") closeMenus();
   });
 
@@ -806,7 +814,7 @@ export function bindEvents() {
       document.querySelector("#close-validation-action").focus();
     });
   elements.themeToggleButton.addEventListener("click", () => {
-    toggleTheme();
+    openThemeDialog();
   });
 
   document
@@ -844,6 +852,21 @@ export function bindEvents() {
     .addEventListener("click", () => elements.settingsDialog.close());
   elements.settingsDialog.addEventListener("close", () => {
     clearBranchCopyStatus();
+  });
+  document
+    .querySelector("#close-theme-button")
+    .addEventListener("click", cancelThemeSettings);
+  document
+    .querySelector("#cancel-theme-button")
+    .addEventListener("click", cancelThemeSettings);
+  elements.themeDarkModeCheckbox.addEventListener("change", updateThemePreview);
+  elements.themeTransparencySlider.addEventListener(
+    "input",
+    updateThemePreview,
+  );
+  elements.themeForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    commitThemeSettings();
   });
   elements.branchInput.addEventListener("click", () => {
     copyFeatureBranch().catch((error) => showToast(error.message));
