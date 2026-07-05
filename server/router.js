@@ -37,6 +37,7 @@ const { validateRepository } = require("./validation");
 const { openFeatureWorkspaceFolder } = require("./workspace-folder");
 const { featureWorkflow } = require("./workflow");
 const { readFeatureDiff } = require("./feature-diff");
+const { sendFeatureLogView } = require("./feature-log");
 
 async function route(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -132,6 +133,11 @@ async function route(req, res) {
 
     if (req.method === "GET" && parts[2] === "diff" && parts[3] === "view") {
       sendFeatureDiffView(res, feature);
+      return;
+    }
+
+    if (req.method === "GET" && parts[2] === "log" && parts[3] === "view") {
+      sendFeatureLogView(res, feature);
       return;
     }
 

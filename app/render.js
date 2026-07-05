@@ -164,10 +164,26 @@ function restoreRunMenuMarkup(feature, run) {
 function restoreArtifactMenuMarkup(feature, artifact, sourceIndex) {
   const commit =
     artifact.commitSha ?? commitForStep(feature, artifact.availableAtStep ?? 0);
+  const extraActions =
+    artifact.name === "prompt.md" && (feature.artifacts ?? []).length > 2
+      ? [
+          {
+            className: "collapse-feature-log-button",
+            label: "Collapse all",
+          },
+          {
+            className: "feature-log-button",
+            label: "Feature log",
+          },
+        ]
+      : [];
+  const hasRestoreAction =
+    Boolean(commit) &&
+    !feature.activeRunId &&
+    !commitsMatch(commit, feature.headCommit);
   if (
-    !commit ||
-    feature.activeRunId ||
-    commitsMatch(commit, feature.headCommit)
+    !hasRestoreAction &&
+    !extraActions.length
   )
     return "";
   return restoreMenuMarkup({
@@ -176,6 +192,8 @@ function restoreArtifactMenuMarkup(feature, artifact, sourceIndex) {
     label: artifact.name,
     detail: `Step ${(artifact.availableAtStep ?? 0) + 1}  ${shortCommit(commit)}`,
     attrs: `data-revert-artifact-index="${sourceIndex}"`,
+    extraActions,
+    showPrimaryAction: hasRestoreAction,
   });
 }
 
@@ -187,6 +205,7 @@ function restoreMenuMarkup({
   attrs,
   actionLabel = "Revert to state",
   extraActions = [],
+  showPrimaryAction = true,
 }) {
   const sharedAttrs = `
           data-revert-kind="${kind}"
@@ -204,12 +223,16 @@ function restoreMenuMarkup({
         </svg>
       </button>
       <div class="menu-popover" role="menu" hidden>
-        <button
+        ${
+          showPrimaryAction
+            ? `<button
           class="revert-state-button"
           type="button"
           role="menuitem"
           ${sharedAttrs}
-        >${escapeHtml(actionLabel)}</button>
+        >${escapeHtml(actionLabel)}</button>`
+            : ""
+        }
         ${extraActions
           .map(
             (action) => `
@@ -345,6 +368,43 @@ function displayAgentRunAction(step) {
   return `Run ${step?.state ?? (step?.agent ? `@${step.agent}` : "agent")}`;
 }
 
+function featureTimelineEntries(feature, { includeArchivedRuns = false } = {}) {
+  const changeRequestRunIndex = new Map();
+  const liveRuns = Array.isArray(feature?.runs) ? feature.runs : [];
+  const archivedRuns = includeArchivedRuns && Array.isArray(feature?.archivedRuns)
+    ? feature.archivedRuns
+    : [];
+
+  liveRuns.forEach((run, index) => {
+    if (run.changeRequestArtifact) {
+      changeRequestRunIndex.set(run.changeRequestArtifact, { run, index });
+    }
+  });
+
+  const artifacts = (feature?.artifacts ?? []).map((artifact, index) => ({
+    kind: "artifact",
+    artifact,
+    sourceIndex: index,
+    order: artifact.availableAtStep ?? 0,
+    ...artifactSortPosition(artifact, index, changeRequestRunIndex),
+  }));
+  const runs = [...liveRuns, ...archivedRuns].map((run, index) => ({
+    kind: "run",
+    run,
+    sourceIndex: index,
+    order: run.step,
+    createdOrder: index * 2,
+    sortTime: run.startedAt ?? "",
+  }));
+
+  return [...artifacts, ...runs].sort(
+    (a, b) =>
+      sortTime(a).localeCompare(sortTime(b)) ||
+      a.order - b.order ||
+      a.createdOrder - b.createdOrder,
+  );
+}
+
 function nextAgentRunActionStep(feature) {
   const currentStep = stepForFeature(feature);
   if (currentAgentStepRequiresRun(feature)) return currentStep;
@@ -363,6 +423,83 @@ function updatedArtifactForRun(run, feature) {
     (item) =>
       item.name === run.artifact && (item.availableAtStep ?? 0) === run.step,
   );
+}
+
+function formatRunEventsMarkdown(run) {
+  return (run.events ?? [])
+    .map((event) => {
+      const timestamp = formatDateTime(event.timestamp);
+      const status = String(event.status ?? "");
+      const isOutput = status === "stdout" || status === "stderr";
+      return isOutput
+        ? `${timestamp} ${event.message}`
+        : `${timestamp} ${status}${status ? ": " : ""}${event.message}`;
+    })
+    .join("\n");
+}
+
+function markdownFromTimelineEntry(feature, entry) {
+  if (entry.kind === "artifact") {
+    const time = formatDateTime(entry.artifact.updated ?? entry.artifact.createdAt);
+    const content = String(entry.artifact.content ?? "").trimEnd();
+    return [
+      `<span style='font-weight:100'>${escapeHtml(time)}</span>`,
+      "",
+      `## ${escapeHtml(entry.artifact.name)}`,
+      "",
+      content || "_Empty artifact_",
+    ]
+      .join("\n")
+      .trimEnd();
+  }
+
+  const step = stepForFeature(feature, entry.run.step) ?? {};
+  const logUrl = `/runs/${encodeURIComponent(entry.run.id)}/log/view`;
+  const summary = [
+    `Status: ${runLabel(entry.run)}`,
+    `Duration: ${displayRunDuration(entry.run)}`,
+    displayRunPrice(entry.run) ? `Price: ${displayRunPrice(entry.run)}` : "",
+    entry.run.artifact ? `Produced: ${entry.run.artifact}` : "",
+    `[View logs](${logUrl})`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  const events = formatRunEventsMarkdown(entry.run);
+  return [
+    `<span style='font-weight:100'>${escapeHtml(
+      formatDateTime(entry.run.startedAt ?? entry.run.finishedAt ?? entry.run.updated),
+    )}</span>`,
+    "",
+    `## ${escapeHtml(displayRunTitle(step))}`,
+    "",
+    summary,
+    "",
+    "### Run log",
+    "",
+    "```text",
+    events || "No events recorded.",
+    "```",
+  ]
+    .join("\n")
+    .trimEnd();
+}
+
+export function featureLogMarkdown(feature) {
+  if (!feature) return "";
+  const entries = featureTimelineEntries(feature, {
+    includeArchivedRuns: true,
+  });
+  const header = [
+    `# ${feature.name}`,
+    "",
+    `- Branch: ${feature.branch}`,
+    `- Feature ID: ${feature.id}`,
+    "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const body = entries.map((entry) => markdownFromTimelineEntry(feature, entry));
+  return [header, ...body].filter(Boolean).join("\n\n").trimEnd() + "\n";
 }
 
 function displayRunUpdatedMarkup(run, feature) {
@@ -422,35 +559,8 @@ function sortTime(entry) {
 
 export function entriesForFeature(feature) {
   if (!feature) return [];
-  const changeRequestRunIndex = new Map();
-  feature.runs.forEach((run, index) => {
-    if (run.changeRequestArtifact) {
-      changeRequestRunIndex.set(run.changeRequestArtifact, { run, index });
-    }
-  });
-  const artifacts = feature.artifacts.map((artifact, index) => ({
-    kind: "artifact",
-    artifact,
-    sourceIndex: index,
-    order: artifact.availableAtStep ?? 0,
-    ...artifactSortPosition(artifact, index, changeRequestRunIndex),
-  }));
-  const runs = feature.runs.map((run, index) => ({
-    kind: "run",
-    run,
-    sourceIndex: index,
-    order: run.step,
-    createdOrder: index * 2,
-    sortTime: run.startedAt ?? "",
-  }));
-  return [...artifacts, ...runs]
-    .filter((entry) => entry.order <= state.selectedStepIndex)
-    .sort(
-      (a, b) =>
-        sortTime(a).localeCompare(sortTime(b)) ||
-        a.order - b.order ||
-        a.createdOrder - b.createdOrder,
-    );
+  return featureTimelineEntries(feature)
+    .filter((entry) => entry.order <= state.selectedStepIndex);
 }
 
 function artifactSortPosition(artifact, index, changeRequestRunIndex) {

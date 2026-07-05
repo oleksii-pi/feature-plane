@@ -12,6 +12,7 @@ import {
   confirmPendingRevert,
   closeEnvironmentPanel,
   openFeatureDiffView,
+  openFeatureLogView,
   moveToStep,
   openEnvironmentPanel,
   openFeatureDialog,
@@ -344,6 +345,21 @@ function setArtifactExpanded(card, expanded, { persist = false } = {}) {
   if (persist) setTimelineCardExpandedByCard(card, expanded);
 }
 
+function setFeatureTimelineExpanded(feature, expanded) {
+  const cards = [...elements.artifactList.querySelectorAll("[data-artifact-index]")];
+  cards.forEach((card) => {
+    setArtifactExpanded(card, expanded, { persist: true });
+  });
+  renderArtifacts(feature);
+}
+
+function toggleFeatureTimelineExpansion(feature) {
+  const cards = [...elements.artifactList.querySelectorAll("[data-artifact-index]")];
+  if (!cards.length) return;
+  const anyExpanded = cards.some((card) => card.classList.contains("expanded"));
+  setFeatureTimelineExpanded(feature, !anyExpanded);
+}
+
 function caretRangeFromPoint(x, y) {
   if (document.caretPositionFromPoint) {
     const position = document.caretPositionFromPoint(x, y);
@@ -631,6 +647,25 @@ export function bindEvents() {
       event.preventDefault();
       event.stopPropagation();
       openRevertDialog(revertTargetFromButton(revertButton));
+      return;
+    }
+
+    const collapseButton = event.target.closest(".artifact-card-menu .collapse-feature-log-button");
+    if (collapseButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      const feature = selectedFeature();
+      if (feature) toggleFeatureTimelineExpansion(feature);
+      closeMenus();
+      return;
+    }
+
+    const featureLogButton = event.target.closest(".artifact-card-menu .feature-log-button");
+    if (featureLogButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeMenus();
+      openFeatureLogView().catch((error) => showToast(error.message));
       return;
     }
 

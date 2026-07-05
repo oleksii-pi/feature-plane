@@ -107,6 +107,17 @@ export async function copyFeatureBranch() {
   elements.branchInput.select();
 }
 
+export async function openFeatureLogView() {
+  const feature = selectedFeature();
+  if (!feature) return;
+  const popup = window.open(
+    `/features/${encodeURIComponent(feature.id)}/log/view`,
+    "_blank",
+    "noopener,noreferrer",
+  );
+  if (!popup) showToast("Popup blocked");
+}
+
 export function setFeaturesPanelHidden(hidden) {
   state.featuresPanelHidden = hidden;
   localState.save({ featuresPanelHidden: state.featuresPanelHidden });
