@@ -47,11 +47,15 @@
   --terminal-surface: #0f141c;
   --terminal-surface-header: #111824;
   --terminal-border: #263244;
-  --terminal-text: rgb(var(--terminal-text-rgb) / var(--theme-font-transparency));
+  --terminal-text: rgb(
+    var(--terminal-text-rgb) / var(--theme-font-transparency)
+  );
   --terminal-text-strong: rgb(
     var(--terminal-text-strong-rgb) / var(--theme-font-transparency)
   );
-  --terminal-muted: rgb(var(--terminal-muted-rgb) / var(--theme-font-transparency));
+  --terminal-muted: rgb(
+    var(--terminal-muted-rgb) / var(--theme-font-transparency)
+  );
   --radius: 12px;
   --environment-terminal-height: clamp(190px, 34vh, 340px);
   font-family:
@@ -114,11 +118,15 @@
   --terminal-surface: #10151d;
   --terminal-surface-header: #141b24;
   --terminal-border: #2e3b4d;
-  --terminal-text: rgb(var(--terminal-text-rgb) / var(--theme-font-transparency));
+  --terminal-text: rgb(
+    var(--terminal-text-rgb) / var(--theme-font-transparency)
+  );
   --terminal-text-strong: rgb(
     var(--terminal-text-strong-rgb) / var(--theme-font-transparency)
   );
-  --terminal-muted: rgb(var(--terminal-muted-rgb) / var(--theme-font-transparency));
+  --terminal-muted: rgb(
+    var(--terminal-muted-rgb) / var(--theme-font-transparency)
+  );
 }
 
 html,
@@ -1306,10 +1314,6 @@ h3 {
 .artifact-body ul {
   margin: 3px 0 8px;
   padding-left: 17px;
-}
-
-.run-log {
-  border-color: #c9daf3;
 }
 
 .run-events {
