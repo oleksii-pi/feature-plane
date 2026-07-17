@@ -5,3 +5,4 @@
 feature/**/*.log
 features/**/artifacts/*.log
 features/**/artifacts/*.pid
+.playwright-cli/
