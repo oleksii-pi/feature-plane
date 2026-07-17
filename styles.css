@@ -4,6 +4,7 @@
   --muted-rgb: 105 115 134;
   --accent-dark-rgb: 12 118 80;
   --blue-rgb: 48 116 217;
+  --price-rgb: 36 97 194;
   --warning-rgb: 181 106 16;
   --danger-rgb: 187 60 71;
   --link-rgb: 63 114 184;
@@ -21,6 +22,7 @@
   --accent-dark: rgb(var(--accent-dark-rgb) / var(--theme-font-transparency));
   --accent-soft: #e4f7ee;
   --blue: rgb(var(--blue-rgb) / var(--theme-font-transparency));
+  --price: rgb(var(--price-rgb) / var(--theme-font-transparency));
   --blue-soft: #7fb0ff;
   --warning: rgb(var(--warning-rgb) / var(--theme-font-transparency));
   --warning-soft: #fff3dc;
@@ -69,6 +71,7 @@
   --muted-rgb: 157 170 186;
   --accent-dark-rgb: 184 241 213;
   --blue-rgb: 127 176 255;
+  --price-rgb: 155 205 255;
   --warning-rgb: 241 179 86;
   --danger-rgb: 239 107 118;
   --link-rgb: 153 192 255;
@@ -86,6 +89,7 @@
   --accent-dark: rgb(var(--accent-dark-rgb) / var(--theme-font-transparency));
   --accent-soft: rgba(79, 199, 141, 0.16);
   --blue: rgb(var(--blue-rgb) / var(--theme-font-transparency));
+  --price: rgb(var(--price-rgb) / var(--theme-font-transparency));
   --blue-soft: rgba(127, 176, 255, 0.18);
   --warning: rgb(var(--warning-rgb) / var(--theme-font-transparency));
   --warning-soft: rgba(241, 179, 86, 0.14);
@@ -678,7 +682,7 @@ h3 {
 
 .feature-price {
   flex: 0 0 auto;
-  color: var(--muted);
+  color: var(--price);
   font-weight: 650;
   text-align: right;
   white-space: nowrap;
@@ -705,7 +709,7 @@ h3 {
 }
 
 .feature-price-detail {
-  color: var(--blue-soft);
+  color: var(--price);
   font-weight: 700;
 }
 
@@ -1198,7 +1202,7 @@ h3 {
 }
 
 .execution-price {
-  color: var(--blue-soft);
+  color: var(--price);
   font-size: 11px;
   font-weight: 700;
 }
