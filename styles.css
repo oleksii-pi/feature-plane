@@ -1522,12 +1522,43 @@ dialog {
   box-shadow: 0 22px 60px rgba(23, 32, 51, 0.2);
 }
 
+dialog[open].movable-dialog {
+  position: fixed;
+  z-index: 40;
+  margin: 0;
+  max-width: calc(100vw - 20px);
+  max-height: calc(100vh - 20px);
+}
+
+dialog[open].resizable-dialog {
+  min-width: min(420px, calc(100vw - 20px));
+  min-height: 300px;
+  resize: both;
+  overflow: hidden;
+}
+
 dialog::backdrop {
   background: rgba(20, 28, 42, 0.42);
 }
 
 dialog form {
   padding: 22px;
+}
+
+#feature-dialog {
+  width: min(560px, calc(100vw - 32px));
+}
+
+#feature-dialog[open] {
+  height: min(460px, calc(100vh - 20px));
+  min-height: min(460px, calc(100vh - 20px));
+}
+
+#feature-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
 }
 
 .theme-dialog {
@@ -1591,6 +1622,12 @@ dialog form {
   margin-bottom: 20px;
 }
 
+.dialog-drag-handle {
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
+
 .form-field {
   display: flex;
   flex-direction: column;
@@ -1598,6 +1635,15 @@ dialog form {
   margin-bottom: 15px;
   font-size: 15px;
   font-weight: 700;
+}
+
+.feature-name-field {
+  flex: 0 0 auto;
+}
+
+.prompt-field {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .form-field input,
@@ -1614,6 +1660,20 @@ dialog form {
 
 .form-field textarea {
   resize: vertical;
+}
+
+#new-feature-prompt {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 180px;
+  font-family:
+    ui-monospace,
+    "SFMono-Regular",
+    "SF Mono",
+    Menlo,
+    Consolas,
+    "Liberation Mono",
+    monospace;
 }
 
 #feature-branch-name[readonly] {
@@ -2005,6 +2065,7 @@ dialog form {
 }
 
 .dialog-actions {
+  margin-top: auto;
   justify-content: flex-end;
   gap: 8px;
   padding-top: 5px;

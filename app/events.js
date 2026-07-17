@@ -82,6 +82,13 @@ function centerDialog(dialog) {
   dialog.style.top = `${next.top}px`;
 }
 
+function clampDialogToViewport(dialog) {
+  const rect = dialog.getBoundingClientRect();
+  const next = clampDialogPosition(dialog, rect.left, rect.top);
+  dialog.style.left = `${next.left}px`;
+  dialog.style.top = `${next.top}px`;
+}
+
 function bindMovableDialog(dialog, handle) {
   let drag = null;
 
@@ -118,8 +125,20 @@ function bindMovableDialog(dialog, handle) {
   });
 
   window.addEventListener("resize", () => {
-    if (dialog.open) centerDialog(dialog);
+    if (!dialog.open) return;
+    if (!dialog.style.left || !dialog.style.top) {
+      centerDialog(dialog);
+      return;
+    }
+    clampDialogToViewport(dialog);
   });
+
+  if (typeof ResizeObserver === "function") {
+    const observer = new ResizeObserver(() => {
+      if (dialog.open) clampDialogToViewport(dialog);
+    });
+    observer.observe(dialog);
+  }
 }
 
 function isTextEntryTarget(target) {
@@ -855,6 +874,14 @@ export function bindEvents() {
   bindMovableDialog(
     elements.validationDialog,
     document.querySelector("#validation-dialog-handle"),
+  );
+  bindMovableDialog(
+    elements.dialog,
+    document.querySelector("#feature-dialog-handle"),
+  );
+  bindMovableDialog(
+    elements.settingsDialog,
+    elements.settingsDialog.querySelector(".dialog-heading"),
   );
 
   document

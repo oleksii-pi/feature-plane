@@ -120,20 +120,19 @@
       </div>
     </div>
 
-    <dialog id="feature-dialog">
+    <dialog id="feature-dialog" class="movable-dialog resizable-dialog">
       <form id="feature-form" method="dialog">
-        <div class="dialog-heading">
+        <div class="dialog-heading dialog-drag-handle" id="feature-dialog-handle">
           <div>
-            <p class="eyebrow">New item</p>
             <h2>Create feature</h2>
           </div>
           <button class="icon-button" id="close-dialog-button" type="button" aria-label="Close dialog">×</button>
         </div>
-        <label class="form-field">
+        <label class="form-field feature-name-field">
           Feature name
           <input id="new-feature-name" name="name" required maxlength="80" />
         </label>
-        <label class="form-field">
+        <label class="form-field prompt-field">
           Prompt
           <textarea id="new-feature-prompt" name="prompt" rows="5" required placeholder="Describe what do you want to achieve..."></textarea>
         </label>

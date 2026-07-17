@@ -26,6 +26,25 @@ function waitForPaint() {
   });
 }
 
+function centerDialog(dialog) {
+  const margin = 10;
+  const width = dialog.offsetWidth;
+  const height = dialog.offsetHeight;
+  const maxLeft = Math.max(margin, window.innerWidth - width - margin);
+  const maxTop = Math.max(margin, window.innerHeight - height - margin);
+  const left = Math.min(
+    Math.max((window.innerWidth - width) / 2, margin),
+    maxLeft,
+  );
+  const top = Math.min(
+    Math.max((window.innerHeight - height) / 2, margin),
+    maxTop,
+  );
+
+  dialog.style.left = `${left}px`;
+  dialog.style.top = `${top}px`;
+}
+
 export async function moveToStep(feature, nextStep) {
   await api(`/features/${feature.id}/steps/${nextStep}`, { method: "PATCH" });
   await loadState({ preserveView: true });
@@ -52,6 +71,7 @@ export function openFeatureDialog() {
   closeMenus();
   elements.form.reset();
   elements.dialog.showModal();
+  centerDialog(elements.dialog);
   elements.nameInput.focus();
 }
 
@@ -67,6 +87,7 @@ export function openFeatureSettings() {
   elements.resetFeatureButton.disabled = featureBusy;
   document.querySelector("#request-delete-feature-button").disabled = featureBusy;
   elements.settingsDialog.showModal();
+  centerDialog(elements.settingsDialog);
   elements.settingsFeatureNameInput.focus();
   elements.settingsFeatureNameInput.setSelectionRange(
     feature.name.length,
