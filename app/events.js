@@ -1,9 +1,4 @@
-import {
-  api,
-  loadState,
-  restoreStateFromClipboard,
-  saveStateToClipboard,
-} from "./api.js";
+import { api, loadState } from "./api.js";
 import {
   closeArtifactSaveDialog,
   closeRevertDialog,
@@ -806,16 +801,6 @@ export function bindEvents() {
     .querySelector("#close-environment-terminal-button")
     .addEventListener("click", closeEnvironmentPanel);
 
-  document.querySelector("#save-state-button").addEventListener("click", () => {
-    closeMenus();
-    saveStateToClipboard();
-  });
-  document
-    .querySelector("#restore-state-button")
-    .addEventListener("click", () => {
-      closeMenus();
-      restoreStateFromClipboard();
-    });
   document
     .querySelector("#repository-workflow-button")
     .addEventListener("click", async () => {

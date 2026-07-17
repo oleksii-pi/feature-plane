@@ -1,9 +1,4 @@
-import {
-  api,
-  loadState,
-  restoreStateFromClipboard,
-  saveStateToClipboard,
-} from "./api.js";
+import { api, loadState } from "./api.js";
 import { closeMenus, elements, showToast } from "./dom.js";
 import { currentDateTime } from "./format.js";
 import { render, renderEnvironmentPanel } from "./render.js";
@@ -21,8 +16,6 @@ import {
   stepForFeature,
   state,
 } from "./state.js";
-
-export { restoreStateFromClipboard, saveStateToClipboard };
 
 let branchCopyStatusTimer;
 let themeDialogOriginal = null;
