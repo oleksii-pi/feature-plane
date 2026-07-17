@@ -91,6 +91,7 @@ function displayRunDuration(run) {
 
 function runLabel(run) {
   if (run.status === "running" || run.status === "queued") return "Running";
+  if (run.status === "cancelled") return "Stopped";
   return run.status.charAt(0).toUpperCase() + run.status.slice(1);
 }
 

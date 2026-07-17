@@ -130,25 +130,39 @@ function restoreStepMenuMarkup(feature, stepIndex) {
 }
 
 function restoreRunMenuMarkup(feature, run) {
-  if (feature.activeRunId || run.status !== "succeeded") return "";
+  if (feature.activeRunId) return "";
   const step = stepForFeature(feature, run.step) ?? {};
+  const isSuccessfulRun = run.status === "succeeded";
+  const isStoppedRun = run.status === "cancelled";
+  if (!isSuccessfulRun && !isStoppedRun) return "";
   if (isAgentStep(step)) {
-    const commit = commitBeforeStep(feature, run.step);
-    if (!commit) return "";
-    const attrs = `data-revert-run-id="${escapeHtml(run.id)}" data-revert-step="${run.step}" data-revert-rerun="true"`;
-    return restoreMenuMarkup({
+    const common = {
       className: "artifact-card-menu",
       kind: "run",
       label: `${displayRunTitle(step)} run`,
-      detail: `Step ${run.step + 1}  reset to ${shortCommit(commit)}`,
-      attrs,
-      actionLabel: "Rerun",
       extraActions: [
         {
           className: "change-request-button",
           label: "Add change request",
         },
       ],
+    };
+    if (isStoppedRun) {
+      return restoreMenuMarkup({
+        ...common,
+        detail: `Step ${run.step + 1} stopped before completion`,
+        attrs: `data-revert-run-id="${escapeHtml(run.id)}" data-revert-step="${run.step}"`,
+        showPrimaryAction: false,
+      });
+    }
+    const commit = commitBeforeStep(feature, run.step);
+    if (!commit) return "";
+    const attrs = `data-revert-run-id="${escapeHtml(run.id)}" data-revert-step="${run.step}" data-revert-rerun="true"`;
+    return restoreMenuMarkup({
+      ...common,
+      detail: `Step ${run.step + 1}  reset to ${shortCommit(commit)}`,
+      attrs,
+      actionLabel: "Rerun",
     });
   }
   if (!run.commitSha) return "";
@@ -352,6 +366,7 @@ function displayEvents(run) {
 
 function runLabel(run) {
   if (run.status === "running" || run.status === "queued") return "Running";
+  if (run.status === "cancelled") return "Stopped";
   return run.status.charAt(0).toUpperCase() + run.status.slice(1);
 }
 

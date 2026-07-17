@@ -326,7 +326,7 @@ export function openRevertDialog(target) {
   elements.revertReasonInput.value = "";
   elements.revertReasonInput.required = changeRequest;
   elements.revertReasonInput.placeholder = changeRequest
-    ? "Describe what should be fixed or changed before rerunning this agent."
+    ? "Describe what should be fixed or changed before the next run."
     : "Optional";
   elements.revertConfirmCheckbox.checked = false;
   elements.confirmRevertButton.disabled = true;

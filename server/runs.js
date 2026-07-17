@@ -351,8 +351,8 @@ async function cancelRun(runId) {
   await addEvent(
     feature,
     run,
-    "Cancelled",
-    "Agent run cancelled by user.",
+    "Stopped",
+    "Agent run stopped by user.",
     "info",
   );
   return run;

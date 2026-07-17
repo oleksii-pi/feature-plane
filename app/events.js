@@ -624,7 +624,7 @@ export function bindEvents() {
     if (!feature?.activeRunId) return;
     await api(`/runs/${feature.activeRunId}/cancel`, { method: "POST" });
     await loadState({ preserveView: true });
-    showToast("Agent run cancelled");
+    showToast("Agent run stopped");
   });
 
   elements.artifactList.addEventListener("click", async (event) => {

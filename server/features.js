@@ -512,6 +512,10 @@ function hasSuccessfulRunForStep(feature, stepIndex) {
   );
 }
 
+function canCreateChangeRequestFromRun(run) {
+  return run.status === "succeeded" || run.status === "cancelled";
+}
+
 async function moveFeature(feature, nextStep) {
   nextStep = clampFeatureStep(feature, nextStep);
   if (feature.activeRunId) {
@@ -632,8 +636,8 @@ function resolveChangeRequestTarget(feature, body) {
   if (body.runId) {
     const run = (feature.runs ?? []).find((item) => item.id === String(body.runId));
     if (!run) throw httpError(404, "Unknown run.");
-    if (run.status !== "succeeded") {
-      throw httpError(409, "Change requests can only be created for completed agent runs.");
+    if (!canCreateChangeRequestFromRun(run)) {
+      throw httpError(409, "Change requests can only be created for completed or stopped agent runs.");
     }
     const step = featureStep(feature, run.step) ?? {};
     if (!step.agent) throw httpError(422, "The selected run is not an agent step.");
@@ -644,8 +648,12 @@ function resolveChangeRequestTarget(feature, body) {
     const stepIndex = Number(body.step);
     const step = featureStep(feature, stepIndex) ?? {};
     if (!step.agent) throw httpError(422, "The selected workflow step is not an agent step.");
-    if (!hasSuccessfulRunForStep(feature, stepIndex)) {
-      throw httpError(409, "The selected agent step has not completed successfully.");
+    if (
+      !(feature.runs ?? []).some(
+        (run) => run.step === stepIndex && canCreateChangeRequestFromRun(run),
+      )
+    ) {
+      throw httpError(409, "The selected agent step has not completed or stopped successfully.");
     }
     return { step: stepIndex, agent: step.agent, label: `${step.agent} run` };
   }
@@ -654,14 +662,14 @@ function resolveChangeRequestTarget(feature, body) {
     const agent = String(body.agent);
     for (let index = (feature.runs ?? []).length - 1; index >= 0; index -= 1) {
       const run = feature.runs[index];
-      if (run.agent === agent && run.status === "succeeded") {
+      if (run.agent === agent && canCreateChangeRequestFromRun(run)) {
         return { step: run.step, agent, label: `${agent} run` };
       }
     }
-    throw httpError(404, "Unknown completed agent run.");
+    throw httpError(404, "Unknown completed or stopped agent run.");
   }
 
-  throw httpError(422, "A completed run, step, or agent is required.");
+  throw httpError(422, "A completed or stopped run, step, or agent is required.");
 }
 
 function normalizeChangeRequest(value) {
